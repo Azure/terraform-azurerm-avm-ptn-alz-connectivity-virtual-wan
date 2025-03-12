@@ -8,7 +8,6 @@ locals {
     }, try(virtual_hub_value.firewall_policy.dns, {}))
     }, virtual_hub_value.firewall_policy) if try(virtual_hub_value.firewall_policy, null) != null
   }
-
   firewalls = { for virtual_hub_key, virtual_hub_value in var.virtual_hubs : virtual_hub_key => merge({
     virtual_hub_key    = virtual_hub_key
     firewall_policy_id = module.firewall_policy[virtual_hub_key].resource_id

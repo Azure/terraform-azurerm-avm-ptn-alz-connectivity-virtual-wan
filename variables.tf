@@ -1,16 +1,18 @@
-variable "virtual_wan_settings" {
-  type        = any
-  default     = {}
+variable "enable_telemetry" {
+  type        = bool
+  default     = true
   description = <<DESCRIPTION
-The shared settings for the Virtual WAN. This is where global resources are defined.
-
-The following attributes are supported:
-
-  - ddos_protection_plan: (Optional) The DDoS protection plan settings. Detailed information about the DDoS protection plan can be found in the module's README: https://registry.terraform.io/modules/Azure/avm-ptn-ddosprotectionplan
-  
-The Virtual WAN module attributes are also supported. Detailed information about the Virtual WAN module variables can be found in the module's README: https://registry.terraform.io/modules/Azure/avm-ptn-virtualwan
-
+This variable controls whether or not telemetry is enabled for the module.
+For more information see <https://aka.ms/avm/telemetryinfo>.
+If it is set to false, then no telemetry will be collected.
 DESCRIPTION
+  nullable    = false
+}
+
+variable "tags" {
+  type        = map(string)
+  default     = null
+  description = "(Optional) Tags of the resource."
 }
 
 variable "virtual_hubs" {
@@ -45,7 +47,6 @@ variable "virtual_hubs" {
     }))
     side_car_virtual_network = optional(any)
   }))
-
   default     = {}
   description = <<DESCRIPTION
 A map of virtual hubs to create.
@@ -63,19 +64,17 @@ The following attributes are supported:
 DESCRIPTION
 }
 
-variable "enable_telemetry" {
-  type        = bool
-  default     = true
+variable "virtual_wan_settings" {
+  type        = any
+  default     = {}
   description = <<DESCRIPTION
-This variable controls whether or not telemetry is enabled for the module.
-For more information see <https://aka.ms/avm/telemetryinfo>.
-If it is set to false, then no telemetry will be collected.
-DESCRIPTION
-  nullable    = false
-}
+The shared settings for the Virtual WAN. This is where global resources are defined.
 
-variable "tags" {
-  type        = map(string)
-  default     = null
-  description = "(Optional) Tags of the resource."
+The following attributes are supported:
+
+  - ddos_protection_plan: (Optional) The DDoS protection plan settings. Detailed information about the DDoS protection plan can be found in the module's README: https://registry.terraform.io/modules/Azure/avm-ptn-ddosprotectionplan
+  
+The Virtual WAN module attributes are also supported. Detailed information about the Virtual WAN module variables can be found in the module's README: https://registry.terraform.io/modules/Azure/avm-ptn-virtualwan
+
+DESCRIPTION
 }

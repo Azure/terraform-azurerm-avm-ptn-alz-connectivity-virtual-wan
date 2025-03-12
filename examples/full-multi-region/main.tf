@@ -15,7 +15,7 @@ provider "azurerm" {
 variable "starter_locations" {
   type        = list(string)
   description = "The default for Azure resources. (e.g 'uksouth')"
-  default = [ "eastus2", "westus2" ]
+  default     = ["eastus2", "westus2"]
 }
 
 variable "connectivity_resource_groups" {
@@ -89,7 +89,7 @@ variable "tags" {
 data "azurerm_client_config" "current" {}
 
 module "config" {
-  source = "github.com/Azure/alz-terraform-accelerator//templates/platform_landing_zone/modules/config-templating"
+  source           = "github.com/Azure/alz-terraform-accelerator//templates/platform_landing_zone/modules/config-templating"
   enable_telemetry = var.enable_telemetry
 
   starter_locations               = var.starter_locations
@@ -100,12 +100,12 @@ module "config" {
 
   custom_replacements = var.custom_replacements
 
-  connectivity_resource_groups        = var.connectivity_resource_groups
-  virtual_wan_settings                = var.virtual_wan_settings
-  virtual_wan_virtual_hubs           = var.virtual_wan_virtual_hubs
-   management_resource_settings        = var.management_resource_settings
-  management_group_settings           = var.management_group_settings
-  tags                                = var.tags
+  connectivity_resource_groups = var.connectivity_resource_groups
+  virtual_wan_settings         = var.virtual_wan_settings
+  virtual_wan_virtual_hubs     = var.virtual_wan_virtual_hubs
+  management_resource_settings = var.management_resource_settings
+  management_group_settings    = var.management_group_settings
+  tags                         = var.tags
 }
 
 module "resource_groups" {
@@ -125,7 +125,7 @@ locals {
   resource_groups = {
     resource_groups = module.resource_groups
   }
-  virtual_wan_settings = merge(module.config.virtual_wan_settings, local.resource_groups)
+  virtual_wan_settings     = merge(module.config.virtual_wan_settings, local.resource_groups)
   virtual_wan_virtual_hubs = (merge({ hubs = module.config.virtual_wan_virtual_hubs }, local.resource_groups)).hubs
 }
 
@@ -134,7 +134,7 @@ module "test" {
   source = "../../"
 
   virtual_wan_settings = local.virtual_wan_settings
-  virtual_hubs = local.virtual_wan_virtual_hubs
-  enable_telemetry                = false
-  tags                            = module.config.tags
+  virtual_hubs         = local.virtual_wan_virtual_hubs
+  enable_telemetry     = false
+  tags                 = module.config.tags
 }
