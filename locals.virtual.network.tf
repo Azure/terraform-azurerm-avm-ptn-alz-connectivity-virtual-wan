@@ -54,10 +54,9 @@ locals {
     remote_virtual_network_id = virtual_network_connection.remote_virtual_network_id
     settings                  = virtual_network_connection.settings
   } }
-  virtual_network_connections_side_car = { for key, value in local.private_dns_zones : "private_dns_vnet_${key}" => {
-    name                      = "private_dns_vnet_${key}"
+  virtual_network_connections_side_car = { for key, value in var.virtual_hubs : key => merge({
+    name                      = "vnet-side-car-${key}"
     virtual_hub_key           = key
-    remote_virtual_network_id = module.virtual_network_side_car[key].resource_id
-    } if local.side_car_virtual_networks_enabled[key]
-  }
+    remote_virtual_network_id = try(module.virtual_network_side_car[key].resource_id, null)
+  }, value.side_car_virtual_network) if local.side_car_virtual_networks_enabled[key] }
 }
