@@ -131,7 +131,7 @@ Default: `{}`
 
 The following outputs are exported:
 
-### <a name="output_dns_server_ip_addresses"></a> [dns\_server\_ip\_addresses](#output\_dns\_server\_ip\_addresses)
+### <a name="output_dns_server_ip_address"></a> [dns\_server\_ip\_address](#output\_dns\_server\_ip\_address)
 
 Description: The private IP addresses of the DNS servers associated with the virtual WAN.
 
@@ -139,7 +139,7 @@ Description: The private IP addresses of the DNS servers associated with the vir
 
 Description: The resource IDs of the firewall policies associated with the virtual WAN.
 
-### <a name="output_firewall_private_ip_addresses"></a> [firewall\_private\_ip\_addresses](#output\_firewall\_private\_ip\_addresses)
+### <a name="output_firewall_private_ip_address"></a> [firewall\_private\_ip\_address](#output\_firewall\_private\_ip\_address)
 
 Description: The private IP addresses of the firewalls associated with the virtual WAN, grouped by hub key.
 
@@ -227,7 +227,7 @@ Version: 0.7.1
 
 Source: Azure/avm-ptn-virtualwan/azurerm
 
-Version: 0.9.0
+Version: 0.11.0
 
 <!-- markdownlint-disable-next-line MD041 -->
 ## Data Collection

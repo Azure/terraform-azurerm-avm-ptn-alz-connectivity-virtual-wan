@@ -144,6 +144,10 @@ module "test" {
   enable_telemetry     = false
   tags                 = module.config.tags
 }
+
+output "test_outputs" {
+  value = module.test
+}
 ```
 
 <!-- markdownlint-disable MD033 -->
@@ -321,6 +325,10 @@ Default: `{}`
 The following outputs are exported:
 
 ### <a name="output_linting"></a> [linting](#output\_linting)
+
+Description: n/a
+
+### <a name="output_test_outputs"></a> [test\_outputs](#output\_test\_outputs)
 
 Description: n/a
 
