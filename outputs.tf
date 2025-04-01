@@ -1,6 +1,6 @@
-output "dns_server_ip_addresses" {
+output "dns_server_ip_address" {
   description = "The private IP addresses of the DNS servers associated with the virtual WAN."
-  value       = module.virtual_wan.firewall_private_ip_addresses_by_hub_key
+  value       = module.virtual_wan.firewall_private_ip_address_by_hub_key
 }
 
 output "firewall_policy_resource_ids" {
@@ -8,9 +8,9 @@ output "firewall_policy_resource_ids" {
   value       = { for key, value in module.firewall_policy : key => value.resource_id }
 }
 
-output "firewall_private_ip_addresses" {
+output "firewall_private_ip_address" {
   description = "The private IP addresses of the firewalls associated with the virtual WAN, grouped by hub key."
-  value       = module.virtual_wan.firewall_private_ip_addresses_by_hub_key
+  value       = module.virtual_wan.firewall_private_ip_address_by_hub_key
 }
 
 output "firewall_public_ip_addresses" {

@@ -138,3 +138,7 @@ module "test" {
   enable_telemetry     = false
   tags                 = module.config.tags
 }
+
+output "test_outputs" {
+  value = module.test
+}
