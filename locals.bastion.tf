@@ -17,6 +17,7 @@ locals {
         name                 = "bastion-ip-config"
         subnet_id            = module.virtual_network_side_car[key].subnets["bastion"].resource_id
         public_ip_address_id = module.bastion_public_ip[key].public_ip_id
+        create_public_ip     = false
       }
     }, value.bastion.bastion_host) if local.bastions_enabled[key]
   }
