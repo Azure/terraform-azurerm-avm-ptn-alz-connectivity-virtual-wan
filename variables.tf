@@ -21,6 +21,7 @@ variable "virtual_hubs" {
     firewall        = optional(any)
     firewall_policy = optional(any)
     bastion = optional(object({
+      enabled               = optional(bool, true)
       subnet_address_prefix = string
       bastion_host          = any
       bastion_public_ip     = any
@@ -30,6 +31,7 @@ variable "virtual_hubs" {
       vpn           = optional(any)
     }))
     private_dns_zones = optional(object({
+      enabled             = optional(bool, true)
       resource_group_name = string
       is_primary          = optional(bool, false)
       private_link_private_dns_zones = optional(map(object({
@@ -40,6 +42,7 @@ variable "virtual_hubs" {
       subnet_address_prefix          = string
       subnet_name                    = optional(string, "dns-resolver")
       private_dns_resolver = object({
+        enabled             = optional(bool, true)
         name                = string
         resource_group_name = optional(string)
         ip_address          = optional(string)
@@ -73,7 +76,7 @@ The shared settings for the Virtual WAN. This is where global resources are defi
 The following attributes are supported:
 
   - ddos_protection_plan: (Optional) The DDoS protection plan settings. Detailed information about the DDoS protection plan can be found in the module's README: https://registry.terraform.io/modules/Azure/avm-ptn-ddosprotectionplan
-  
+
 The Virtual WAN module attributes are also supported. Detailed information about the Virtual WAN module variables can be found in the module's README: https://registry.terraform.io/modules/Azure/avm-ptn-virtualwan
 
 DESCRIPTION

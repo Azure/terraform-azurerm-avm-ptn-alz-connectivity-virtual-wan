@@ -1,5 +1,5 @@
 locals {
-  side_car_virtual_networks_enabled = { for key, value in var.virtual_hubs : key => try(value.side_car_virtual_network, null) != null }
+  side_car_virtual_networks_enabled = { for key, value in var.virtual_hubs : key => try(value.side_car_virtual_network.enabled, try(value.side_car_virtual_network, null) != null) }
 }
 
 locals {

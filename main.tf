@@ -1,6 +1,6 @@
 module "firewall_policy" {
   source  = "Azure/avm-res-network-firewallpolicy/azurerm"
-  version = "0.3.2"
+  version = "0.3.3"
 
   for_each = local.firewall_policies
 
@@ -20,7 +20,7 @@ module "firewall_policy" {
 
 module "virtual_wan" {
   source  = "Azure/avm-ptn-virtualwan/azurerm"
-  version = "0.11.0"
+  version = "0.11.1"
 
   allow_branch_to_branch_traffic        = try(var.virtual_wan_settings.allow_branch_to_branch_traffic, null)
   disable_vpn_encryption                = try(var.virtual_wan_settings.disable_vpn_encryption, false)
@@ -49,7 +49,7 @@ module "virtual_wan" {
 
 module "virtual_network_side_car" {
   source  = "Azure/avm-res-network-virtualnetwork/azurerm"
-  version = "0.7.1"
+  version = "0.8.1"
 
   for_each = local.side_car_virtual_networks
 
@@ -65,7 +65,7 @@ module "virtual_network_side_car" {
 
 module "dns_resolver" {
   source  = "Azure/avm-res-network-dnsresolver/azurerm"
-  version = "0.4.0"
+  version = "0.7.3"
 
   for_each = local.private_dns_zones
 
@@ -85,7 +85,7 @@ module "dns_resolver" {
 
 module "private_dns_zones" {
   source  = "Azure/avm-ptn-network-private-link-private-dns-zones/azurerm"
-  version = "0.7.1"
+  version = "0.10.1"
 
   for_each = local.private_dns_zones
 
@@ -100,7 +100,7 @@ module "private_dns_zones" {
 
 module "private_dns_zone_auto_registration" {
   source  = "Azure/avm-res-network-privatednszone/azurerm"
-  version = "0.2.2"
+  version = "0.3.3"
 
   for_each = local.private_dns_zones_auto_registration
 
@@ -165,7 +165,7 @@ module "bastion_public_ip" {
 
 module "bastion_host" {
   source  = "Azure/avm-res-network-bastionhost/azurerm"
-  version = "0.4.0"
+  version = "0.7.2"
 
   for_each = local.bastion_hosts
 
