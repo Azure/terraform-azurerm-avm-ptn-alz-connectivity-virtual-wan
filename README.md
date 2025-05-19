@@ -212,7 +212,7 @@ Version: 0.3.3
 
 Source: Azure/avm-ptn-network-private-link-private-dns-zones/azurerm
 
-Version: 0.12.0
+Version: 0.13.0
 
 ### <a name="module_virtual_network_side_car"></a> [virtual\_network\_side\_car](#module\_virtual\_network\_side\_car)
 
