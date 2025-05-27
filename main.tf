@@ -14,7 +14,7 @@ module "firewall_policy" {
   firewall_policy_sku                               = try(each.value.sku, "Standard")
   firewall_policy_threat_intelligence_allowlist     = try(each.value.threat_intelligence_allowlist, null)
   firewall_policy_threat_intelligence_mode          = try(each.value.threat_intelligence_mode, "Alert")
-  tags                                              = try(each.value.tags, null)
+  tags                                              = try(each.value.tags, var.tags)
 }
 
 module "virtual_wan" {
@@ -36,7 +36,7 @@ module "virtual_wan" {
   p2s_gateways                          = try(var.virtual_wan_settings.p2s_gateways, {})
   resource_group_tags                   = try(var.virtual_wan_settings.resource_group_tags, null)
   routing_intents                       = try(var.virtual_wan_settings.routing_intents, null)
-  tags                                  = try(var.virtual_wan_settings.tags, null)
+  tags                                  = try(var.virtual_wan_settings.tags, var.tags)
   type                                  = try(var.virtual_wan_settings.type, "Standard")
   virtual_hubs                          = local.virtual_hubs
   virtual_network_connections           = local.virtual_network_connections
