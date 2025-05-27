@@ -3,6 +3,16 @@ output "dns_server_ip_address" {
   value       = module.virtual_wan.firewall_private_ip_address_by_hub_key
 }
 
+output "express_route_gateway_resource_ids" {
+  description = "The resource IDs of the ExpressRoute gateways associated with the virtual WAN."
+  value       = module.virtual_wan.ergw_id
+}
+
+output "express_route_gateway_resources" {
+  description = "The resource objects of the ExpressRoute gateways associated with the virtual WAN."
+  value       = module.virtual_wan.ergw
+}
+
 output "firewall_policy_resource_ids" {
   description = "The resource IDs of the firewall policies associated with the virtual WAN."
   value       = { for key, value in module.firewall_policy : key => value.resource_id }

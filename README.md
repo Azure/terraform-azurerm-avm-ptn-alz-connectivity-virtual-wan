@@ -143,6 +143,14 @@ The following outputs are exported:
 
 Description: The private IP addresses of the DNS servers associated with the virtual WAN.
 
+### <a name="output_express_route_gateway_resource_ids"></a> [express\_route\_gateway\_resource\_ids](#output\_express\_route\_gateway\_resource\_ids)
+
+Description: The resource IDs of the ExpressRoute gateways associated with the virtual WAN.
+
+### <a name="output_express_route_gateway_resources"></a> [express\_route\_gateway\_resources](#output\_express\_route\_gateway\_resources)
+
+Description: The resource objects of the ExpressRoute gateways associated with the virtual WAN.
+
 ### <a name="output_firewall_policy_resource_ids"></a> [firewall\_policy\_resource\_ids](#output\_firewall\_policy\_resource\_ids)
 
 Description: The resource IDs of the firewall policies associated with the virtual WAN.
@@ -235,7 +243,7 @@ Version: 0.8.1
 
 Source: Azure/avm-ptn-virtualwan/azurerm
 
-Version: 0.11.1
+Version: 0.12.0
 
 <!-- markdownlint-disable-next-line MD041 -->
 ## Data Collection
