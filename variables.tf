@@ -32,33 +32,15 @@ variable "virtual_hubs" {
     }))
     private_dns_zones = optional(object({
       enabled             = optional(bool, true)
-      resource_group_name = string
-      is_primary          = optional(bool, false)
-      private_link_private_dns_zones = optional(map(object({
-        zone_name = optional(string, null)
-        custom_iterator = optional(object({
-          replacement_placeholder = string
-          replacement_values      = map(string)
-        }))
-      })))
-      private_link_private_dns_zones_additional = optional(map(object({
-        zone_name = optional(string, null)
-        custom_iterator = optional(object({
-          replacement_placeholder = string
-          replacement_values      = map(string)
-        }))
-      })))
-      private_dns_zone_network_link_name_template = optional(string)
-      auto_registration_zone_enabled              = optional(bool, false)
+      dns_zones           = any
+      auto_registration_zone_enabled              = optional(bool, true)
       auto_registration_zone_name                 = optional(string, null)
+    }))
+    private_dns_resolver = optional(object({
+      enabled             = optional(bool, true)
       subnet_address_prefix                       = string
       subnet_name                                 = optional(string, "dns-resolver")
-      private_dns_resolver = object({
-        enabled             = optional(bool, true)
-        name                = string
-        resource_group_name = optional(string)
-        ip_address          = optional(string)
-      })
+      dns_resolver = any
     }))
     side_car_virtual_network = optional(any)
   }))

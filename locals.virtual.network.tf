@@ -25,15 +25,15 @@ locals {
   private_dns_resolver_subnets = { for key, value in var.virtual_hubs : key => {
     dns_resolver = {
       hub_network_key  = key
-      address_prefixes = [value.private_dns_zones.subnet_address_prefix]
-      name             = value.private_dns_zones.subnet_name
+      address_prefixes = [value.private_dns_resolver.subnet_address_prefix]
+      name             = value.private_dns_resolver.subnet_name
       delegation = [{
         name = "Microsoft.Network.dnsResolvers"
         service_delegation = {
           name = "Microsoft.Network/dnsResolvers"
         }
       }]
-    } } if local.private_dns_zones_enabled[key]
+    } } if local.private_dns_resolver_enabled[key]
   }
   subnets = { for key, value in var.virtual_hubs : key => merge(lookup(local.private_dns_resolver_subnets, key, {}), lookup(local.bastion_subnets, key, {}), try(value.side_car_virtual_network.subnets, {})) }
 }
