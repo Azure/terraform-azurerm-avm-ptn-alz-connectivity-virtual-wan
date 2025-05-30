@@ -4,7 +4,7 @@ locals {
 
 locals {
   private_dns_resolver = { for key, value in var.virtual_hubs : key => merge({
-    location = value.hub.location
+    location            = value.hub.location
     resource_group_name = value.hub.resource_group
     inbound_endpoints = local.private_dns_zones_enabled[key] ? {
       dns = {

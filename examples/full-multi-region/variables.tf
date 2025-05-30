@@ -85,7 +85,7 @@ DESCRIPTION
 }
 
 variable "virtual_wan_virtual_hubs" {
-  type = map(any)
+  type        = map(any)
   default     = {}
   description = <<DESCRIPTION
 A map of virtual hubs to create.
