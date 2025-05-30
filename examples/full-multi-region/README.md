@@ -221,28 +221,17 @@ The following attributes are supported:
   - virtual\_network\_gateways: (Optional) The virtual network gateway settings. Detailed information about the virtual network gateway can be found in the Virtual WAN module's README: https://registry.terraform.io/modules/Azure/avm-ptn-virtualhub
   - side\_car\_virtual\_network: (Optional) The side car virtual network settings. Detailed information about the side car virtual network can be found in the module's README: https://registry.terraform.io/modules/Azure/avm-res-network-virtualnetwork
 
-Type:
-
-```hcl
-map(object({
-    hub               = any
-    firewall          = optional(any)
-    firewall_policy   = optional(any)
-    private_dns_zones = optional(any)
-    bastion           = optional(any)
-    virtual_network_gateways = optional(object({
-      express_route = optional(any)
-      vpn           = optional(any)
-    }))
-    side_car_virtual_network = optional(any)
-  }))
-```
+Type: `map(any)`
 
 Default: `{}`
 
 ## Outputs
 
 The following outputs are exported:
+
+### <a name="output_config_outputs"></a> [config\_outputs](#output\_config\_outputs)
+
+Description: n/a
 
 ### <a name="output_linting"></a> [linting](#output\_linting)
 
