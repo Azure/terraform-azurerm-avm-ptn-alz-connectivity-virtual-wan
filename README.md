@@ -124,6 +124,18 @@ Default: `{}`
 
 The following outputs are exported:
 
+### <a name="output_bastion_host_public_ip_address"></a> [bastion\_host\_public\_ip\_address](#output\_bastion\_host\_public\_ip\_address)
+
+Description: The public IP addresses of the bastion hosts associated with the virtual WAN, grouped by hub key.
+
+### <a name="output_bastion_host_resource_ids"></a> [bastion\_host\_resource\_ids](#output\_bastion\_host\_resource\_ids)
+
+Description: The resource IDs of the bastion hosts associated with the virtual WAN, grouped by hub key.
+
+### <a name="output_bastion_host_resources"></a> [bastion\_host\_resources](#output\_bastion\_host\_resources)
+
+Description: The bastion host resources associated with the virtual WAN, grouped by hub key.
+
 ### <a name="output_dns_server_ip_address"></a> [dns\_server\_ip\_address](#output\_dns\_server\_ip\_address)
 
 Description: The private IP addresses of the DNS servers associated with the virtual WAN.
@@ -160,9 +172,25 @@ Description: The names of the firewalls associated with the virtual WAN, grouped
 
 Description: The name of the virtual WAN.
 
+### <a name="output_private_dns_resolver_resource_ids"></a> [private\_dns\_resolver\_resource\_ids](#output\_private\_dns\_resolver\_resource\_ids)
+
+Description: The resource IDs of the private DNS resolvers associated with the virtual WAN, grouped by hub key.
+
+### <a name="output_private_dns_resolver_resources"></a> [private\_dns\_resolver\_resources](#output\_private\_dns\_resolver\_resources)
+
+Description: The private DNS resolvers associated with the virtual WAN, grouped by hub key.
+
 ### <a name="output_resource_id"></a> [resource\_id](#output\_resource\_id)
 
 Description: The resource ID of the virtual WAN.
+
+### <a name="output_sidecar_virtual_network_resource_ids"></a> [sidecar\_virtual\_network\_resource\_ids](#output\_sidecar\_virtual\_network\_resource\_ids)
+
+Description: The resource IDs of the side car virtual networks associated with the virtual WAN, grouped by hub key.
+
+### <a name="output_sidecar_virtual_network_resources"></a> [sidecar\_virtual\_network\_resources](#output\_sidecar\_virtual\_network\_resources)
+
+Description: The side car virtual networks associated with the virtual WAN, grouped by hub key.
 
 ### <a name="output_virtual_hub_resource_ids"></a> [virtual\_hub\_resource\_ids](#output\_virtual\_hub\_resource\_ids)
 
