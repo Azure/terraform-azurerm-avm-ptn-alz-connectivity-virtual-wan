@@ -256,7 +256,7 @@ Version: 0.8.1
 
 Source: Azure/avm-ptn-virtualwan/azurerm
 
-Version: 0.12.2
+Version: 0.12.3
 
 <!-- markdownlint-disable-next-line MD041 -->
 ## Data Collection
