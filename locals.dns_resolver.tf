@@ -12,5 +12,5 @@ locals {
         subnet_name = module.virtual_network_side_car[key].subnets["dns_resolver"].name
       }
     } : {}
-  }, value.private_dns_resolver.dns_resolver) if local.private_dns_resolver_enabled[key] }
+  }, value.private_dns_resolver.dns_resolver) if local.private_dns_resolver_enabled[key] && local.side_car_virtual_networks_enabled[key] }
 }
