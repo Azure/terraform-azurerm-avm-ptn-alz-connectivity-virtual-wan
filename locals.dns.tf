@@ -13,10 +13,12 @@ locals {
   }, value.private_dns_zones) if local.private_dns_zones_enabled[key] && try(value.private_dns_zones.auto_registration_zone_enabled, false) }
   private_dns_zones_auto_registration_virtual_network_links = {
     for key, value in module.virtual_network_side_car : key => {
-      vnetlinkname     = "vnet-link-${key}-auto-registration"
-      vnetid           = value.resource_id
-      autoregistration = true
-      tags             = var.tags
+      auto_registration_link = {
+        vnetlinkname     = "vnet-link-${key}-auto-registration"
+        vnetid           = value.resource_id
+        autoregistration = true
+        tags             = var.tags
+      }
     }
   }
   private_dns_zones_virtual_network_links = {
