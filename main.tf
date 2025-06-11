@@ -109,7 +109,7 @@ module "private_dns_zone_auto_registration" {
   resource_group_name   = each.value.resource_group_name
   enable_telemetry      = var.enable_telemetry
   tags                  = var.tags
-  virtual_network_links = try(local.private_dns_zones_auto_registration_virtual_network_links[each.key], null)
+  virtual_network_links = each.value.virtual_network_links
 }
 
 module "ddos_protection_plan" {
