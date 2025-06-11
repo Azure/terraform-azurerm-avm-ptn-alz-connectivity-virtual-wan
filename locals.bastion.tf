@@ -1,5 +1,5 @@
 locals {
-  bastions_enabled = { for key, value in var.virtual_hubs : key => try(value.bastion.enabled, try(value.bastion, null) != null) }
+  bastions_enabled = { for key, value in var.virtual_hubs : key => try(value.bastion.enabled, try(value.bastion, null) != null) && local.side_car_virtual_networks_enabled[key] }
 }
 
 locals {
@@ -19,6 +19,6 @@ locals {
         public_ip_address_id = module.bastion_public_ip[key].public_ip_id
         create_public_ip     = false
       }
-    }, value.bastion.bastion_host) if local.bastions_enabled[key] && local.side_car_virtual_networks_enabled[key]
+    }, value.bastion.bastion_host) if local.bastions_enabled[key]
   }
 }
