@@ -18,7 +18,7 @@ locals {
         tags             = var.tags
       }
     } : {}
-  }, value.private_dns_zones) if local.private_dns_zones_enabled[key] && try(value.private_dns_zones.auto_registration_zone_enabled, false) }
+  }, value.private_dns_zones.dns_zones) if local.private_dns_zones_enabled[key] && try(value.private_dns_zones.auto_registration_zone_enabled, false) }
   private_dns_zones_virtual_network_links = {
     for key, value in module.virtual_network_side_car : key => {
       vnet_resource_id                            = value.resource_id
