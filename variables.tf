@@ -32,10 +32,11 @@ variable "virtual_hubs" {
       vpn           = optional(any)
     }))
     private_dns_zones = optional(object({
-      enabled                        = optional(bool, true)
-      dns_zones                      = any
-      auto_registration_zone_enabled = optional(bool, true)
-      auto_registration_zone_name    = optional(string, null)
+      enabled                                    = optional(bool, true)
+      dns_zones                                  = any
+      auto_registration_zone_enabled             = optional(bool, true)
+      auto_registration_zone_name                = optional(string, null)
+      auto_registration_zone_resource_group_name = optional(string, null)
     }))
     private_dns_resolver = optional(object({
       enabled                                = optional(bool, true)
