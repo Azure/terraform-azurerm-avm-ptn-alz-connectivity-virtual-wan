@@ -105,7 +105,7 @@ module "private_dns_zone_auto_registration" {
   version  = "0.3.3"
   for_each = local.private_dns_zones_auto_registration
 
-  domain_name           = each.value.auto_registration_zone_name
+  domain_name           = each.value.domain_name
   resource_group_name   = each.value.resource_group_name
   enable_telemetry      = var.enable_telemetry
   tags                  = var.tags

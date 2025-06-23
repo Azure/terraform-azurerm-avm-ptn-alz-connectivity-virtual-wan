@@ -9,6 +9,7 @@ locals {
   }, value.private_dns_zones.dns_zones) if local.private_dns_zones_enabled[key] }
   private_dns_zones_auto_registration = { for key, value in var.virtual_hubs : key => {
     location            = value.hub.location
+    domain_name         = value.private_dns_zones.auto_registration_zone_name
     resource_group_name = try(value.auto_registration_zone_resource_group_name, local.module.private_dns_zones[key].resource_group_name)
     virtual_network_links = local.side_car_virtual_networks_enabled[key] ? {
       auto_registion = {
