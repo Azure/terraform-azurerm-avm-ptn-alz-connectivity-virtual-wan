@@ -182,7 +182,7 @@ Default:
 ```json
 [
   "eastus2",
-  "westus2"
+  "southcentralus"
 ]
 ```
 
