@@ -43,7 +43,7 @@ locals {
 locals {
   virtual_network_connections = merge(local.virtual_network_connections_input, local.virtual_network_connections_side_car)
   virtual_network_connections_input = { for virtual_network_connection in flatten([for virtual_hub_key, virtual_hub_value in var.virtual_hubs :
-    [for virtual_network_connection_key, virtual_network_connection_value in try(virtual_hub_value.virtual_network_connections, {}) : {
+    [for virtual_network_connection_key, virtual_network_connection_value in try(virtual_hub_value.hub.virtual_network_connections, {}) : {
       unique_key                = "${virtual_hub_key}-${virtual_network_connection_key}"
       name                      = virtual_network_connection_value.name
       virtual_hub_key           = virtual_hub_key
