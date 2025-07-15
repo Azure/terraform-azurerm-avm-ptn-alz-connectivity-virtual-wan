@@ -45,11 +45,11 @@ locals {
   virtual_network_connections_input = { for virtual_network_connection in flatten([for virtual_hub_key, virtual_hub_value in var.virtual_hubs :
     [for virtual_network_connection_key, virtual_network_connection_value in try(virtual_hub_value.virtual_network_connections, {}) : {
       unique_key                = "${virtual_hub_key}-${virtual_network_connection_key}"
-      name                      = virtual_network_connection_value.settings.name
+      name                      = virtual_network_connection_value.name
       virtual_hub_key           = virtual_hub_key
       remote_virtual_network_id = virtual_network_connection_value.remote_virtual_network_id
-      internet_security_enabled = try(virtual_network_connection_value.settings.internet_security_enabled, null)
-      routing                   = try(virtual_network_connection_value.settings.routing, null)
+      internet_security_enabled = try(virtual_network_connection_value.internet_security_enabled, null)
+      routing                   = try(virtual_network_connection_value.routing, null)
     }]
     ]) : virtual_network_connection.unique_key => {
     name                      = virtual_network_connection.name
