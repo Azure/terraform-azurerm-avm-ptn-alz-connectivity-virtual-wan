@@ -251,7 +251,7 @@ Version: 0.15.0
 
 Source: Azure/avm-res-network-virtualnetwork/azurerm
 
-Version: 0.8.1
+Version: 0.9.3
 
 ### <a name="module_virtual_wan"></a> [virtual\_wan](#module\_virtual\_wan)
 

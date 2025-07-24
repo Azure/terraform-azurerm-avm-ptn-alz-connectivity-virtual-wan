@@ -28,7 +28,7 @@ locals {
       hub_network_key  = key
       address_prefixes = [value.private_dns_resolver.subnet_address_prefix]
       name             = value.private_dns_resolver.subnet_name
-      delegation = [{
+      delegations = [{
         name = "Microsoft.Network.dnsResolvers"
         service_delegation = {
           name = "Microsoft.Network/dnsResolvers"

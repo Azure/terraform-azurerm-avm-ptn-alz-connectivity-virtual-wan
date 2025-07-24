@@ -55,7 +55,7 @@ module "virtual_wan" {
 
 module "virtual_network_side_car" {
   source   = "Azure/avm-res-network-virtualnetwork/azurerm"
-  version  = "0.8.1"
+  version  = "0.9.3"
   for_each = local.side_car_virtual_networks
 
   address_space        = each.value.address_space
