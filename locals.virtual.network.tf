@@ -28,7 +28,7 @@ locals {
       hub_network_key  = key
       address_prefixes = [value.private_dns_resolver.subnet_address_prefix]
       name             = value.private_dns_resolver.subnet_name
-      delegation = [{
+      delegations = [{
         name = "Microsoft.Network.dnsResolvers"
         service_delegation = {
           name = "Microsoft.Network/dnsResolvers"
@@ -43,24 +43,27 @@ locals {
 locals {
   virtual_network_connections = merge(local.virtual_network_connections_input, local.virtual_network_connections_side_car)
   virtual_network_connections_input = { for virtual_network_connection in flatten([for virtual_hub_key, virtual_hub_value in var.virtual_hubs :
-    [for virtual_network_connection_key, virtual_network_connection_value in try(virtual_hub_value.virtual_network_connections, {}) : {
+    [for virtual_network_connection_key, virtual_network_connection_value in try(virtual_hub_value.hub.virtual_network_connections, {}) : {
       unique_key                = "${virtual_hub_key}-${virtual_network_connection_key}"
-      name                      = virtual_network_connection_value.settings.name
+      name                      = virtual_network_connection_value.name
       virtual_hub_key           = virtual_hub_key
       remote_virtual_network_id = virtual_network_connection_value.remote_virtual_network_id
-      settings                  = virtual_network_connection_value.settings
+      internet_security_enabled = try(virtual_network_connection_value.internet_security_enabled, null)
+      routing                   = try(virtual_network_connection_value.routing, null)
     }]
     ]) : virtual_network_connection.unique_key => {
     name                      = virtual_network_connection.name
     virtual_hub_key           = virtual_network_connection.virtual_hub_key
     remote_virtual_network_id = virtual_network_connection.remote_virtual_network_id
-    settings                  = virtual_network_connection.settings
+    internet_security_enabled = virtual_network_connection.internet_security_enabled
+    routing                   = virtual_network_connection.routing
   } }
   virtual_network_connections_side_car = { for key, value in local.side_car_virtual_networks : "private_dns_vnet_${key}" => {
-    name                      = try(var.virtual_hubs[key].side_car_virtual_network.virtual_network_connection_name, "vnet-side-car-${key}")
+    name                      = try(var.virtual_hubs[key].side_car_virtual_network.virtual_network_connection_settings.name, "vnet-side-car-${key}")
     virtual_hub_key           = key
     remote_virtual_network_id = module.virtual_network_side_car[key].resource_id
-    settings                  = try(var.virtual_hubs[key].side_car_virtual_network.virtual_network_connection_settings, null)
+    internet_security_enabled = try(var.virtual_hubs[key].side_car_virtual_network.virtual_network_connection_settings.internet_security_enabled, null)
+    routing                   = try(var.virtual_hubs[key].side_car_virtual_network.virtual_network_connection_settings.routing, null)
     } if local.side_car_virtual_networks_enabled[key]
   }
 }
