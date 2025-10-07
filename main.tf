@@ -25,8 +25,7 @@ module "firewall_policy" {
 }
 
 module "virtual_wan" {
-  source  = "Azure/avm-ptn-virtualwan/azurerm"
-  version = "0.12.3"
+  source = "./modules/virtual-wan"
 
   location                              = var.virtual_wan_settings.location
   resource_group_name                   = var.virtual_wan_settings.resource_group_name

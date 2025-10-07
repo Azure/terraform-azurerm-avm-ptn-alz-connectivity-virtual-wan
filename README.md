@@ -258,9 +258,9 @@ Version: 0.9.3
 
 ### <a name="module_virtual_wan"></a> [virtual\_wan](#module\_virtual\_wan)
 
-Source: Azure/avm-ptn-virtualwan/azurerm
+Source: ./modules/virtual-wan
 
-Version: 0.12.3
+Version:
 
 <!-- markdownlint-disable-next-line MD041 -->
 ## Data Collection
