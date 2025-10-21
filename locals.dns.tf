@@ -16,17 +16,17 @@ locals {
     location            = value.location
     domain_name         = coalesce(value.private_dns_zones.auto_registration_zone_name, "${value.location}.azure.local")
     resource_group_name = coalesce(value.private_dns_zones.auto_registration_zone_resource_group_name, local.private_dns_zones[key].resource_group_name)
-    virtual_network_links = {
+    virtual_network_links = local.side_car_virtual_networks_enabled[key] ? {
       auto_registration = {
         vnetlinkname     = "vnet-link-${key}-auto-registration"
-        vnetid           = module.side_car_virtual_network[key].resource_id
+        vnetid           = module.virtual_network_side_car[key].resource_id
         autoregistration = true
         tags             = var.tags
       }
-    }
+    } : {}
   } if local.private_dns_zones_enabled[key] && value.private_dns_zones.auto_registration_zone_enabled }
   private_dns_zones_virtual_network_links = {
-    for key, value in module.side_car_virtual_network : key => {
+    for key, value in module.virtual_network_side_car : key => {
       vnet_resource_id                            = value.resource_id
       virtual_network_link_name_template_override = var.virtual_hubs[key].private_dns_zones.private_dns_zone_network_link_name_template
     }

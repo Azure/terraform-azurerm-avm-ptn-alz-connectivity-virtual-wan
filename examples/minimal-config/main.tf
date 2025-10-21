@@ -59,6 +59,7 @@ module "test" {
   source = "../../"
 
   enable_telemetry = false
+  tags             = local.common_tags
   virtual_hubs = {
     primary = {
       location = local.resource_groups["hub_primary"].location
@@ -71,5 +72,4 @@ module "test" {
       default_parent_id = module.resource_groups["hub_secondary"].resource_id
     }
   }
-  tags = local.common_tags
 }

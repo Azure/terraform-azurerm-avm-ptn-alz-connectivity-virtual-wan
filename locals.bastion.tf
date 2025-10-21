@@ -1,5 +1,5 @@
 locals {
-  bastions_enabled = { for key, value in var.virtual_hubs : key => value.enabled_resources.bastion }
+  bastions_enabled = { for key, value in var.virtual_hubs : key => value.enabled_resources.bastion && local.side_car_virtual_networks_enabled[key] }
 }
 
 locals {
@@ -22,7 +22,7 @@ locals {
       tags                = coalesce(value.bastion.tags, var.tags, {})
       ip_configuration = {
         name                 = "bastion-ip-config"
-        subnet_id            = module.side_car_virtual_network[key].subnet_ids["${key}-bastion"]
+        subnet_id            = module.virtual_network_side_car[key].subnets["bastion"].resource_id
         public_ip_address_id = module.bastion_public_ip[key].public_ip_id
         create_public_ip     = false
       }

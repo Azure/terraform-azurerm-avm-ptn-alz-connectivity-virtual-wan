@@ -1,5 +1,5 @@
 locals {
-  private_dns_resolver_enabled = { for key, value in var.virtual_hubs : key => value.enabled_resources.private_dns_resolver }
+  private_dns_resolver_enabled = { for key, value in var.virtual_hubs : key => value.enabled_resources.private_dns_resolver && local.side_car_virtual_networks_enabled[key] }
 }
 
 locals {
@@ -10,7 +10,7 @@ locals {
     inbound_endpoints = local.private_dns_zones_enabled[key] && value.private_dns_resolver.default_inbound_endpoint_enabled ? merge({
       dns = {
         name                         = "dns"
-        subnet_name                  = module.side_car_virtual_network[key].subnets["${key}-dns_resolver"].name
+        subnet_name                  = module.virtual_network_side_car[key].subnets["dns_resolver"].name
         private_ip_allocation_method = "Static"
         private_ip_address           = local.private_dns_resolver_ip_addresses[key]
         tags                         = coalesce(value.private_dns_resolver.tags, var.tags, {})

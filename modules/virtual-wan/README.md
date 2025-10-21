@@ -556,7 +556,7 @@ Description:   Map of objects for Virtual Hubs to deploy into the Virtual WAN.
 
   - `name`: Name for the Virtual Hub resource.
   - `location`: Location for the Virtual Hub resource.
-  - `resource_group`: Optional resource group name to deploy the Virtual Hub into. If not specified, the Virtual Hub will be deployed into the resource group specified in the variable `resource_group_name`, e.g. the same as the Virtual WAN itself.
+  - `resource_group_name`: Optional resource group name to deploy the Virtual Hub into. If not specified, the Virtual Hub will be deployed into the resource group specified in the variable `resource_group_name`, e.g. the same as the Virtual WAN itself.
   - `address_prefix`: Address prefix for the Virtual Hub. Recommend using a `/23` CIDR block.
   - `tags`: Optional tags to apply to the Virtual Hub resource.
   - `sku`: Optional SKU for the Virtual Hub. Possible values are: `Standard`, `Basic`. Defaults to `null` for backwards compatibility. See https://learn.microsoft.com/en-gb/azure/virtual-wan/hub-settings#type for more information.
@@ -571,7 +571,7 @@ Type:
 map(object({
     name                                   = string
     location                               = string
-    resource_group                         = optional(string, null)
+    resource_group_name                    = optional(string, null)
     address_prefix                         = string
     tags                                   = optional(map(string))
     sku                                    = optional(string, null)

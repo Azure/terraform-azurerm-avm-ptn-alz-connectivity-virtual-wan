@@ -28,7 +28,7 @@ module "virtual_hubs" {
     for key, value in local.virtual_hubs : key => {
       name                                   = value.name
       location                               = value.location
-      resource_group                         = value.resource_group
+      resource_group_name                    = value.resource_group_name
       address_prefix                         = value.address_prefix
       virtual_wan_id                         = azurerm_virtual_wan.virtual_wan.id
       hub_routing_preference                 = value.hub_routing_preference

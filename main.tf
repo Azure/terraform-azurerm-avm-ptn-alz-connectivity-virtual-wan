@@ -27,44 +27,42 @@ module "firewall_policy" {
 module "virtual_wan" {
   source = "./modules/virtual-wan"
 
-  location                          = local.virtual_wan.location
-  resource_group_name               = local.virtual_wan.resource_group_name
-  virtual_wan_name                  = local.virtual_wan.name
-  allow_branch_to_branch_traffic    = local.virtual_wan.allow_branch_to_branch_traffic
-  disable_vpn_encryption            = local.virtual_wan.disable_vpn_encryption
-  office365_local_breakout_category = local.virtual_wan.office365_local_breakout_category
-  enable_telemetry                  = var.enable_telemetry
-  tags                              = var.tags
-  virtual_wan_tags                  = local.virtual_wan.tags
-  type                              = local.virtual_wan.type
-
-  virtual_hubs                = local.virtual_hubs
-  firewalls                   = local.firewalls
-  expressroute_gateways       = local.virtual_network_gateways_express_route
-  vpn_gateways                = local.virtual_network_gateways_vpn
-  virtual_network_connections = local.virtual_network_connections
-
+  location                              = local.virtual_wan.location
+  resource_group_name                   = local.virtual_wan.resource_group_name
+  virtual_wan_name                      = local.virtual_wan.name
+  allow_branch_to_branch_traffic        = local.virtual_wan.allow_branch_to_branch_traffic
+  disable_vpn_encryption                = local.virtual_wan.disable_vpn_encryption
+  enable_telemetry                      = var.enable_telemetry
+  er_circuit_connections                = local.express_route_circuit_connections
+  expressroute_gateways                 = local.virtual_network_gateways_express_route
+  firewalls                             = local.firewalls
+  office365_local_breakout_category     = local.virtual_wan.office365_local_breakout_category
   p2s_gateway_vpn_server_configurations = local.p2s_gateway_vpn_server_configurations
   p2s_gateways                          = local.p2s_gateways
   routing_intents                       = local.routing_intents
-  er_circuit_connections                = local.express_route_circuit_connections
+  tags                                  = var.tags
+  type                                  = local.virtual_wan.type
+  virtual_hubs                          = local.virtual_hubs
+  virtual_network_connections           = local.virtual_network_connections
+  virtual_wan_tags                      = local.virtual_wan.tags
+  vpn_gateways                          = local.virtual_network_gateways_vpn
   vpn_site_connections                  = local.vpn_site_connections
   vpn_sites                             = local.vpn_sites
 }
 
 module "virtual_network_side_car" {
   source   = "Azure/avm-res-network-virtualnetwork/azurerm"
-  version  = "0.9.3"
+  version  = "0.15.0"
   for_each = local.side_car_virtual_networks
 
-  address_space        = each.value.address_space
   location             = each.value.location
-  resource_group_name  = each.value.resource_group_name
+  parent_id            = each.value.parent_id
+  address_space        = each.value.address_space
   ddos_protection_plan = each.value.ddos_protection_plan
   enable_telemetry     = var.enable_telemetry
   name                 = each.value.name
   subnets              = local.subnets[each.key]
-  tags                 = var.tags
+  tags                 = each.value.tags
 }
 
 module "dns_resolver" {
@@ -75,7 +73,7 @@ module "dns_resolver" {
   location                    = each.value.location
   name                        = each.value.name
   resource_group_name         = each.value.resource_group_name
-  virtual_network_resource_id = module.side_car_virtual_network[each.key].resource_id
+  virtual_network_resource_id = module.virtual_network_side_car[each.key].resource_id
   enable_telemetry            = var.enable_telemetry
   inbound_endpoints           = each.value.inbound_endpoints
   outbound_endpoints          = each.value.outbound_endpoints

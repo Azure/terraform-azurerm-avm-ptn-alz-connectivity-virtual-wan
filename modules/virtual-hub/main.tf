@@ -4,7 +4,7 @@ resource "azurerm_virtual_hub" "virtual_hub" {
 
   location                               = each.value.location
   name                                   = each.value.name
-  resource_group_name                    = each.value.resource_group
+  resource_group_name                    = each.value.resource_group_name
   address_prefix                         = each.value.address_prefix
   hub_routing_preference                 = each.value.hub_routing_preference
   sku                                    = each.value.sku

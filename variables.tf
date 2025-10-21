@@ -1,25 +1,20 @@
 variable "default_naming_convention" {
   type = object({
-    virtual_wan_name                                            = optional(string, "vwan-hub-$${location}-$${sequence}")
-    virtual_hub_name                                            = optional(string, "vhub-hub-$${location}-$${sequence}")
-    sidecar_virtual_network_name                                = optional(string, "vnet-sidecar-$${location}-$${sequence}")
-    firewall_name                                               = optional(string, "fw-hub-$${location}-$${sequence}")
-    firewall_policy_name                                        = optional(string, "fwp-hub-$${location}-$${sequence}")
-    firewall_public_ip_name                                     = optional(string, "pip-fw-hub-$${location}-$${sequence}")
-    firewall_management_public_ip_name                          = optional(string, "pip-fw-hub-mgmt-$${location}-$${sequence}")
-    route_table_firewall_name                                   = optional(string, "rt-hub-fw-$${location}-$${sequence}")
-    route_table_user_subnets_name                               = optional(string, "rt-hub-std-$${location}-$${sequence}")
-    virtual_network_gateway_express_route_name                  = optional(string, "vgw-hub-er-$${location}-$${sequence}")
-    virtual_network_gateway_express_route_ip_configuration_name = optional(string, "ipcfg-vgw-hub-er-$${location}-$${sequence}")
-    virtual_network_gateway_express_route_public_ip_name        = optional(string, "pip-vgw-hub-er-$${location}-$${sequence}")
-    virtual_network_gateway_vpn_name                            = optional(string, "vgw-hub-vpn-$${location}-$${sequence}")
-    virtual_network_gateway_vpn_ip_configuration_name           = optional(string, "ipcfg-vgw-hub-vpn-$${location}-$${sequence}")
-    virtual_network_gateway_vpn_public_ip_name                  = optional(string, "pip-vgw-hub-vpn-$${location}-$${sequence}")
-    virtual_network_gateway_route_table_name                    = optional(string, "rt-hub-gateway-$${location}-$${sequence}")
-    private_dns_resolver_name                                   = optional(string, "pdr-hub-$${location}-$${sequence}")
-    bastion_host_name                                           = optional(string, "bas-hub-$${location}-$${sequence}")
-    bastion_host_public_ip_name                                 = optional(string, "pip-bas-hub-$${location}-$${sequence}")
-    ddos_protection_plan_name                                   = optional(string, "ddos-hub-$${location}-$${sequence}")
+    virtual_wan_name                           = optional(string, "vwan-hub-$${location}-$${sequence}")
+    virtual_hub_name                           = optional(string, "vhub-hub-$${location}-$${sequence}")
+    sidecar_virtual_network_name               = optional(string, "vnet-sidecar-$${location}-$${sequence}")
+    firewall_name                              = optional(string, "fw-hub-$${location}-$${sequence}")
+    firewall_policy_name                       = optional(string, "fwp-hub-$${location}-$${sequence}")
+    firewall_public_ip_name                    = optional(string, "pip-fw-hub-$${location}-$${sequence}")
+    firewall_management_public_ip_name         = optional(string, "pip-fw-hub-mgmt-$${location}-$${sequence}")
+    route_table_firewall_name                  = optional(string, "rt-hub-fw-$${location}-$${sequence}")
+    route_table_user_subnets_name              = optional(string, "rt-hub-std-$${location}-$${sequence}")
+    virtual_network_gateway_express_route_name = optional(string, "vgw-hub-er-$${location}-$${sequence}")
+    virtual_network_gateway_vpn_name           = optional(string, "vgw-hub-vpn-$${location}-$${sequence}")
+    private_dns_resolver_name                  = optional(string, "pdr-hub-$${location}-$${sequence}")
+    bastion_host_name                          = optional(string, "bas-hub-$${location}-$${sequence}")
+    bastion_host_public_ip_name                = optional(string, "pip-bas-hub-$${location}-$${sequence}")
+    ddos_protection_plan_name                  = optional(string, "ddos-hub-$${location}-$${sequence}")
   })
   default     = {}
   description = <<DESCRIPTION
@@ -89,7 +84,7 @@ variable "virtual_hubs" {
       virtual_network_gateway_vpn           = optional(bool, true)
       private_dns_zones                     = optional(bool, true)
       private_dns_resolver                  = optional(bool, true)
-      side_car_virtual_network              = optional(bool, true)
+      sidecar_virtual_network               = optional(bool, true)
     }), {})
 
     default_hub_address_space = optional(string)
@@ -164,7 +159,7 @@ variable "virtual_hubs" {
       }))
     })), {})
 
-    vpn_site_connections = optinal(map(object({
+    vpn_site_connections = optional(map(object({
       name                = string
       remote_vpn_site_key = string
       vpn_links = list(object({
@@ -241,11 +236,11 @@ variable "virtual_hubs" {
       tags = optional(map(string))
     })), {})
 
-    sidecar_virtual_networks = optional(map(object({
-      name                = optional(string)
-      resource_group_name = optional(string)
-      address_space       = optional(list(string))
-      tags                = optional(map(string))
+    sidecar_virtual_network = optional(object({
+      name          = optional(string)
+      parent_id     = optional(string)
+      address_space = optional(list(string))
+      tags          = optional(map(string))
       ddos_protection_plan = optional(object({
         id     = string
         enable = bool
@@ -282,58 +277,16 @@ variable "virtual_hubs" {
           default_outbound_access_enabled = optional(bool, false)
         }
       )), {})
-    })), {})
+    }), {})
 
     firewall = optional(object({
-      name                                              = optional(string)
-      resource_group_name                               = optional(string)
-      sku_name                                          = optional(string, "AZFW_VNet")
-      sku_tier                                          = optional(string, "Standard")
-      subnet_address_prefix                             = optional(string)
-      subnet_default_outbound_access_enabled            = optional(bool, false)
-      firewall_policy_id                                = optional(string, null)
-      management_ip_enabled                             = optional(bool, true)
-      management_subnet_address_prefix                  = optional(string, null)
-      management_subnet_default_outbound_access_enabled = optional(bool, false)
-      private_ip_ranges                                 = optional(list(string))
-      subnet_route_table_id                             = optional(string)
-      tags                                              = optional(map(string))
-      zones                                             = optional(list(string))
-
-      default_ip_configuration = optional(object({
-        is_default = optional(bool, true)
-        name       = optional(string)
-        public_ip_config = optional(object({
-          ip_version          = optional(string, "IPv4")
-          name                = optional(string)
-          resource_group_name = optional(string)
-          sku_tier            = optional(string, "Regional")
-          zones               = optional(set(string))
-        }), {})
-      }), {})
-
-      ip_configurations = optional(map(object({
-        is_default = optional(bool, false)
-        name       = optional(string)
-        public_ip_config = optional(object({
-          ip_version          = optional(string, "IPv4")
-          name                = optional(string)
-          resource_group_name = optional(string)
-          sku_tier            = optional(string, "Regional")
-          zones               = optional(set(string))
-        }), {})
-      })), {})
-
-      management_ip_configuration = optional(object({
-        name = optional(string)
-        public_ip_config = optional(object({
-          ip_version          = optional(string, "IPv4")
-          name                = optional(string)
-          resource_group_name = optional(string)
-          sku_tier            = optional(string, "Regional")
-          zones               = optional(set(string))
-        }), {})
-      }), {})
+      name                 = optional(string)
+      sku_name             = optional(string, "AZFW_Hub")
+      sku_tier             = optional(string, "Standard")
+      zones                = optional(list(number))
+      firewall_policy_id   = optional(string)
+      vhub_public_ip_count = optional(string)
+      tags                 = optional(map(string))
     }), {})
 
     firewall_policy = optional(object({
@@ -440,271 +393,28 @@ variable "virtual_hubs" {
       route_table_bgp_route_propagation_enabled = optional(bool, false)
 
       express_route = optional(object({
-        name      = optional(string)
-        parent_id = optional(string)
-        sku       = optional(string, null)
-        edge_zone = optional(string)
-        express_route_circuits = optional(map(object({
-          id = string
-          connection = optional(object({
-            resource_group_name            = optional(string, null)
-            authorization_key              = optional(string, null)
-            express_route_gateway_bypass   = optional(bool, null)
-            private_link_fast_path_enabled = optional(bool, false)
-            name                           = optional(string, null)
-            routing_weight                 = optional(number, null)
-            shared_key                     = optional(string, null)
-            tags                           = optional(map(string), {})
-          }), null)
-          peering = optional(object({
-            peering_type                  = string
-            vlan_id                       = number
-            resource_group_name           = optional(string, null)
-            ipv4_enabled                  = optional(bool, true)
-            peer_asn                      = optional(number, null)
-            primary_peer_address_prefix   = optional(string, null)
-            secondary_peer_address_prefix = optional(string, null)
-            shared_key                    = optional(string, null)
-            route_filter_id               = optional(string, null)
-            microsoft_peering_config = optional(object({
-              advertised_public_prefixes = list(string)
-              advertised_communities     = optional(list(string), null)
-              customer_asn               = optional(number, null)
-              routing_registry_name      = optional(string, null)
-            }), null)
-          }), null)
-        })))
-        express_route_remote_vnet_traffic_enabled = optional(bool, false)
-        hosted_on_behalf_of_public_ip_enabled     = optional(bool, true)
-        ip_configurations = optional(map(object({
-          name                          = optional(string, null)
-          apipa_addresses               = optional(list(string), null)
-          private_ip_address_allocation = optional(string, "Dynamic")
-          public_ip = optional(object({
-            creation_enabled        = optional(bool, true)
-            id                      = optional(string, null)
-            name                    = optional(string, null)
-            resource_group_name     = optional(string, null)
-            allocation_method       = optional(string, "Static")
-            sku                     = optional(string, "Standard")
-            tags                    = optional(map(string), {})
-            zones                   = optional(list(number), null)
-            edge_zone               = optional(string, null)
-            ddos_protection_mode    = optional(string, "VirtualNetworkInherited")
-            ddos_protection_plan_id = optional(string, null)
-            domain_name_label       = optional(string, null)
-            idle_timeout_in_minutes = optional(number, null)
-            ip_tags                 = optional(map(string), {})
-            ip_version              = optional(string, "IPv4")
-            public_ip_prefix_id     = optional(string, null)
-            reverse_fqdn            = optional(string, null)
-            sku_tier                = optional(string, "Regional")
-          }), {})
-        })), {})
-        local_network_gateways = optional(map(object({
-          id                  = optional(string, null)
-          name                = optional(string, null)
-          resource_group_name = optional(string, null)
-          address_space       = optional(list(string), null)
-          gateway_fqdn        = optional(string, null)
-          gateway_address     = optional(string, null)
-          tags                = optional(map(string), {})
-          bgp_settings = optional(object({
-            asn                 = number
-            bgp_peering_address = string
-            peer_weight         = optional(number, null)
-          }), null)
-          connection = optional(object({
-            name                               = optional(string, null)
-            resource_group_name                = optional(string, null)
-            type                               = string
-            connection_mode                    = optional(string, null)
-            connection_protocol                = optional(string, null)
-            dpd_timeout_seconds                = optional(number, null)
-            egress_nat_rule_ids                = optional(list(string), null)
-            enable_bgp                         = optional(bool, null)
-            ingress_nat_rule_ids               = optional(list(string), null)
-            local_azure_ip_address_enabled     = optional(bool, null)
-            peer_virtual_network_gateway_id    = optional(string, null)
-            routing_weight                     = optional(number, null)
-            shared_key                         = optional(string, null)
-            tags                               = optional(map(string), null)
-            use_policy_based_traffic_selectors = optional(bool, null)
-            custom_bgp_addresses = optional(object({
-              primary   = string
-              secondary = string
-            }), null)
-            ipsec_policy = optional(object({
-              dh_group         = string
-              ike_encryption   = string
-              ike_integrity    = string
-              ipsec_encryption = string
-              ipsec_integrity  = string
-              pfs_group        = string
-              sa_datasize      = optional(number, null)
-              sa_lifetime      = optional(number, null)
-            }), null)
-            traffic_selector_policy = optional(list(
-              object({
-                local_address_prefixes  = list(string)
-                remote_address_prefixes = list(string)
-              })
-            ), null)
-          }), null)
-        })))
-        tags = optional(map(string))
+        name                          = optional(string)
+        allow_non_virtual_wan_traffic = optional(bool, false)
+        scale_units                   = optional(number, 1)
+        tags                          = optional(map(string))
       }), {})
 
       vpn = optional(object({
         name                                  = optional(string)
-        parent_id                             = optional(string)
-        sku                                   = optional(string, "VpnGw1AZ")
-        edge_zone                             = optional(string)
-        hosted_on_behalf_of_public_ip_enabled = optional(bool, false)
-        ip_configurations = optional(map(object({
-          name                          = optional(string, null)
-          apipa_addresses               = optional(list(string), null)
-          private_ip_address_allocation = optional(string, "Dynamic")
-          public_ip = optional(object({
-            creation_enabled        = optional(bool, true)
-            id                      = optional(string, null)
-            name                    = optional(string, null)
-            resource_group_name     = optional(string, null)
-            allocation_method       = optional(string, "Static")
-            sku                     = optional(string, "Standard")
-            tags                    = optional(map(string), {})
-            zones                   = optional(list(number), null)
-            edge_zone               = optional(string, null)
-            ddos_protection_mode    = optional(string, "VirtualNetworkInherited")
-            ddos_protection_plan_id = optional(string, null)
-            domain_name_label       = optional(string, null)
-            idle_timeout_in_minutes = optional(number, null)
-            ip_tags                 = optional(map(string), {})
-            ip_version              = optional(string, "IPv4")
-            public_ip_prefix_id     = optional(string, null)
-            reverse_fqdn            = optional(string, null)
-            sku_tier                = optional(string, "Regional")
-          }), {})
-          })), {
-          active_active_1 = {}
-          active_active_2 = {}
-        })
-        local_network_gateways = optional(map(object({
-          id                  = optional(string, null)
-          name                = optional(string, null)
-          resource_group_name = optional(string, null)
-          address_space       = optional(list(string), null)
-          gateway_fqdn        = optional(string, null)
-          gateway_address     = optional(string, null)
-          tags                = optional(map(string), {})
-          bgp_settings = optional(object({
-            asn                 = number
-            bgp_peering_address = string
-            peer_weight         = optional(number, null)
-          }), null)
-          connection = optional(object({
-            name                               = optional(string, null)
-            resource_group_name                = optional(string, null)
-            type                               = string
-            connection_mode                    = optional(string, null)
-            connection_protocol                = optional(string, null)
-            dpd_timeout_seconds                = optional(number, null)
-            egress_nat_rule_ids                = optional(list(string), null)
-            enable_bgp                         = optional(bool, null)
-            ingress_nat_rule_ids               = optional(list(string), null)
-            local_azure_ip_address_enabled     = optional(bool, null)
-            peer_virtual_network_gateway_id    = optional(string, null)
-            routing_weight                     = optional(number, null)
-            shared_key                         = optional(string, null)
-            tags                               = optional(map(string), null)
-            use_policy_based_traffic_selectors = optional(bool, null)
-            custom_bgp_addresses = optional(object({
-              primary   = string
-              secondary = string
-            }), null)
-            ipsec_policy = optional(object({
-              dh_group         = string
-              ike_encryption   = string
-              ike_integrity    = string
-              ipsec_encryption = string
-              ipsec_integrity  = string
-              pfs_group        = string
-              sa_datasize      = optional(number, null)
-              sa_lifetime      = optional(number, null)
-            }), null)
-            traffic_selector_policy = optional(list(
-              object({
-                local_address_prefixes  = list(string)
-                remote_address_prefixes = list(string)
-              })
-            ), null)
-          }), null)
-        })))
-        tags                                      = optional(map(string))
-        vpn_active_active_enabled                 = optional(bool, true)
-        vpn_bgp_enabled                           = optional(bool, false)
-        vpn_bgp_route_translation_for_nat_enabled = optional(bool, false)
-        vpn_bgp_settings = optional(object({
-          asn         = optional(number, 65515)
-          peer_weight = optional(number, null)
-        }))
-        vpn_custom_route = optional(object({
-          address_prefixes = list(string)
-        }))
-        vpn_default_local_network_gateway_id = optional(string, null)
-        vpn_dns_forwarding_enabled           = optional(bool, false)
-        vpn_generation                       = optional(string, null)
-        vpn_ip_sec_replay_protection_enabled = optional(bool, true)
-        vpn_point_to_site = optional(object({
-          address_space         = list(string)
-          aad_tenant            = optional(string, null)
-          aad_audience          = optional(string, null)
-          aad_issuer            = optional(string, null)
-          radius_server_address = optional(string, null)
-          radius_server_secret  = optional(string, null)
-          root_certificates = optional(map(object({
-            name             = string
-            public_cert_data = string
-          })), {})
-          revoked_certificates = optional(map(object({
-            name       = string
-            thumbprint = string
-          })), {})
-          radius_servers = optional(map(object({
-            address = string
-            secret  = string
-            score   = number
-          })), {})
-          vpn_client_protocols = optional(list(string), null)
-          vpn_auth_types       = optional(list(string), null)
-          ipsec_policy = optional(object({
-            dh_group                  = string
-            ike_encryption            = string
-            ike_integrity             = string
-            ipsec_encryption          = string
-            ipsec_integrity           = string
-            pfs_group                 = string
-            sa_data_size_in_kilobytes = optional(number, null)
-            sa_lifetime_in_seconds    = optional(number, null)
-          }), null)
-          virtual_network_gateway_client_connections = optional(map(object({
-            name               = string
-            policy_group_names = list(string)
-            address_prefixes   = list(string)
-          })), {})
-        }))
-        vpn_policy_groups = optional(map(object({
-          name       = string
-          is_default = optional(bool, null)
-          priority   = optional(number, null)
-          policy_members = map(object({
-            name  = string
-            type  = string
-            value = string
+        bgp_route_translation_for_nat_enabled = optional(bool)
+        bgp_settings = optional(object({
+          instance_0_bgp_peering_address = optional(object({
+            custom_ips = list(string)
           }))
-        })))
-        vpn_private_ip_address_enabled = optional(bool, false)
-        vpn_type                       = optional(string, null)
+          instance_1_bgp_peering_address = optional(object({
+            custom_ips = list(string)
+          }))
+          peer_weight = number
+          asn         = number
+        }))
+        routing_preference = optional(string)
+        scale_unit         = optional(number)
+        tags               = optional(map(string))
       }), {})
     }), {})
 

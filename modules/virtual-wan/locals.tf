@@ -57,7 +57,7 @@ locals {
     for key, vhub in var.virtual_hubs : key => {
       name                                   = vhub.name
       location                               = vhub.location
-      resource_group                         = try(vhub.resource_group, "")
+      resource_group_name                    = try(vhub.resource_group_name, "")
       address_prefix                         = vhub.address_prefix
       hub_routing_preference                 = try(vhub.hub_routing_preference, "")
       sku                                    = try(vhub.sku, null)

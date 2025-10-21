@@ -4,14 +4,15 @@ locals {
 
 locals {
   side_car_virtual_networks = { for key, value in var.virtual_hubs : key => {
-    name                = coalesce(value.sidecar_virtual_network.name, "vnet-side-car-${key}")
-    location            = value.hub.location
-    resource_group_name = coalesce(value.sidecar_virtual_network.resource_group_name, value.hub.resource_group)
-    address_space       = coalesce(value.sidecar_virtual_network.address_space, [local.virtual_network_default_ip_prefixes[key]["sidecar"]])
+    name          = coalesce(value.sidecar_virtual_network.name, "vnet-side-car-${key}")
+    location      = value.location
+    parent_id     = coalesce(value.sidecar_virtual_network.parent_id, value.hub.parent_id, value.default_parent_id)
+    address_space = coalesce(value.sidecar_virtual_network.address_space, [local.virtual_network_default_ip_prefixes[key]["sidecar"]])
     ddos_protection_plan = local.ddos_protection_plan_enabled ? {
       id     = module.ddos_protection_plan[0].resource.id
       enable = true
     } : value.sidecar_virtual_network.ddos_protection_plan_name
+    tags = coalesce(value.sidecar_virtual_network.tags, var.tags, {})
   } if local.side_car_virtual_networks_enabled[key] }
 }
 
