@@ -73,13 +73,13 @@ module "resource_group_vnet_demo_01" {
 
 module "virtual_network" {
   source  = "Azure/avm-res-network-virtualnetwork/azurerm"
-  version = "0.9.2"
+  version = "0.15.0"
 
-  address_space       = ["10.100.0.0/16"]
-  location            = var.starter_locations[0]
-  resource_group_name = module.resource_group_vnet_demo_01.name
-  name                = "vnet-demo-01"
-  tags                = local.common_tags
+  location      = var.starter_locations[0]
+  parent_id     = module.resource_group_vnet_demo_01.resource_id
+  address_space = ["10.100.0.0/16"]
+  name          = "vnet-demo-01"
+  tags          = local.common_tags
 }
 
 # This is the module call
@@ -92,6 +92,7 @@ module "test" {
     primary = {
       enabled_resources = {
         sidecar_virtual_network               = true
+        bastion                               = false
         firewall                              = false
         private_dns_resolver                  = false
         virtual_network_gateway_express_route = false
@@ -112,6 +113,7 @@ module "test" {
     secondary = {
       enabled_resources = {
         sidecar_virtual_network               = true
+        bastion                               = false
         firewall                              = false
         private_dns_resolver                  = false
         virtual_network_gateway_express_route = false
@@ -321,7 +323,7 @@ Version:
 
 Source: Azure/avm-res-network-virtualnetwork/azurerm
 
-Version: 0.9.2
+Version: 0.15.0
 
 <!-- markdownlint-disable-next-line MD041 -->
 ## Data Collection
