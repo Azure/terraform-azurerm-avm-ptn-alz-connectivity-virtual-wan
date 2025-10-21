@@ -322,9 +322,11 @@ connectivity_resource_groups = {
 }
 
 virtual_wan_settings = {
-  name                = "vwan-$${starter_location_01}"
-  resource_group_name = "$${connectivity_hub_vwan_resource_group_name}"
-  location            = "$${starter_location_01}"
+  virtual_wan = {
+    name                = "vwan-$${starter_location_01}"
+    resource_group_name = "$${connectivity_hub_vwan_resource_group_name}"
+    location            = "$${starter_location_01}"
+  }
   ddos_protection_plan = {
     enabled             = "$${ddos_protection_plan_enabled}"
     name                = "$${ddos_protection_plan_name}"
