@@ -184,7 +184,7 @@ Default:
 ```json
 [
   "eastus2",
-  "southcentralus"
+  "canadacentral"
 ]
 ```
 

@@ -59,7 +59,7 @@ DESCRIPTION
 
 variable "starter_locations" {
   type        = list(string)
-  default     = ["eastus2", "southcentralus"]
+  default     = ["eastus2", "canadacentral"]
   description = "The default for Azure resources. (e.g 'uksouth')"
 }
 

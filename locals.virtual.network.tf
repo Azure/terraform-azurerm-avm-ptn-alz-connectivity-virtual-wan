@@ -20,7 +20,7 @@ locals {
   bastion_subnets = { for key, value in var.virtual_hubs : key => {
     bastion = {
       hub_network_key                 = key
-      address_prefixes                = [value.bastion.subnet_address_prefix]
+      address_prefixes                = [coalesce(value.bastion.subnet_address_prefix, local.virtual_network_subnet_default_ip_prefixes[key]["bastion"])]
       name                            = "AzureBastionSubnet"
       default_outbound_access_enabled = value.bastion.subnet_default_outbound_access_enabled
     } } if local.bastions_enabled[key]
@@ -28,7 +28,7 @@ locals {
   private_dns_resolver_subnets = { for key, value in var.virtual_hubs : key => {
     dns_resolver = {
       hub_network_key  = key
-      address_prefixes = [value.private_dns_resolver.subnet_address_prefix]
+      address_prefixes = [coalesce(value.private_dns_resolver.subnet_address_prefix, local.virtual_network_subnet_default_ip_prefixes[key]["dns_resolver"])]
       name             = value.private_dns_resolver.subnet_name
       delegations = [{
         name = "Microsoft.Network.dnsResolvers"
