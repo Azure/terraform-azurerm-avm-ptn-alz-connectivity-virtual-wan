@@ -34,11 +34,11 @@ locals {
   resource_groups = {
     hub_primary = {
       name     = "rg-hub-primary-${random_string.suffix.result}"
-      location = "australiaeast"
+      location = "eastus"
     }
     hub_secondary = {
       name     = "rg-hub-secondary-${random_string.suffix.result}"
-      location = "australiacentral"
+      location = "eastus2"
     }
   }
 }
