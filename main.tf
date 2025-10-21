@@ -7,21 +7,21 @@ module "firewall_policy" {
   name                                              = each.value.name
   resource_group_name                               = each.value.resource_group_name
   enable_telemetry                                  = var.enable_telemetry
-  firewall_policy_auto_learn_private_ranges_enabled = try(each.value.auto_learn_private_ranges_enabled, null)
-  firewall_policy_base_policy_id                    = try(each.value.base_policy_id, null)
+  firewall_policy_auto_learn_private_ranges_enabled = each.value.auto_learn_private_ranges_enabled
+  firewall_policy_base_policy_id                    = each.value.base_policy_id
   firewall_policy_dns                               = each.value.dns
-  firewall_policy_explicit_proxy                    = try(each.value.explicit_proxy, null)
-  firewall_policy_identity                          = try(each.value.identity, null)
-  firewall_policy_insights                          = try(each.value.insights, null)
-  firewall_policy_intrusion_detection               = try(each.value.intrusion_detection, null)
-  firewall_policy_private_ip_ranges                 = try(each.value.private_ip_ranges, null)
-  firewall_policy_sku                               = try(each.value.sku, "Standard")
-  firewall_policy_sql_redirect_allowed              = try(each.value.sql_redirect_allowed, null)
-  firewall_policy_threat_intelligence_allowlist     = try(each.value.threat_intelligence_allowlist, null)
-  firewall_policy_threat_intelligence_mode          = try(each.value.threat_intelligence_mode, "Alert")
-  firewall_policy_timeouts                          = try(each.value.timeouts, null)
-  firewall_policy_tls_certificate                   = try(each.value.tls_certificate, null)
-  tags                                              = try(each.value.tags, var.tags)
+  firewall_policy_explicit_proxy                    = each.value.explicit_proxy
+  firewall_policy_identity                          = each.value.identity
+  firewall_policy_insights                          = each.value.insights
+  firewall_policy_intrusion_detection               = each.value.intrusion_detection
+  firewall_policy_private_ip_ranges                 = each.value.private_ip_ranges
+  firewall_policy_sku                               = each.value.sku
+  firewall_policy_sql_redirect_allowed              = each.value.sql_redirect_allowed
+  firewall_policy_threat_intelligence_allowlist     = each.value.threat_intelligence_allowlist
+  firewall_policy_threat_intelligence_mode          = each.value.threat_intelligence_mode
+  firewall_policy_timeouts                          = each.value.timeouts
+  firewall_policy_tls_certificate                   = each.value.tls_certificate
+  tags                                              = each.value.tags
 }
 
 module "virtual_wan" {

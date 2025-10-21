@@ -97,6 +97,23 @@ variable "virtual_hubs" {
       tags                                   = optional(map(string))
     }), {})
 
+    virtual_network_connections = optional(map(object({
+      name                      = string
+      remote_virtual_network_id = string
+      internet_security_enabled = optional(bool)
+      routing = optional(object({
+        associated_route_table_id  = optional(string)
+        associated_route_table_key = optional(string)
+        propagated_route_table = optional(object({
+          route_table_ids  = optional(list(string))
+          route_table_keys = optional(list(string))
+          labels           = optional(list(string))
+        }))
+        inbound_route_map_id  = optional(string)
+        outbound_route_map_id = optional(string)
+      }))
+    })), {})
+
     express_route_circuit_connections = optional(map(object({
       name                                 = string
       express_route_circuit_peering_id     = string
@@ -241,6 +258,21 @@ variable "virtual_hubs" {
         id     = string
         enable = bool
       }))
+      virtual_network_connection_settings = optional(object({
+        name                      = optional(string)
+        internet_security_enabled = optional(bool)
+        routing = optional(object({
+          associated_route_table_id  = optional(string)
+          associated_route_table_key = optional(string)
+          propagated_route_table = optional(object({
+            route_table_ids  = optional(list(string))
+            route_table_keys = optional(list(string))
+            labels           = optional(list(string))
+          }))
+          inbound_route_map_id  = optional(string)
+          outbound_route_map_id = optional(string)
+        }))
+      }), {})
       subnets = optional(map(object(
         {
           name             = string
