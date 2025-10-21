@@ -1,5 +1,5 @@
 locals {
-  bastions_enabled = { for key, value in var.virtual_hubs : key => value.enabled_resources.bastion && local.side_car_virtual_networks_enabled[key] }
+  bastions_enabled = { for key, value in var.virtual_hubs : key => value.enabled_resources.bastion && local.sidecar_virtual_networks_enabled[key] }
 }
 
 locals {

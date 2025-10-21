@@ -1,5 +1,5 @@
 locals {
-  private_dns_resolver_enabled = { for key, value in var.virtual_hubs : key => value.enabled_resources.private_dns_resolver && local.side_car_virtual_networks_enabled[key] }
+  private_dns_resolver_enabled = { for key, value in var.virtual_hubs : key => value.enabled_resources.private_dns_resolver && local.sidecar_virtual_networks_enabled[key] }
 }
 
 locals {

@@ -1,10 +1,10 @@
 locals {
-  side_car_virtual_networks_enabled = { for key, value in var.virtual_hubs : key => value.enabled_resources.sidecar_virtual_network }
+  sidecar_virtual_networks_enabled = { for key, value in var.virtual_hubs : key => value.enabled_resources.sidecar_virtual_network }
 }
 
 locals {
-  side_car_virtual_networks = { for key, value in var.virtual_hubs : key => {
-    name          = coalesce(value.sidecar_virtual_network.name, "vnet-side-car-${key}")
+  sidecar_virtual_networks = { for key, value in var.virtual_hubs : key => {
+    name          = coalesce(value.sidecar_virtual_network.name, local.default_names[key].sidecar_virtual_network_name)
     location      = value.location
     parent_id     = coalesce(value.sidecar_virtual_network.parent_id, value.hub.parent_id, value.default_parent_id)
     address_space = coalesce(value.sidecar_virtual_network.address_space, [local.virtual_network_default_ip_prefixes[key]["sidecar"]])
@@ -13,7 +13,7 @@ locals {
       enable = true
     } : value.sidecar_virtual_network.ddos_protection_plan_name
     tags = coalesce(value.sidecar_virtual_network.tags, var.tags, {})
-  } if local.side_car_virtual_networks_enabled[key] }
+  } if local.sidecar_virtual_networks_enabled[key] }
 }
 
 locals {
@@ -39,7 +39,7 @@ locals {
       default_outbound_access_enabled = try(value.private_dns_resolver.subnet_default_outbound_access_enabled, false)
     } } if local.private_dns_resolver_enabled[key]
   }
-  subnets = { for key, value in var.virtual_hubs : key => merge(lookup(local.private_dns_resolver_subnets, key, {}), lookup(local.bastion_subnets, key, {}), try(value.side_car_virtual_network.subnets, {})) }
+  subnets = { for key, value in var.virtual_hubs : key => merge(lookup(local.private_dns_resolver_subnets, key, {}), lookup(local.bastion_subnets, key, {}), try(value.sidecar_virtual_network.subnets, {})) }
 }
 
 locals {
@@ -60,12 +60,12 @@ locals {
     internet_security_enabled = virtual_network_connection.internet_security_enabled
     routing                   = virtual_network_connection.routing
   } }
-  virtual_network_connections_side_car = { for key, value in local.side_car_virtual_networks : "private_dns_vnet_${key}" => {
-    name                      = try(var.virtual_hubs[key].side_car_virtual_network.virtual_network_connection_settings.name, "vnet-side-car-${key}")
+  virtual_network_connections_side_car = { for key, value in local.sidecar_virtual_networks : "private_dns_vnet_${key}" => {
+    name                      = try(var.virtual_hubs[key].sidecar_virtual_network.virtual_network_connection_settings.name, "vnet-side-car-${key}")
     virtual_hub_key           = key
     remote_virtual_network_id = module.virtual_network_side_car[key].resource_id
-    internet_security_enabled = try(var.virtual_hubs[key].side_car_virtual_network.virtual_network_connection_settings.internet_security_enabled, null)
-    routing                   = try(var.virtual_hubs[key].side_car_virtual_network.virtual_network_connection_settings.routing, null)
-    } if local.side_car_virtual_networks_enabled[key]
+    internet_security_enabled = try(var.virtual_hubs[key].sidecar_virtual_network.virtual_network_connection_settings.internet_security_enabled, null)
+    routing                   = try(var.virtual_hubs[key].sidecar_virtual_network.virtual_network_connection_settings.routing, null)
+    } if local.sidecar_virtual_networks_enabled[key]
   }
 }

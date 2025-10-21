@@ -16,7 +16,7 @@ locals {
     location            = value.location
     domain_name         = coalesce(value.private_dns_zones.auto_registration_zone_name, "${value.location}.azure.local")
     resource_group_name = coalesce(value.private_dns_zones.auto_registration_zone_resource_group_name, local.private_dns_zones[key].resource_group_name)
-    virtual_network_links = local.side_car_virtual_networks_enabled[key] ? {
+    virtual_network_links = local.sidecar_virtual_networks_enabled[key] ? {
       auto_registration = {
         vnetlinkname     = "vnet-link-${key}-auto-registration"
         vnetid           = module.virtual_network_side_car[key].resource_id
