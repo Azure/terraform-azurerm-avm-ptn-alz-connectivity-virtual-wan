@@ -64,10 +64,31 @@ DESCRIPTION
   nullable    = false
 }
 
+variable "retry" {
+  type = object({
+    error_message_regex  = optional(list(string), ["ReferencedResourceNotProvisioned"])
+    interval_seconds     = optional(number, 10)
+    max_interval_seconds = optional(number, 180)
+  })
+  default     = {}
+  description = "Retry configuration for the resource operations"
+}
+
 variable "tags" {
   type        = map(string)
   default     = null
   description = "(Optional) Tags of the resource."
+}
+
+variable "timeouts" {
+  type = object({
+    create = optional(string, "60m")
+    read   = optional(string, "5m")
+    update = optional(string, "60m")
+    delete = optional(string, "60m")
+  })
+  default     = {}
+  description = "Timeouts for the resource operations"
 }
 
 variable "virtual_hubs" {
@@ -323,6 +344,7 @@ variable "virtual_hubs" {
       sku                               = optional(string, "Standard")
       auto_learn_private_ranges_enabled = optional(bool)
       base_policy_id                    = optional(string)
+      tags                              = optional(map(string))
       dns = optional(object({
         proxy_enabled = optional(bool, false)
         servers       = optional(list(string))

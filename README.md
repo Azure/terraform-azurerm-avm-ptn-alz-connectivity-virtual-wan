@@ -118,6 +118,22 @@ Type: `bool`
 
 Default: `true`
 
+### <a name="input_retry"></a> [retry](#input\_retry)
+
+Description: Retry configuration for the resource operations
+
+Type:
+
+```hcl
+object({
+    error_message_regex  = optional(list(string), ["ReferencedResourceNotProvisioned"])
+    interval_seconds     = optional(number, 10)
+    max_interval_seconds = optional(number, 180)
+  })
+```
+
+Default: `{}`
+
 ### <a name="input_tags"></a> [tags](#input\_tags)
 
 Description: (Optional) Tags of the resource.
@@ -125,6 +141,23 @@ Description: (Optional) Tags of the resource.
 Type: `map(string)`
 
 Default: `null`
+
+### <a name="input_timeouts"></a> [timeouts](#input\_timeouts)
+
+Description: Timeouts for the resource operations
+
+Type:
+
+```hcl
+object({
+    create = optional(string, "60m")
+    read   = optional(string, "5m")
+    update = optional(string, "60m")
+    delete = optional(string, "60m")
+  })
+```
+
+Default: `{}`
 
 ### <a name="input_virtual_hubs"></a> [virtual\_hubs](#input\_virtual\_hubs)
 
@@ -602,6 +635,23 @@ map(object({
       tags                                   = optional(map(string))
     }), {})
 
+    virtual_network_connections = optional(map(object({
+      name                      = string
+      remote_virtual_network_id = string
+      internet_security_enabled = optional(bool)
+      routing = optional(object({
+        associated_route_table_id  = optional(string)
+        associated_route_table_key = optional(string)
+        propagated_route_table = optional(object({
+          route_table_ids  = optional(list(string))
+          route_table_keys = optional(list(string))
+          labels           = optional(list(string))
+        }))
+        inbound_route_map_id  = optional(string)
+        outbound_route_map_id = optional(string)
+      }))
+    })), {})
+
     express_route_circuit_connections = optional(map(object({
       name                                 = string
       express_route_circuit_peering_id     = string
@@ -746,6 +796,21 @@ map(object({
         id     = string
         enable = bool
       }))
+      virtual_network_connection_settings = optional(object({
+        name                      = optional(string)
+        internet_security_enabled = optional(bool)
+        routing = optional(object({
+          associated_route_table_id  = optional(string)
+          associated_route_table_key = optional(string)
+          propagated_route_table = optional(object({
+            route_table_ids  = optional(list(string))
+            route_table_keys = optional(list(string))
+            labels           = optional(list(string))
+          }))
+          inbound_route_map_id  = optional(string)
+          outbound_route_map_id = optional(string)
+        }))
+      }), {})
       subnets = optional(map(object(
         {
           name             = string
@@ -796,6 +861,7 @@ map(object({
       sku                               = optional(string, "Standard")
       auto_learn_private_ranges_enabled = optional(bool)
       base_policy_id                    = optional(string)
+      tags                              = optional(map(string))
       dns = optional(object({
         proxy_enabled = optional(bool, false)
         servers       = optional(list(string))

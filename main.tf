@@ -19,7 +19,7 @@ module "firewall_policy" {
   firewall_policy_sql_redirect_allowed              = each.value.sql_redirect_allowed
   firewall_policy_threat_intelligence_allowlist     = each.value.threat_intelligence_allowlist
   firewall_policy_threat_intelligence_mode          = each.value.threat_intelligence_mode
-  firewall_policy_timeouts                          = each.value.timeouts
+  firewall_policy_timeouts                          = var.timeouts
   firewall_policy_tls_certificate                   = each.value.tls_certificate
   tags                                              = each.value.tags
 }
@@ -61,8 +61,10 @@ module "virtual_network_side_car" {
   ddos_protection_plan = each.value.ddos_protection_plan
   enable_telemetry     = var.enable_telemetry
   name                 = each.value.name
+  retry                = var.retry
   subnets              = local.subnets[each.key]
   tags                 = each.value.tags
+  timeouts             = var.timeouts
 }
 
 module "dns_resolver" {
