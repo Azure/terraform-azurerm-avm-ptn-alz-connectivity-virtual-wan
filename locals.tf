@@ -10,7 +10,7 @@ locals {
     address_prefix      = coalesce(virtual_hub_value.hub.address_prefix, local.virtual_network_default_ip_prefixes[virtual_hub_key]["virtual_hub"])
     tags                = coalesce(virtual_hub_value.hub.tags, var.tags, {})
   }) }
-  virtual_wan = {
+  virtual_wan = local.has_regions ? {
     name                              = coalesce(var.virtual_wan_settings.virtual_wan.name, local.default_names[local.primary_region_key].virtual_wan_name)
     location                          = coalesce(var.virtual_wan_settings.virtual_wan.location, local.primary_location)
     resource_group_name               = coalesce(var.virtual_wan_settings.virtual_wan.resource_group_name, local.hub_virtual_networks_resource_group_names[local.primary_region_key])
@@ -19,5 +19,5 @@ locals {
     disable_vpn_encryption            = var.virtual_wan_settings.virtual_wan.disable_vpn_encryption
     office365_local_breakout_category = var.virtual_wan_settings.virtual_wan.office365_local_breakout_category
     tags                              = coalesce(var.virtual_wan_settings.virtual_wan.tags, var.tags, {})
-  }
+  } : null
 }

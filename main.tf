@@ -26,6 +26,7 @@ module "firewall_policy" {
 
 module "virtual_wan" {
   source = "./modules/virtual-wan"
+  count  = local.has_regions ? 1 : 0
 
   location                              = local.virtual_wan.location
   resource_group_name                   = local.virtual_wan.resource_group_name
@@ -48,6 +49,11 @@ module "virtual_wan" {
   vpn_gateways                          = local.virtual_network_gateways_vpn
   vpn_site_connections                  = local.vpn_site_connections
   vpn_sites                             = local.vpn_sites
+}
+
+moved {
+  from = module.virtual_wan
+  to   = module.virtual_wan[0]
 }
 
 module "virtual_network_side_car" {
