@@ -3,7 +3,6 @@ locals {
     virtual_hub = 22
     sidecar     = 22
   }
-  virtual_network_default_ip_prefix_size = 22
   virtual_network_subnet_default_ip_prefix_sizes = {
     bastion      = 26
     dns_resolver = 28
