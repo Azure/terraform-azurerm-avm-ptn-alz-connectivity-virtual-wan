@@ -970,7 +970,6 @@ map(object({
       subnet_name                            = optional(string, "dns-resolver")
       subnet_default_outbound_access_enabled = optional(bool, false)
       default_inbound_endpoint_enabled       = optional(bool, true)
-      ip_address                             = optional(string, null)
       inbound_endpoints = optional(map(object({
         name                         = optional(string)
         subnet_name                  = string

@@ -11,8 +11,7 @@ locals {
       dns = {
         name                         = "dns"
         subnet_name                  = module.virtual_network_side_car[key].subnets["dns_resolver"].name
-        private_ip_allocation_method = "Static"
-        private_ip_address           = local.private_dns_resolver_ip_addresses[key]
+        private_ip_allocation_method = "Dynamic"
         tags                         = coalesce(value.private_dns_resolver.tags, var.tags, {})
         merge_with_module_tags       = false
       }
@@ -20,10 +19,5 @@ locals {
     outbound_endpoints = value.private_dns_resolver.outbound_endpoints
     tags               = coalesce(value.private_dns_resolver.tags, var.tags, {})
     } if local.private_dns_resolver_enabled[key]
-  }
-  private_dns_resolver_ip_addresses = { for key, value in var.virtual_hubs : key =>
-    (value.private_dns_resolver.ip_address == null ?
-      cidrhost(coalesce(value.private_dns_resolver.subnet_address_prefix, local.virtual_network_subnet_default_ip_prefixes[key]["dns_resolver"]), 4) :
-    value.private_dns_resolver.ip_address) if local.private_dns_resolver_enabled[key]
   }
 }

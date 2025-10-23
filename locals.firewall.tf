@@ -9,7 +9,7 @@ locals {
   }) if local.firewall_policy_enabled[key] }
   firewall_policy_dns_defaults = { for key, value in var.virtual_hubs : key => local.private_dns_resolver_enabled[key] && local.private_dns_zones_enabled[key] && local.firewall_enabled[key] && !local.firewall_sku_is_basic[key] ? {
     proxy_enabled = true
-    servers       = [local.private_dns_resolver_ip_addresses[key]]
+    servers       = [module.dns_resolver[key].inbound_endpoint_ips["dns"]]
   } : null }
   firewall_policy_enabled = { for key, value in var.virtual_hubs : key => value.enabled_resources.firewall_policy && local.firewall_enabled[key] }
   firewall_sku_is_basic   = { for key, value in var.virtual_hubs : key => local.firewall_enabled[key] && (value.firewall.sku_tier == "Basic" || value.firewall_policy.sku == "Basic") }

@@ -1,7 +1,6 @@
 locals {
-  virtual_network_gateways = merge(local.virtual_network_gateways_express_route, local.virtual_network_gateways_vpn)
   virtual_network_gateways_express_route = {
-    for hub_network_key, hub_network_value in var.virtual_hubs : "${hub_network_key}-express-route" => merge(hub_network_value.virtual_network_gateways.express_route, {
+    for hub_network_key, hub_network_value in var.virtual_hubs : hub_network_key => merge(hub_network_value.virtual_network_gateways.express_route, {
       virtual_hub_key = hub_network_key
       name            = coalesce(hub_network_value.virtual_network_gateways.express_route.name, local.default_names[hub_network_key].virtual_network_gateway_express_route_name)
       tags            = coalesce(hub_network_value.virtual_network_gateways.express_route.tags, var.tags, {})
@@ -14,7 +13,7 @@ locals {
 
 locals {
   virtual_network_gateways_vpn = {
-    for hub_network_key, hub_network_value in var.virtual_hubs : "${hub_network_key}-vpn" => merge(hub_network_value.virtual_network_gateways.vpn, {
+    for hub_network_key, hub_network_value in var.virtual_hubs : hub_network_key => merge(hub_network_value.virtual_network_gateways.vpn, {
       virtual_hub_key = hub_network_key
       name            = coalesce(hub_network_value.virtual_network_gateways.vpn.name, local.default_names[hub_network_key].virtual_network_gateway_vpn_name)
       tags            = coalesce(hub_network_value.virtual_network_gateways.vpn.tags, var.tags, {})

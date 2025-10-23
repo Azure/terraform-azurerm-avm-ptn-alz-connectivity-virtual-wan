@@ -183,8 +183,8 @@ Default:
 
 ```json
 [
-  "eastus2",
-  "canadacentral"
+  "uksouth",
+  "ukwest"
 ]
 ```
 
