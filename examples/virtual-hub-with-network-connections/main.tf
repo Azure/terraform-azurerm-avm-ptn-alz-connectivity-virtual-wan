@@ -58,7 +58,7 @@ module "resource_group_vnet_demo_01" {
   source  = "Azure/avm-res-resources-resourcegroup/azurerm"
   version = "0.2.0"
 
-  location         = var.starter_locations[0]
+  location         = local.resource_groups["hub_primary"].location
   name             = "rg-vnet-demo-01"
   enable_telemetry = false
   tags             = local.common_tags
@@ -68,7 +68,7 @@ module "virtual_network" {
   source  = "Azure/avm-res-network-virtualnetwork/azurerm"
   version = "0.15.0"
 
-  location      = var.starter_locations[0]
+  location      = local.resource_groups["hub_primary"].location
   parent_id     = module.resource_group_vnet_demo_01.resource_id
   address_space = ["10.100.0.0/16"]
   name          = "vnet-demo-01"
