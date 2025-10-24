@@ -6,6 +6,10 @@ terraform {
       source  = "hashicorp/azurerm"
       version = "~> 4.21"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.7"
+    }
   }
 }
 
@@ -13,73 +17,110 @@ provider "azurerm" {
   features {}
 }
 
-data "azurerm_client_config" "current" {}
+resource "random_string" "suffix" {
+  length  = 4
+  numeric = true
+  special = false
+  upper   = false
+}
 
-module "config" {
-  source = "github.com/Azure/alz-terraform-accelerator//templates/platform_landing_zone/modules/config-templating"
-
-  connectivity_resource_groups    = var.connectivity_resource_groups
-  custom_replacements             = var.custom_replacements
-  enable_telemetry                = var.enable_telemetry
-  management_group_settings       = var.management_group_settings
-  management_resource_settings    = var.management_resource_settings
-  root_parent_management_group_id = ""
-  starter_locations               = var.starter_locations
-  subscription_id_connectivity    = data.azurerm_client_config.current.subscription_id
-  subscription_id_identity        = data.azurerm_client_config.current.subscription_id
-  subscription_id_management      = data.azurerm_client_config.current.subscription_id
-  tags                            = var.tags
-  virtual_wan_settings            = var.virtual_wan_settings
-  virtual_wan_virtual_hubs        = var.virtual_wan_virtual_hubs
+locals {
+  common_tags = {
+    created_by  = "terraform"
+    project     = "Azure Landing Zones"
+    owner       = "avm"
+    environment = "demo"
+  }
+  resource_groups = {
+    hub_primary = {
+      name     = "rg-hub-primary-${random_string.suffix.result}"
+      location = "eastus"
+    }
+    hub_secondary = {
+      name     = "rg-hub-secondary-${random_string.suffix.result}"
+      location = "eastus2"
+    }
+  }
 }
 
 module "resource_groups" {
   source   = "Azure/avm-res-resources-resourcegroup/azurerm"
   version  = "0.2.0"
-  for_each = module.config.connectivity_resource_groups
+  for_each = local.resource_groups
 
   location         = each.value.location
   name             = each.value.name
   enable_telemetry = false
-  tags             = module.config.tags
+  tags             = local.common_tags
 }
 
 module "resource_group_vnet_demo_01" {
   source  = "Azure/avm-res-resources-resourcegroup/azurerm"
   version = "0.2.0"
 
-  location         = var.starter_locations[0]
+  location         = local.resource_groups["hub_primary"].location
   name             = "rg-vnet-demo-01"
   enable_telemetry = false
-  tags             = module.config.tags
+  tags             = local.common_tags
 }
 
 module "virtual_network" {
   source  = "Azure/avm-res-network-virtualnetwork/azurerm"
-  version = "0.9.2"
+  version = "0.15.0"
 
-  address_space       = ["10.100.0.0/16"]
-  location            = var.starter_locations[0]
-  resource_group_name = module.resource_group_vnet_demo_01.name
-  name                = "vnet-demo-01"
-}
-
-# Build an implicit dependency on the resource groups
-locals {
-  resource_groups = {
-    resource_groups = module.resource_groups
-  }
-  virtual_wan_settings     = merge(module.config.virtual_wan_settings, local.resource_groups)
-  virtual_wan_virtual_hubs = (merge({ hubs = module.config.virtual_wan_virtual_hubs }, local.resource_groups)).hubs
+  location      = local.resource_groups["hub_primary"].location
+  parent_id     = module.resource_group_vnet_demo_01.resource_id
+  address_space = ["10.100.0.0/16"]
+  name          = "vnet-demo-01"
+  tags          = local.common_tags
 }
 
 # This is the module call
 module "test" {
   source = "../../"
 
-  enable_telemetry     = false
-  tags                 = module.config.tags
-  virtual_hubs         = local.virtual_wan_virtual_hubs
-  virtual_wan_settings = local.virtual_wan_settings
+  enable_telemetry = false
+  tags             = local.common_tags
+  virtual_hubs = {
+    primary = {
+      enabled_resources = {
+        sidecar_virtual_network               = true
+        bastion                               = false
+        firewall                              = false
+        private_dns_resolver                  = false
+        virtual_network_gateway_express_route = false
+        virtual_network_gateway_vpn           = false
+        private_dns_zones                     = false
+      }
+      location = local.resource_groups["hub_primary"].location
+      # default_hub_address_space = "10.0.0.0/16"
+      default_parent_id = module.resource_groups["hub_primary"].resource_id
+      virtual_network_connections = {
+        vnet_demo_01 = {
+          name                      = "vnet-connection-demo-01"
+          remote_virtual_network_id = module.virtual_network.resource_id
+          internet_security_enabled = true
+        }
+      }
+    }
+    secondary = {
+      enabled_resources = {
+        sidecar_virtual_network               = true
+        bastion                               = false
+        firewall                              = false
+        private_dns_resolver                  = false
+        virtual_network_gateway_express_route = false
+        virtual_network_gateway_vpn           = false
+        private_dns_zones                     = false
+      }
+      location = local.resource_groups["hub_secondary"].location
+      # default_hub_address_space = "10.1.0.0/16"
+      default_parent_id = module.resource_groups["hub_secondary"].resource_id
+    }
+  }
+  virtual_wan_settings = {
+    enabled_resources = {
+      ddos_protection_plan = false
+    }
+  }
 }
-

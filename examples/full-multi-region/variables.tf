@@ -59,7 +59,7 @@ DESCRIPTION
 
 variable "starter_locations" {
   type        = list(string)
-  default     = ["eastus2", "southcentralus"]
+  default     = ["uksouth", "ukwest"]
   description = "The default for Azure resources. (e.g 'uksouth')"
 }
 
@@ -98,7 +98,7 @@ The following attributes are supported:
   - private_dns_zones: (Optional) The private DNS zone settings. Detailed information about the private DNS zone can be found in the module's README: https://registry.terraform.io/modules/Azure/avm-ptn-network-private-link-private-dns-zones
   - bastion: (Optional) The bastion host settings. Detailed information about the bastion can be found in the module's README: https://registry.terraform.io/modules/Azure/avm-res-network-bastionhost/
   - virtual_network_gateways: (Optional) The virtual network gateway settings. Detailed information about the virtual network gateway can be found in the Virtual WAN module's README: https://registry.terraform.io/modules/Azure/avm-ptn-virtualhub
-  - side_car_virtual_network: (Optional) The side car virtual network settings. Detailed information about the side car virtual network can be found in the module's README: https://registry.terraform.io/modules/Azure/avm-res-network-virtualnetwork
+  - sidecar_virtual_network: (Optional) The side car virtual network settings. Detailed information about the side car virtual network can be found in the module's README: https://registry.terraform.io/modules/Azure/avm-res-network-virtualnetwork
 
 DESCRIPTION
 }

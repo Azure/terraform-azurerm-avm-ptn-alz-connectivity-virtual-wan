@@ -99,14 +99,14 @@ custom_replacements = {
     # IP Ranges Primary
     # Regional Address Space: 10.0.0.0/16
     primary_hub_address_space                          = "10.0.0.0/22"
-    primary_side_car_virtual_network_address_space     = "10.0.4.0/22"
+    primary_sidecar_virtual_network_address_space      = "10.0.4.0/22"
     primary_bastion_subnet_address_prefix              = "10.0.4.0/26"
     primary_private_dns_resolver_subnet_address_prefix = "10.0.4.64/28"
 
     # IP Ranges Secondary
     # Regional Address Space: 10.1.0.0/16
     secondary_hub_address_space                          = "10.1.0.0/22"
-    secondary_side_car_virtual_network_address_space     = "10.1.4.0/22"
+    secondary_sidecar_virtual_network_address_space      = "10.1.4.0/22"
     secondary_bastion_subnet_address_prefix              = "10.1.4.0/26"
     secondary_private_dns_resolver_subnet_address_prefix = "10.1.4.64/28"
   }
@@ -118,8 +118,10 @@ custom_replacements = {
   NOTE: You cannot refer to another custom resource group identifier in this variable.
   */
   resource_group_identifiers = {
-    management_resource_group_id           = "/subscriptions/$${subscription_id_management}/resourcegroups/$${management_resource_group_name}"
-    ddos_protection_plan_resource_group_id = "/subscriptions/$${subscription_id_connectivity}/resourcegroups/$${ddos_resource_group_name}"
+    management_resource_group_id                 = "/subscriptions/$${subscription_id_management}/resourcegroups/$${management_resource_group_name}"
+    ddos_protection_plan_resource_group_id       = "/subscriptions/$${subscription_id_connectivity}/resourcegroups/$${ddos_resource_group_name}"
+    connectivity_hub_primary_resource_group_id   = "/subscriptions/$${subscription_id_connectivity}/resourceGroups/$${connectivity_hub_primary_resource_group_name}"
+    connectivity_hub_secondary_resource_group_id = "/subscriptions/$${subscription_id_connectivity}/resourceGroups/$${connectivity_hub_secondary_resource_group_name}"
   }
 
   /*
@@ -320,9 +322,11 @@ connectivity_resource_groups = {
 }
 
 virtual_wan_settings = {
-  name                = "vwan-$${starter_location_01}"
-  resource_group_name = "$${connectivity_hub_vwan_resource_group_name}"
-  location            = "$${starter_location_01}"
+  virtual_wan = {
+    name                = "vwan-$${starter_location_01}"
+    resource_group_name = "$${connectivity_hub_vwan_resource_group_name}"
+    location            = "$${starter_location_01}"
+  }
   ddos_protection_plan = {
     enabled             = "$${ddos_protection_plan_enabled}"
     name                = "$${ddos_protection_plan_name}"
@@ -333,6 +337,16 @@ virtual_wan_settings = {
 
 virtual_wan_virtual_hubs = {
   primary = {
+    enabled_resources = {
+      firewall                              = "$${primary_firewall_enabled}"
+      virtual_network_gateway_express_route = "$${primary_virtual_network_gateway_express_route_enabled}"
+      virtual_network_gateway_vpn           = "$${primary_virtual_network_gateway_vpn_enabled}"
+      private_dns_zones                     = "$${primary_private_dns_zones_enabled}"
+      private_dns_resolver                  = "$${primary_private_dns_resolver_enabled}"
+      bastion                               = "$${primary_bastion_enabled}"
+      sidecar_virtual_network               = "$${primary_sidecar_virtual_network_enabled}"
+    }
+    location = "$${starter_location_01}"
     hub = {
       name = "$${primary_hub_name}"
       /*
@@ -340,67 +354,58 @@ virtual_wan_virtual_hubs = {
       However, there is a known limitation with the portal experience: https://learn.microsoft.com/en-us/azure/virtual-wan/virtual-wan-faq#can-hubs-be-created-in-different-resource-groups-in-virtual-wan
       If you prefer to use the same resource group as the vwan, then set this to `$${connectivity_hub_vwan_resource_group_name}`
       */
-      resource_group = "$${connectivity_hub_primary_resource_group_name}"
-      location       = "$${starter_location_01}"
+      parent_id      = "$${connectivity_hub_primary_resource_group_id}"
       address_prefix = "$${primary_hub_address_space}"
     }
     firewall = {
-      enabled  = "$${primary_firewall_enabled}"
-      name     = "$${primary_firewall_name}"
-      sku_name = "AZFW_Hub"
-      sku_tier = "Standard"
-      zones    = "$${starter_location_01_availability_zones}"
+      name = "$${primary_firewall_name}"
     }
     firewall_policy = {
       name = "$${primary_firewall_policy_name}"
     }
     virtual_network_gateways = {
       express_route = {
-        enabled = "$${primary_virtual_network_gateway_express_route_enabled}"
-        name    = "$${primary_virtual_network_gateway_express_route_name}"
+        name = "$${primary_virtual_network_gateway_express_route_name}"
       }
       vpn = {
-        enabled = "$${primary_virtual_network_gateway_vpn_enabled}"
-        name    = "$${primary_virtual_network_gateway_vpn_name}"
+        name = "$${primary_virtual_network_gateway_vpn_name}"
       }
     }
     private_dns_zones = {
-      enabled = "$${primary_private_dns_zones_enabled}"
-      dns_zones = {
-        resource_group_name = "$${dns_resource_group_name}"
-        private_link_private_dns_zones_regex_filter = {
-          enabled = false
-        }
+      resource_group_name = "$${dns_resource_group_name}"
+      private_link_private_dns_zones_regex_filter = {
+        enabled = false
       }
       auto_registration_zone_enabled = "$${primary_private_dns_auto_registration_zone_enabled}"
       auto_registration_zone_name    = "$${primary_auto_registration_zone_name}"
     }
     private_dns_resolver = {
-      enabled               = "$${primary_private_dns_resolver_enabled}"
+      name                  = "$${primary_private_dns_resolver_name}"
       subnet_address_prefix = "$${primary_private_dns_resolver_subnet_address_prefix}"
-      dns_resolver = {
-        name = "$${primary_private_dns_resolver_name}"
-      }
     }
     bastion = {
-      enabled               = "$${primary_bastion_enabled}"
+      name                  = "$${primary_bastion_host_name}"
       subnet_address_prefix = "$${primary_bastion_subnet_address_prefix}"
-      bastion_host = {
-        name  = "$${primary_bastion_host_name}"
-        zones = "$${starter_location_01_availability_zones}"
-      }
       bastion_public_ip = {
-        name  = "$${primary_bastion_host_public_ip_name}"
-        zones = "$${starter_location_01_availability_zones}"
+        name = "$${primary_bastion_host_public_ip_name}"
       }
     }
-    side_car_virtual_network = {
-      enabled       = "$${primary_sidecar_virtual_network_enabled}"
+    sidecar_virtual_network = {
       name          = "$${primary_sidecar_virtual_network_name}"
-      address_space = ["$${primary_side_car_virtual_network_address_space}"]
+      address_space = ["$${primary_sidecar_virtual_network_address_space}"]
     }
   }
   secondary = {
+    enabled_resources = {
+      firewall                              = "$${secondary_firewall_enabled}"
+      virtual_network_gateway_express_route = "$${secondary_virtual_network_gateway_express_route_enabled}"
+      virtual_network_gateway_vpn           = "$${secondary_virtual_network_gateway_vpn_enabled}"
+      private_dns_zones                     = "$${secondary_private_dns_zones_enabled}"
+      private_dns_resolver                  = "$${secondary_private_dns_resolver_enabled}"
+      bastion                               = "$${secondary_bastion_enabled}"
+      sidecar_virtual_network               = "$${secondary_sidecar_virtual_network_enabled}"
+    }
+    location = "$${starter_location_02}"
     hub = {
       name = "$${secondary_hub_name}"
       /*
@@ -408,64 +413,45 @@ virtual_wan_virtual_hubs = {
       However, there is a known limitation with the portal experience: https://learn.microsoft.com/en-us/azure/virtual-wan/virtual-wan-faq#can-hubs-be-created-in-different-resource-groups-in-virtual-wan
       If you prefer to use the same resource group as the vwan, then set this to `$${connectivity_hub_vwan_resource_group_name}`
       */
-      resource_group = "$${connectivity_hub_secondary_resource_group_name}"
-      location       = "$${starter_location_02}"
+      parent_id      = "$${connectivity_hub_secondary_resource_group_id}"
       address_prefix = "$${secondary_hub_address_space}"
     }
     firewall = {
-      enabled  = "$${secondary_firewall_enabled}"
-      name     = "$${secondary_firewall_name}"
-      sku_name = "AZFW_Hub"
-      sku_tier = "Standard"
-      zones    = "$${starter_location_02_availability_zones}"
+      name = "$${secondary_firewall_name}"
     }
     firewall_policy = {
       name = "$${secondary_firewall_policy_name}"
     }
     virtual_network_gateways = {
       express_route = {
-        enabled = "$${secondary_virtual_network_gateway_express_route_enabled}"
-        name    = "$${secondary_virtual_network_gateway_express_route_name}"
+        name = "$${secondary_virtual_network_gateway_express_route_name}"
       }
       vpn = {
-        enabled = "$${secondary_virtual_network_gateway_vpn_enabled}"
-        name    = "$${secondary_virtual_network_gateway_vpn_name}"
+        name = "$${secondary_virtual_network_gateway_vpn_name}"
       }
     }
     private_dns_zones = {
-      enabled = "$${secondary_private_dns_zones_enabled}"
-      dns_zones = {
-        resource_group_name = "$${dns_resource_group_name}"
-        private_link_private_dns_zones_regex_filter = {
-          enabled = true
-        }
+      resource_group_name = "$${dns_resource_group_name}"
+      private_link_private_dns_zones_regex_filter = {
+        enabled = true
       }
       auto_registration_zone_enabled = "$${secondary_private_dns_auto_registration_zone_enabled}"
       auto_registration_zone_name    = "$${secondary_auto_registration_zone_name}"
     }
     private_dns_resolver = {
-      enabled               = "$${secondary_private_dns_resolver_enabled}"
       subnet_address_prefix = "$${secondary_private_dns_resolver_subnet_address_prefix}"
-      dns_resolver = {
-        name = "$${secondary_private_dns_resolver_name}"
-      }
+      name                  = "$${secondary_private_dns_resolver_name}"
     }
     bastion = {
-      enabled               = "$${secondary_bastion_enabled}"
       subnet_address_prefix = "$${secondary_bastion_subnet_address_prefix}"
-      bastion_host = {
-        name  = "$${secondary_bastion_host_name}"
-        zones = "$${starter_location_02_availability_zones}"
-      }
+      name                  = "$${secondary_bastion_host_name}"
       bastion_public_ip = {
-        name  = "$${secondary_bastion_host_public_ip_name}"
-        zones = "$${starter_location_02_availability_zones}"
+        name = "$${secondary_bastion_host_public_ip_name}"
       }
     }
-    side_car_virtual_network = {
-      enabled       = "$${secondary_sidecar_virtual_network_enabled}"
+    sidecar_virtual_network = {
       name          = "$${secondary_sidecar_virtual_network_name}"
-      address_space = ["$${secondary_side_car_virtual_network_address_space}"]
+      address_space = ["$${secondary_sidecar_virtual_network_address_space}"]
     }
   }
 }
