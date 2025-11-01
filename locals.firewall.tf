@@ -7,7 +7,7 @@ locals {
     resource_group_name = coalesce(value.firewall_policy.resource_group_name, local.hub_virtual_networks_resource_group_names[key])
     tags                = coalesce(value.firewall_policy.tags, var.tags, {})
   }) if local.firewall_policy_enabled[key] }
-  firewall_policy_dns_defaults = { for key, value in var.virtual_hubs : key => local.private_dns_resolver_enabled[key] && local.private_dns_zones_enabled[key] && local.firewall_enabled[key] && !local.firewall_sku_is_basic[key] ? {
+  firewall_policy_dns_defaults = { for key, value in var.virtual_hubs : key => local.private_dns_resolver_enabled[key] && local.private_dns_zones_enabled[key] && local.firewall_enabled[key] && !local.firewall_sku_is_basic[key] && value.private_dns_resolver.default_inbound_endpoint_enabled ? {
     proxy_enabled = true
     servers       = [module.dns_resolver[key].inbound_endpoint_ips["dns"]]
   } : null }

@@ -12,6 +12,7 @@ locals {
         name                         = "dns"
         subnet_name                  = module.virtual_network_side_car[key].subnets["dns_resolver"].name
         private_ip_allocation_method = "Dynamic"
+        private_ip_address           = null
         tags                         = coalesce(value.private_dns_resolver.tags, var.tags, {})
         merge_with_module_tags       = false
       }
