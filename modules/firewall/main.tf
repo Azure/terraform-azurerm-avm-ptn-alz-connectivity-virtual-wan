@@ -16,7 +16,7 @@ resource "azurerm_firewall" "fw" {
   }
 
   dynamic "ip_configuration" {
-    for_each = each.value.ip_configuration
+    for_each = { for i, o in each.value.ip_configuration: o.name => o }
 
     content {
       name                 = each.value.name
