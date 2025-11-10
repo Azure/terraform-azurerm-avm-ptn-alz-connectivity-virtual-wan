@@ -19,9 +19,9 @@ resource "azurerm_firewall" "fw" {
     for_each = { for i, o in each.value.ip_configuration: o.name => o }
 
     content {
-      name                 = each.value.name
-      public_ip_address_id = each.value.public_ip_address_id
-      subnet_id            = each.value.subnet_id
+      name                 = ip_configuration.value.name
+      public_ip_address_id = ip_configuration.value.public_ip_address_id
+      subnet_id            = ip_configuration.value.subnet_id
     }
   }
 }
