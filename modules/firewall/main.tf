@@ -16,11 +16,11 @@ resource "azurerm_firewall" "fw" {
   }
 
   dynamic "ip_configuration" {
-    for_each = try(length(each.value.firewall_public_ip_id), 0) > 0 ? [1] : []
+    for_each = try(length(each.value.public_ip_address_id), 0) > 0 ? [1] : []
 
     content {
       name                 = "assigned"
-      public_ip_address_id = each.value.firewall_public_ip_id
+      public_ip_address_id = each.value.public_ip_address_id
     }
   }
 }
