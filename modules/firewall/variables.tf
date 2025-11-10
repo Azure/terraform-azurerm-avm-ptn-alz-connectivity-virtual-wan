@@ -67,7 +67,11 @@ variable "firewalls" {
     firewall_policy_id   = optional(string)
     vhub_public_ip_count = optional(string, null)
     tags                 = optional(map(string))
-    public_ip_address_id = optional(string)
+    ip_configuration = optional(list(object({
+      name                 = string
+      public_ip_address_id = optional(string)
+      subnet_id            = optional(string)
+    })))
   }))
   default     = {}
   description = <<DESCRIPTION

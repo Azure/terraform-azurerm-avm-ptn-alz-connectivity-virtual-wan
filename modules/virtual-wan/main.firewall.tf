@@ -14,7 +14,7 @@ module "firewalls" {
       virtual_hub_id       = module.virtual_hubs.resource_object[value.virtual_hub_key].id
       vhub_public_ip_count = value.vhub_public_ip_count
       zones                = value.zones
-      public_ip_address_id = value.public_ip_address_id
+      ip_configuration     = value.ip_configuration
     }
   }
 }

@@ -328,8 +328,12 @@ variable "virtual_hubs" {
       zones                = optional(list(number))
       firewall_policy_id   = optional(string)
       vhub_public_ip_count = optional(string)
-      public_ip_address_id = optional(string)
-      tags                 = optional(map(string))
+      ip_configuration = optional(list(object({
+        name                 = string
+        public_ip_address_id = optional(string)
+        subnet_id            = optional(string)
+      })))
+      tags = optional(map(string))
     }), {})
 
     firewall_policy = optional(object({
