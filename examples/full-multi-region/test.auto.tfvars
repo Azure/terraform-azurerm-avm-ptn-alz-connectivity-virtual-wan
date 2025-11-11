@@ -439,8 +439,8 @@ virtual_wan_virtual_hubs = {
       auto_registration_zone_name    = "$${secondary_auto_registration_zone_name}"
     }
     private_dns_resolver = {
-      subnet_address_prefix = "$${secondary_private_dns_resolver_subnet_address_prefix}"
-      name                  = "$${secondary_private_dns_resolver_name}"
+      subnet_address_prefix            = "$${secondary_private_dns_resolver_subnet_address_prefix}"
+      name                             = "$${secondary_private_dns_resolver_name}"
       default_inbound_endpoint_enabled = false
     }
     bastion = {
