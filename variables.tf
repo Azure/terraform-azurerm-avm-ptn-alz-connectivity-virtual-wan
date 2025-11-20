@@ -59,7 +59,12 @@ DESCRIPTION
 
 variable "retry" {
   type = object({
-    error_message_regex  = optional(list(string), ["ReferencedResourceNotProvisioned"])
+    error_message_regex = optional(list(string), [
+      "ReferencedResourceNotProvisioned",
+      "UpdateGatewayInProgress",
+      "CannotDeleteVirtualHubWhenItIsInUse",
+      "InUseVirtualWanCannotBeDeleted"
+    ])
     interval_seconds     = optional(number, 10)
     max_interval_seconds = optional(number, 180)
   })
