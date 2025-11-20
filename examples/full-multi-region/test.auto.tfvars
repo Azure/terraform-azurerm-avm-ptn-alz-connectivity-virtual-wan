@@ -118,8 +118,9 @@ custom_replacements = {
   NOTE: You cannot refer to another custom resource group identifier in this variable.
   */
   resource_group_identifiers = {
-    management_resource_group_id                 = "/subscriptions/$${subscription_id_management}/resourcegroups/$${management_resource_group_name}"
-    ddos_protection_plan_resource_group_id       = "/subscriptions/$${subscription_id_connectivity}/resourcegroups/$${ddos_resource_group_name}"
+    management_resource_group_id                 = "/subscriptions/$${subscription_id_management}/resourceGroups/$${management_resource_group_name}"
+    ddos_protection_plan_resource_group_id       = "/subscriptions/$${subscription_id_connectivity}/resourceGroups/$${ddos_resource_group_name}"
+    dns_resource_group_id                        = "/subscriptions/$${subscription_id_connectivity}/resourceGroups/$${dns_resource_group_name}"
     connectivity_hub_primary_resource_group_id   = "/subscriptions/$${subscription_id_connectivity}/resourceGroups/$${connectivity_hub_primary_resource_group_name}"
     connectivity_hub_secondary_resource_group_id = "/subscriptions/$${subscription_id_connectivity}/resourceGroups/$${connectivity_hub_secondary_resource_group_name}"
   }
@@ -372,7 +373,15 @@ virtual_wan_virtual_hubs = {
       }
     }
     private_dns_zones = {
-      resource_group_name = "$${dns_resource_group_name}"
+      parent_id = "$${dns_resource_group_id}"
+      virtual_network_link_overrides_by_zone = {
+        azure_storage_blob = {
+          resolution_policy = "NxDomainRedirect"
+        }
+        azure_api_management = {
+          resolution_policy = "NxDomainRedirect"
+        }
+      }
       private_link_private_dns_zones_regex_filter = {
         enabled = false
       }
@@ -431,7 +440,7 @@ virtual_wan_virtual_hubs = {
       }
     }
     private_dns_zones = {
-      resource_group_name = "$${dns_resource_group_name}"
+      parent_id = "$${dns_resource_group_id}"
       private_link_private_dns_zones_regex_filter = {
         enabled = true
       }
@@ -439,8 +448,8 @@ virtual_wan_virtual_hubs = {
       auto_registration_zone_name    = "$${secondary_auto_registration_zone_name}"
     }
     private_dns_resolver = {
-      subnet_address_prefix = "$${secondary_private_dns_resolver_subnet_address_prefix}"
-      name                  = "$${secondary_private_dns_resolver_name}"
+      subnet_address_prefix            = "$${secondary_private_dns_resolver_subnet_address_prefix}"
+      name                             = "$${secondary_private_dns_resolver_name}"
       default_inbound_endpoint_enabled = false
     }
     bastion = {
