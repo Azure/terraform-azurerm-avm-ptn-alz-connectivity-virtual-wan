@@ -38,6 +38,7 @@ module "config" {
   source = "github.com/Azure/alz-terraform-accelerator//templates/platform_landing_zone/modules/config-templating?ref=main"
 
   custom_replacements             = var.custom_replacements
+  enable_telemetry                = var.enable_telemetry
   inputs                          = local.config_templating_inputs
   root_parent_management_group_id = ""
   starter_locations               = var.starter_locations
