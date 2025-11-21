@@ -111,6 +111,16 @@ Type: `bool`
 
 Default: `true`
 
+### <a name="input_private_link_private_dns_zone_virtual_network_link_moved_block_template_module_prefix"></a> [private\_link\_private\_dns\_zone\_virtual\_network\_link\_moved\_block\_template\_module\_prefix](#input\_private\_link\_private\_dns\_zone\_virtual\_network\_link\_moved\_block\_template\_module\_prefix)
+
+Description: (Optional) A prefix to use for the moved block template module for virtual network links.
+
+NOTE: This is a temporary variable to support migration to the new module and will be moved in the next major version.
+
+Type: `string`
+
+Default: `""`
+
 ### <a name="input_retry"></a> [retry](#input\_retry)
 
 Description: Retry configuration for the resource operations
@@ -119,7 +129,12 @@ Type:
 
 ```hcl
 object({
-    error_message_regex  = optional(list(string), ["ReferencedResourceNotProvisioned"])
+    error_message_regex = optional(list(string), [
+      "ReferencedResourceNotProvisioned",
+      "UpdateGatewayInProgress",
+      "CannotDeleteVirtualHubWhenItIsInUse",
+      "InUseVirtualWanCannotBeDeleted"
+    ])
     interval_seconds     = optional(number, 10)
     max_interval_seconds = optional(number, 180)
   })
@@ -934,15 +949,16 @@ map(object({
     }), {})
 
     private_dns_zones = optional(object({
-      resource_group_name                         = optional(string, null)
-      auto_registration_zone_enabled              = optional(bool, true)
-      auto_registration_zone_name                 = optional(string, null)
-      auto_registration_zone_resource_group_name  = optional(string, null)
-      private_dns_zone_network_link_name_template = optional(string, null)
-      private_link_excluded_zones                 = optional(set(string), [])
+      parent_id                        = optional(string)
+      auto_registration_zone_enabled   = optional(bool, true)
+      auto_registration_zone_name      = optional(string, null)
+      auto_registration_zone_parent_id = optional(string, null)
+
+      private_link_excluded_zones = optional(set(string), [])
       private_link_private_dns_zones = optional(map(object({
         zone_name                              = optional(string, null)
         private_dns_zone_supports_private_link = optional(bool, true)
+        resolution_policy                      = optional(string)
         custom_iterator = optional(object({
           replacement_placeholder = string
           replacement_values      = map(string)
@@ -951,6 +967,7 @@ map(object({
       private_link_private_dns_zones_additional = optional(map(object({
         zone_name                              = optional(string, null)
         private_dns_zone_supports_private_link = optional(bool, true)
+        resolution_policy                      = optional(string)
         custom_iterator = optional(object({
           replacement_placeholder = string
           replacement_values      = map(string)
@@ -960,7 +977,34 @@ map(object({
         enabled      = optional(bool, false)
         regex_filter = optional(string, "{regionName}|{regionCode}")
       }))
-      tags = optional(map(string), null)
+      virtual_network_link_default_virtual_networks = optional(map(object({
+        virtual_network_resource_id                 = optional(string)
+        virtual_network_link_name_template_override = optional(string)
+        resolution_policy                           = optional(string)
+      })))
+      virtual_network_link_by_zone_and_virtual_network = optional(map(map(object({
+        virtual_network_resource_id = optional(string, null)
+        name                        = optional(string, null)
+        resolution_policy           = optional(string)
+      }))))
+      virtual_network_link_overrides_by_zone = optional(map(object({
+        virtual_network_link_name_template_override = optional(string)
+        resolution_policy                           = optional(string)
+        enabled                                     = optional(bool, true)
+      })))
+      virtual_network_link_overrides_by_virtual_network = optional(map(object({
+        virtual_network_link_name_template_override = optional(string)
+        resolution_policy                           = optional(string)
+        enabled                                     = optional(bool, true)
+      })))
+      virtual_network_link_overrides_by_zone_and_virtual_network = optional(map(map(object({
+        name              = optional(string)
+        resolution_policy = optional(string)
+        enabled           = optional(bool, true)
+      }))))
+      virtual_network_link_name_template             = optional(string, null)
+      virtual_network_link_resolution_policy_default = optional(string)
+      tags                                           = optional(map(string), null)
     }), {})
 
     private_dns_resolver = optional(object({
@@ -1128,6 +1172,20 @@ Description: The resource IDs of the private DNS resolvers associated with the v
 
 Description: The private DNS resolvers associated with the virtual WAN, grouped by hub key.
 
+### <a name="output_private_dns_zone_resource_ids"></a> [private\_dns\_zone\_resource\_ids](#output\_private\_dns\_zone\_resource\_ids)
+
+Description: Resource IDs of the private DNS zones
+
+### <a name="output_private_link_private_dns_zone_virtual_network_link_moved_blocks"></a> [private\_link\_private\_dns\_zone\_virtual\_network\_link\_moved\_blocks](#output\_private\_link\_private\_dns\_zone\_virtual\_network\_link\_moved\_blocks)
+
+Description: Moved blocks for private link private DNS zone virtual network links.
+
+NOTE: This is a temporary output to support migration to the new module and will be moved in the next major version.
+
+### <a name="output_private_link_private_dns_zones_maps"></a> [private\_link\_private\_dns\_zones\_maps](#output\_private\_link\_private\_dns\_zones\_maps)
+
+Description: Final configuration applied to the private DNS zones and associated virtual network links.
+
 ### <a name="output_resource_id"></a> [resource\_id](#output\_resource\_id)
 
 Description: The resource ID of the virtual WAN.
@@ -1186,13 +1244,13 @@ Version: 0.3.3
 
 Source: Azure/avm-res-network-privatednszone/azurerm
 
-Version: 0.3.3
+Version: 0.4.3
 
 ### <a name="module_private_dns_zones"></a> [private\_dns\_zones](#module\_private\_dns\_zones)
 
 Source: Azure/avm-ptn-network-private-link-private-dns-zones/azurerm
 
-Version: 0.15.0
+Version: 0.22.1
 
 ### <a name="module_regions"></a> [regions](#module\_regions)
 

@@ -68,6 +68,16 @@ output "private_dns_resolver_resources" {
   value       = module.dns_resolver
 }
 
+output "private_dns_zone_resource_ids" {
+  description = "Resource IDs of the private DNS zones"
+  value       = { for key, value in module.private_dns_zones : key => value.private_dns_zone_resource_ids }
+}
+
+output "private_link_private_dns_zones_maps" {
+  description = "Final configuration applied to the private DNS zones and associated virtual network links."
+  value       = { for key, value in module.private_dns_zones : key => value.private_link_private_dns_zones_map }
+}
+
 output "resource_id" {
   description = "The resource ID of the virtual WAN."
   value       = local.has_regions ? module.virtual_wan[0].resource_id : null
