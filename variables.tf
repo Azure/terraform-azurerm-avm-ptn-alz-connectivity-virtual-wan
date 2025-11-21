@@ -500,6 +500,11 @@ variable "virtual_hubs" {
         virtual_network_link_name_template_override = optional(string)
         resolution_policy                           = optional(string)
       })))
+      virtual_network_link_additional_virtual_networks = optional(map(object({
+        virtual_network_resource_id                 = optional(string)
+        virtual_network_link_name_template_override = optional(string)
+        resolution_policy                           = optional(string)
+      })))
       virtual_network_link_by_zone_and_virtual_network = optional(map(map(object({
         virtual_network_resource_id = optional(string, null)
         name                        = optional(string, null)
@@ -931,6 +936,10 @@ The following top level attributes are supported:
     - `enabled` - (Optional) Should regex filtering be enabled? Default `false`.
     - `regex_filter` - (Optional) The regex filter pattern. Default `{regionName}|{regionCode}`.
   - `virtual_network_link_default_virtual_networks` - (Optional) A map of default virtual network links. Each link is an object with:
+    - `virtual_network_resource_id` - (Optional) The virtual network resource ID.
+    - `virtual_network_link_name_template_override` - (Optional) Override template for the virtual network link name.
+    - `resolution_policy` - (Optional) The resolution policy for the link.
+  - `virtual_network_link_additional_virtual_networks` - (Optional) A map of additional virtual network links. Each link is an object with:
     - `virtual_network_resource_id` - (Optional) The virtual network resource ID.
     - `virtual_network_link_name_template_override` - (Optional) Override template for the virtual network link name.
     - `resolution_policy` - (Optional) The resolution policy for the link.
