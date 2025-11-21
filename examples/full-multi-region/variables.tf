@@ -15,6 +15,12 @@ The following attributes are supported:
 DESCRIPTION
 }
 
+variable "connectivity_tags" {
+  type        = map(string)
+  default     = null
+  description = "(Optional) Tags of the connectivity resource."
+}
+
 variable "connectivity_type" {
   type        = string
   default     = "hub_and_spoke_vnet"
@@ -85,7 +91,7 @@ DESCRIPTION
 }
 
 variable "virtual_wan_virtual_hubs" {
-  type        = map(any)
+  type        = any
   default     = {}
   description = <<DESCRIPTION
 A map of virtual hubs to create.
