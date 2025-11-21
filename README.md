@@ -530,6 +530,10 @@ The following top level attributes are supported:
     - `virtual_network_resource_id` - (Optional) The virtual network resource ID.
     - `virtual_network_link_name_template_override` - (Optional) Override template for the virtual network link name.
     - `resolution_policy` - (Optional) The resolution policy for the link.
+  - `virtual_network_link_additional_virtual_networks` - (Optional) A map of additional virtual network links. Each link is an object with:
+    - `virtual_network_resource_id` - (Optional) The virtual network resource ID.
+    - `virtual_network_link_name_template_override` - (Optional) Override template for the virtual network link name.
+    - `resolution_policy` - (Optional) The resolution policy for the link.
   - `virtual_network_link_by_zone_and_virtual_network` - (Optional) A map of virtual network links by zone and virtual network. Each link is an object with:
     - `virtual_network_resource_id` - (Optional) The virtual network resource ID.
     - `name` - (Optional) The link name.
@@ -1004,6 +1008,11 @@ map(object({
         virtual_network_link_name_template_override = optional(string)
         resolution_policy                           = optional(string)
       })))
+      virtual_network_link_additional_virtual_networks = optional(map(object({
+        virtual_network_resource_id                 = optional(string)
+        virtual_network_link_name_template_override = optional(string)
+        resolution_policy                           = optional(string)
+      })))
       virtual_network_link_by_zone_and_virtual_network = optional(map(map(object({
         virtual_network_resource_id = optional(string, null)
         name                        = optional(string, null)
@@ -1272,7 +1281,7 @@ Version: 0.4.3
 
 Source: Azure/avm-ptn-network-private-link-private-dns-zones/azurerm
 
-Version: 0.22.1
+Version: 0.22.2
 
 ### <a name="module_regions"></a> [regions](#module\_regions)
 
