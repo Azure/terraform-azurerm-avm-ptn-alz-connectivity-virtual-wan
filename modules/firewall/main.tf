@@ -10,6 +10,15 @@ resource "azurerm_firewall" "fw" {
   tags                = try(each.value.tags, {})
   zones               = each.value.zones
 
+  dynamic "ip_configuration" {
+    for_each = try({ for i, o in each.value.ip_configuration : o.name => o }, {})
+
+    content {
+      name                 = ip_configuration.value.name
+      public_ip_address_id = ip_configuration.value.public_ip_address_id
+      subnet_id            = ip_configuration.value.subnet_id
+    }
+  }
   virtual_hub {
     virtual_hub_id  = each.value.virtual_hub_id
     public_ip_count = each.value.vhub_public_ip_count
