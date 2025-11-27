@@ -1,35 +1,45 @@
-resource "azurerm_firewall" "fw" {
+data "azurerm_resource_group" "fw_rg" {
+  for_each = var.firewalls != null ? var.firewalls : {}
+  name     = each.value.resource_group_name
+}
+
+resource "azapi_resource" "fw" {
+  type     = "Microsoft.Network/azureFirewalls@2024-10-01"
   for_each = var.firewalls != null ? var.firewalls : {}
 
-  location            = each.value.location
-  name                = each.value.name
-  resource_group_name = each.value.resource_group_name
-  sku_name            = each.value.sku_name
-  sku_tier            = each.value.sku_tier
-  firewall_policy_id  = each.value.firewall_policy_id
-  tags                = try(each.value.tags, {})
-  zones               = each.value.zones
-
-  dynamic "ip_configuration" {
-    for_each = try({ for i, o in each.value.ip_configuration : o.name => o }, {})
-
-    content {
-      name                 = ip_configuration.value.name
-      public_ip_address_id = ip_configuration.value.public_ip_address_id
-      subnet_id            = ip_configuration.value.subnet_id
+  location  = each.value.location
+  name      = each.value.name
+  parent_id = data.azurerm_resource_group.fw_rg[each.key].id
+  tags      = try(each.value.tags, {})
+  body = {
+    zones = each.value.zones
+    properties = {
+      sku = {
+        name = each.value.sku_name
+        tier = each.value.sku_tier
+      }
+      firewallPolicy = {
+        id = each.value.firewall_policy_id
+      }
+      virtualHub = {
+        id = each.value.virtual_hub_id
+      }
+      hubIPAddresses = {
+        publicIPs = {
+          count = each.value.vhub_public_ip_count
+        }
+      }
+      ipConfigurations = coalesce(each.value.ip_configuration, [])
     }
   }
-  virtual_hub {
-    virtual_hub_id  = each.value.virtual_hub_id
-    public_ip_count = each.value.vhub_public_ip_count
-  }
+  schema_validation_enabled = false
 }
 
 resource "azurerm_monitor_diagnostic_setting" "this" {
   for_each = local.flattened_diagnostic_settings
 
-  name                           = each.value.data.name != null ? each.value.data.name : "diag-${azurerm_firewall.fw[each.value.virtual_hub_key].name}"
-  target_resource_id             = azurerm_firewall.fw[each.value.virtual_hub_key].id
+  name                           = each.value.data.name != null ? each.value.data.name : "diag-${azapi_resource.fw[each.value.virtual_hub_key].name}"
+  target_resource_id             = azapi_resource.fw[each.value.virtual_hub_key].id
   eventhub_authorization_rule_id = each.value.data.event_hub_authorization_rule_resource_id
   eventhub_name                  = each.value.data.event_hub_name
   log_analytics_destination_type = each.value.data.log_analytics_destination_type
