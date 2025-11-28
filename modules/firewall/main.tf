@@ -24,11 +24,11 @@ resource "azapi_resource" "fw" {
       virtualHub = {
         id = each.value.virtual_hub_id
       }
-      hubIPAddresses = {
+      hubIPAddresses = (coalesce(each.value.vhub_public_ip_count, 0) > 0) ? {
         publicIPs = {
           count = each.value.vhub_public_ip_count
         }
-      }
+      } : null
       ipConfigurations = local.ip_configuration[each.key]
     }
   }
