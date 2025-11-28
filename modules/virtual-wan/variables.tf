@@ -173,33 +173,15 @@ The key is deliberately arbitrary to avoid issues with known after apply values.
 # Azure Firewall
 variable "firewalls" {
   type = map(object({
-    virtual_hub_key      = string
-    sku_name             = optional(string, "AZFW_Hub")
-    sku_tier             = string
-    name                 = string
-    zones                = optional(list(number), [1, 2, 3])
-    firewall_policy_id   = optional(string)
-    vhub_public_ip_count = optional(string)
-    ip_configuration = optional(list(object({
-      name = string
-      properties = object(
-        {
-          publicIPAddress = optional(
-            object(
-              {
-                id = string
-              }
-            )
-          )
-          subnet = optional(
-            object(
-              {
-                id = string
-              }
-          ))
-      })
-    })))
-    tags = optional(map(string))
+    virtual_hub_key       = string
+    sku_name              = optional(string, "AZFW_Hub")
+    sku_tier              = string
+    name                  = string
+    zones                 = optional(list(number), [1, 2, 3])
+    firewall_policy_id    = optional(string)
+    vhub_public_ip_count  = optional(string)
+    firewall_public_ip_id = optional(string)
+    tags                  = optional(map(string))
   }))
   default     = {}
   description = <<DESCRIPTION

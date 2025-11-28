@@ -29,17 +29,24 @@ resource "azapi_resource" "fw" {
           count = each.value.vhub_public_ip_count
         }
       }
-      ipConfigurations = coalesce(each.value.ip_configuration, [])
+      ipConfigurations = local.ip_configuration[each.key]
     }
   }
   schema_validation_enabled = false
 }
 
+data "azurerm_firewall" "fw" {
+  for_each = var.firewalls != null ? var.firewalls : {}
+
+  name                = azapi_resource.fw[each.key].name
+  resource_group_name = each.value.resource_group_name
+}
+
 resource "azurerm_monitor_diagnostic_setting" "this" {
   for_each = local.flattened_diagnostic_settings
 
-  name                           = each.value.data.name != null ? each.value.data.name : "diag-${azapi_resource.fw[each.value.virtual_hub_key].name}"
-  target_resource_id             = azapi_resource.fw[each.value.virtual_hub_key].id
+  name                           = each.value.data.name != null ? each.value.data.name : "diag-${data.azurerm_firewall.fw[each.value.virtual_hub_key].name}"
+  target_resource_id             = data.azurerm_firewall.fw[each.value.virtual_hub_key].id
   eventhub_authorization_rule_id = each.value.data.event_hub_authorization_rule_resource_id
   eventhub_name                  = each.value.data.event_hub_name
   log_analytics_destination_type = each.value.data.log_analytics_destination_type
