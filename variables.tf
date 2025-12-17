@@ -796,6 +796,7 @@ The following top level attributes are supported:
   - `zones` - (Optional) A list of availability zones for the Azure Firewall.
   - `firewall_policy_id` - (Optional) The resource ID of the Azure Firewall Policy to associate with the firewall.
   - `vhub_public_ip_count` - (Optional) The number of public IP addresses to assign to the Virtual Hub firewall.
+  - `firewall_public_ip_id` - (Optional) Resource id of existing public ip to assign to this firewall.
   - `tags` - (Optional) A map of tags to apply to the Azure Firewall.
 
 ## Azure Firewall Policy
