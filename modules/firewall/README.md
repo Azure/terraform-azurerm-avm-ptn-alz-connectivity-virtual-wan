@@ -11,7 +11,7 @@ The following requirements are needed by this module:
 
 - <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (~> 1.7)
 
-- <a name="requirement_azapi"></a> [azapi](#requirement\_azapi) (~> 2.5.0)
+- <a name="requirement_azapi"></a> [azapi](#requirement\_azapi) (~> 2.0)
 
 - <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (~> 4.0)
 
@@ -83,8 +83,8 @@ The key is deliberately arbitrary to avoid issues with known after apply values.
 - `zones`: Optional list of zones to deploy the Azure Firewall into. Defaults to `[1, 2, 3]`.
 - `firewall_policy_id`: Optional Azure Firewall Policy Resource ID to associate with the Azure Firewall.
 - `vhub_public_ip_count`: Optional number of public IP addresses to associate with the Azure Firewall.
-- `firewall_public_ip_id` - (Optional) Resource id of existing public ip to assign to this firewall.
 - `tags`: Optional tags to apply to the Azure Firewall resource.
+- `firewall_public_ip_id` - (Optional) Resource id of existing public ip to assign to this firewall.
 
 > Note: There can be multiple objects in this map, one for each Azure Firewall you wish to deploy into the Virtual WAN Virtual Hubs that have been defined in the variable `virtual_hubs`.
 
