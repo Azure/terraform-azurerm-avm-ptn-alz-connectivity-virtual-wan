@@ -11,14 +11,18 @@ The following requirements are needed by this module:
 
 - <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (~> 1.7)
 
+- <a name="requirement_azapi"></a> [azapi](#requirement\_azapi) (~> 2.5.0)
+
 - <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (~> 4.0)
 
 ## Resources
 
 The following resources are used by this module:
 
-- [azurerm_firewall.fw](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/firewall) (resource)
+- [azapi_resource.fw](https://registry.terraform.io/providers/azure/azapi/latest/docs/resources/resource) (resource)
 - [azurerm_monitor_diagnostic_setting.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/monitor_diagnostic_setting) (resource)
+- [azurerm_firewall.fw](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/firewall) (data source)
+- [azurerm_resource_group.fw_rg](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/resource_group) (data source)
 
 <!-- markdownlint-disable MD013 -->
 ## Required Inputs
@@ -79,10 +83,6 @@ The key is deliberately arbitrary to avoid issues with known after apply values.
 - `zones`: Optional list of zones to deploy the Azure Firewall into. Defaults to `[1, 2, 3]`.
 - `firewall_policy_id`: Optional Azure Firewall Policy Resource ID to associate with the Azure Firewall.
 - `vhub_public_ip_count`: Optional number of public IP addresses to associate with the Azure Firewall.
-- `ip_configuration` - (Optional) A list of ip configurations. Each element is an object with the following fields:
-  - `name` - (Required) Name of the configuration
-  - `public_ip_address_id` - The ID of the Public IP Address associated with the firewall.
-  - `subnet_id` - Reference to the subnet associated with the IP Configuration. Changing this forces a new resource to be created.
 - `tags`: Optional tags to apply to the Azure Firewall resource.
 
 > Note: There can be multiple objects in this map, one for each Azure Firewall you wish to deploy into the Virtual WAN Virtual Hubs that have been defined in the variable `virtual_hubs`.
@@ -91,21 +91,17 @@ Type:
 
 ```hcl
 map(object({
-    virtual_hub_id       = string
-    sku_name             = optional(string, "AZFW_Hub")
-    location             = string
-    resource_group_name  = string
-    sku_tier             = string
-    name                 = string
-    zones                = optional(list(number), [1, 2, 3])
-    firewall_policy_id   = optional(string)
-    vhub_public_ip_count = optional(string, null)
-    tags                 = optional(map(string))
-    ip_configuration = optional(list(object({
-      name                 = string
-      public_ip_address_id = optional(string)
-      subnet_id            = optional(string)
-    })))
+    virtual_hub_id        = string
+    sku_name              = optional(string, "AZFW_Hub")
+    location              = string
+    resource_group_name   = string
+    sku_tier              = string
+    name                  = string
+    zones                 = optional(list(number), [1, 2, 3])
+    firewall_policy_id    = optional(string)
+    vhub_public_ip_count  = optional(string, null)
+    tags                  = optional(map(string))
+    firewall_public_ip_id = optional(string)
   }))
 ```
 

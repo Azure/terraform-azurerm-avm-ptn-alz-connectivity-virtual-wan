@@ -1,16 +1,16 @@
 data "azurerm_resource_group" "fw_rg" {
   for_each = var.firewalls != null ? var.firewalls : {}
-  name     = each.value.resource_group_name
+
+  name = each.value.resource_group_name
 }
 
 resource "azapi_resource" "fw" {
-  type     = "Microsoft.Network/azureFirewalls@2024-10-01"
   for_each = var.firewalls != null ? var.firewalls : {}
 
   location  = each.value.location
   name      = each.value.name
   parent_id = data.azurerm_resource_group.fw_rg[each.key].id
-  tags      = try(each.value.tags, {})
+  type      = "Microsoft.Network/azureFirewalls@2024-10-01"
   body = {
     zones = each.value.zones
     properties = {
@@ -33,6 +33,7 @@ resource "azapi_resource" "fw" {
     }
   }
   schema_validation_enabled = false
+  tags                      = try(each.value.tags, {})
 }
 
 data "azurerm_firewall" "fw" {

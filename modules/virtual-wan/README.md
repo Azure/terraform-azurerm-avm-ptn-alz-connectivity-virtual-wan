@@ -335,10 +335,6 @@ The key is deliberately arbitrary to avoid issues with known after apply values.
 - `zones`: Optional list of zones to deploy the Azure Firewall into. Defaults to `[1, 2, 3]`.
 - `firewall_policy_id`: Optional Azure Firewall Policy Resource ID to associate with the Azure Firewall.
 - `vhub_public_ip_count`: Optional number of public IP addresses to associate with the Azure Firewall.
-- `ip_configuration` - (Optional) A list of ip configurations. Each element is an object with the following fields:
-  - `name` - (Required) Name of the configuration
-  - `public_ip_address_id` - The ID of the Public IP Address associated with the firewall.
-  - `subnet_id` - Reference to the subnet associated with the IP Configuration. Changing this forces a new resource to be created.
 - `tags`: Optional tags to apply to the Azure Firewall resource.
 
 > Note: There can be multiple objects in this map, one for each Azure Firewall you wish to deploy into the Virtual WAN Virtual Hubs that have been defined in the variable `virtual_hubs`.
@@ -347,19 +343,15 @@ Type:
 
 ```hcl
 map(object({
-    virtual_hub_key      = string
-    sku_name             = optional(string, "AZFW_Hub")
-    sku_tier             = string
-    name                 = string
-    zones                = optional(list(number), [1, 2, 3])
-    firewall_policy_id   = optional(string)
-    vhub_public_ip_count = optional(string)
-    ip_configuration = optional(list(object({
-      name                 = string
-      public_ip_address_id = optional(string)
-      subnet_id            = optional(string)
-    })))
-    tags = optional(map(string))
+    virtual_hub_key       = string
+    sku_name              = optional(string, "AZFW_Hub")
+    sku_tier              = string
+    name                  = string
+    zones                 = optional(list(number), [1, 2, 3])
+    firewall_policy_id    = optional(string)
+    vhub_public_ip_count  = optional(string)
+    firewall_public_ip_id = optional(string)
+    tags                  = optional(map(string))
   }))
 ```
 
