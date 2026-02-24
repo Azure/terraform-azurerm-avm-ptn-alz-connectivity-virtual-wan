@@ -102,6 +102,7 @@ variable "virtual_hubs" {
       sidecar_virtual_network               = optional(bool, true)
     }), {})
 
+    is_primary                = optional(bool, false)
     default_hub_address_space = optional(string)
     default_parent_id         = optional(string)
     location                  = string
@@ -593,6 +594,7 @@ The following top level attributes are supported:
   - `private_dns_zones` - (Optional) Should private DNS zones be created? Default `true`.
   - `private_dns_resolver` - (Optional) Should the private DNS resolver be created? Default `true`.
   - `sidecar_virtual_network` - (Optional) Should the sidecar virtual network be created? Default `true`.
+- `is_primary` - (Optional) Marks this hub as the primary region. The primary region is used to determine the default location for resources like the Virtual WAN, DDoS Protection Plan, and is used to determine which region hosts the full set of private DNS zones. Only one hub should be marked as primary. If not specified, the first hub key in alphabetical order is used as the primary region. Default `false`.
 - `default_hub_address_space` - (Optional) The default address space to use if not specified in the hub. This defaults to `10.0.0.0/16` and increments to the next /16 for each region if not supplied.
 - `default_parent_id` - (Optional) The default parent resource group ID to use if not specified in hub or individual sections.
 - `location` - (Required) The Azure location where the Virtual WAN hub resources should be created.
@@ -1009,6 +1011,11 @@ The following top level attributes are supported:
   - `tags` - (Optional) A map of tags to apply to the DNS resolver.
 
 DESCRIPTION
+
+  validation {
+    condition     = length([for k, v in var.virtual_hubs : k if v.is_primary]) <= 1
+    error_message = "Only one virtual hub can be marked as `is_primary = true`."
+  }
 }
 
 variable "virtual_wan_settings" {
