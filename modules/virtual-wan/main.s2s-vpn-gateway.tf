@@ -40,6 +40,7 @@ module "vpn_site_connection" {
           bandwidth_mbps                        = try(link.bandwidth_mbps, null)
           bgp_enabled                           = try(link.bgp_enabled, null)
           connection_mode                       = try(link.connection_mode, null)
+          dpd_timeout_seconds                   = try(link.dpd_timeout_seconds, null)
           egress_nat_rule_ids                   = try(link.egress_nat_rule_ids, null)
           ingress_nat_rule_ids                  = try(link.ingress_nat_rule_ids, null)
           ipsec_policy                          = try(link.ipsec_policy, null)
