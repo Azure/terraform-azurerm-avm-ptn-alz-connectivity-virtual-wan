@@ -44,7 +44,16 @@ output "p2s_vpn_gw_resource_names" {
 
 output "resource" {
   description = "The full resource outputs."
-  value       = merge(azurerm_virtual_wan.virtual_wan, module.virtual_hubs)
+  value = merge(
+    local.create_virtual_wan ? jsondecode(jsonencode(azurerm_virtual_wan.virtual_wan[0])) : {
+      id                  = local.effective_virtual_wan_id
+      name                = local.effective_virtual_wan_name
+      location            = var.location
+      resource_group_name = local.resource_group_name
+      type                = var.type
+    },
+    module.virtual_hubs
+  )
 }
 
 output "resource_group_name" {
@@ -64,7 +73,7 @@ output "s2s_vpn_gw_id" {
 
 output "virtual_wan_id" {
   description = "Virtual WAN ID"
-  value       = azurerm_virtual_wan.virtual_wan != null ? azurerm_virtual_wan.virtual_wan.id : null
+  value       = local.effective_virtual_wan_id
 }
 
 output "vpn_gateway_resource_ids" {

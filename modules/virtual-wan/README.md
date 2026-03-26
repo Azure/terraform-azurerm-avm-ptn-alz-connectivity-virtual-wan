@@ -631,6 +631,14 @@ map(object({
 
 Default: `{}`
 
+### <a name="input_virtual_wan_id"></a> [virtual\_wan\_id](#input\_virtual\_wan\_id)
+
+Description: (Optional) Resource ID of an existing Virtual WAN. If set, the module will not create a new Virtual WAN and will attach hubs/gateways to this vWAN.
+
+Type: `string`
+
+Default: `null`
+
 ### <a name="input_virtual_wan_tags"></a> [virtual\_wan\_tags](#input\_virtual\_wan\_tags)
 
 Description:   (Optional) Tags to apply to the Virtual WAN resource only.

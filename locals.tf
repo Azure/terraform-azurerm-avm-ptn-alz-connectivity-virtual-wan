@@ -11,6 +11,7 @@ locals {
     tags                = coalesce(virtual_hub_value.hub.tags, var.tags, {})
   }) }
   virtual_wan = local.has_regions ? {
+    id                                = try(var.virtual_wan_settings.virtual_wan.id, null)
     name                              = coalesce(var.virtual_wan_settings.virtual_wan.name, local.default_names[local.primary_region_key].virtual_wan_name)
     location                          = coalesce(var.virtual_wan_settings.virtual_wan.location, local.primary_location)
     resource_group_name               = coalesce(var.virtual_wan_settings.virtual_wan.resource_group_name, local.hub_virtual_networks_resource_group_names[local.primary_region_key])
