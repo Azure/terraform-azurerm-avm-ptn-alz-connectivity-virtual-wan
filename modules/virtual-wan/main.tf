@@ -9,7 +9,7 @@ resource "azurerm_resource_group" "rg" {
 locals {
   create_virtual_wan         = var.virtual_wan_id == null
   effective_virtual_wan_id   = local.create_virtual_wan ? azurerm_virtual_wan.virtual_wan[0].id : var.virtual_wan_id
-  effective_virtual_wan_name = local.create_virtual_wan ? azurerm_virtual_wan.virtual_wan[0].name : element(reverse(split("/", var.virtual_wan_id)), 0)
+  effective_virtual_wan_name = local.create_virtual_wan ? azurerm_virtual_wan.virtual_wan[0].name : provider::azapi::parse_resource_id("Microsoft.Network/virtualWans", var.virtual_wan_id).name
   resource_group_name        = var.create_resource_group ? azurerm_resource_group.rg[0].name : var.resource_group_name
 }
 

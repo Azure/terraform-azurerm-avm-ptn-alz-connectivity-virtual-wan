@@ -1063,4 +1063,14 @@ The shared settings for the hub and spoke networks. This is where global resourc
   - `tags` - (Optional) A map of tags to apply to the DDoS protection plan resource.
 
 DESCRIPTION
+
+  validation {
+    condition = (
+      var.virtual_wan_settings == null
+      || var.virtual_wan_settings.virtual_wan == null
+      || var.virtual_wan_settings.virtual_wan.id == null
+      || can(provider::azapi::parse_resource_id("Microsoft.Network/virtualWans", var.virtual_wan_settings.virtual_wan.id).name)
+    )
+    error_message = "If provided, virtual_wan_settings.virtual_wan.id must be a valid Virtual WAN resource ID of the form /subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.Network/virtualWans/<name>."
+  }
 }
