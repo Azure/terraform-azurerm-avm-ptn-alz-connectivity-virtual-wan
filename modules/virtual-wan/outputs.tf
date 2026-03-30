@@ -42,11 +42,6 @@ output "p2s_vpn_gw_resource_names" {
   value       = var.p2s_gateways != null ? { for key, value in azurerm_point_to_site_vpn_gateway.p2s_gateway : key => value.id } : null
 }
 
-output "resource" {
-  description = "The full resource outputs."
-  value       = merge(azurerm_virtual_wan.virtual_wan, module.virtual_hubs)
-}
-
 output "resource_group_name" {
   description = "Resource Group Name"
   value       = local.resource_group_name
@@ -60,11 +55,6 @@ output "s2s_vpn_gw" {
 output "s2s_vpn_gw_id" {
   description = "S2S VPN Gateway ID"
   value       = var.vpn_gateways != null ? [for gw in module.vpn_gateway.resource_object : gw.id] : null
-}
-
-output "virtual_wan_id" {
-  description = "Virtual WAN ID"
-  value       = azurerm_virtual_wan.virtual_wan != null ? azurerm_virtual_wan.virtual_wan.id : null
 }
 
 output "vpn_gateway_resource_ids" {
