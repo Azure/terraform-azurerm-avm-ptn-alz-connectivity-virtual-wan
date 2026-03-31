@@ -11,7 +11,8 @@ variable "vpn_site_connection" {
       vpn_site_link_id = string
       bandwidth_mbps   = optional(number)
       bgp_enabled      = optional(bool)
-      connection_mode  = optional(string)
+      connection_mode      = optional(string)
+      dpd_timeout_seconds  = optional(number)
 
       ipsec_policy = optional(object({
         dh_group                 = string

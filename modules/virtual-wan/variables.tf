@@ -554,6 +554,7 @@ variable "vpn_site_connections" {
       bandwidth_mbps       = optional(number)
       bgp_enabled          = optional(bool)
       connection_mode      = optional(string, "Default")
+      dpd_timeout_seconds  = optional(number)
 
       ipsec_policy = optional(object({
         dh_group                 = string
