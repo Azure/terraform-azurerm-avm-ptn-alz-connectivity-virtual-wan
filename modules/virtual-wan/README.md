@@ -633,6 +633,14 @@ map(object({
 
 Default: `{}`
 
+### <a name="input_virtual_wan_id"></a> [virtual\_wan\_id](#input\_virtual\_wan\_id)
+
+Description: (Optional) Resource ID of an existing Virtual WAN. If set, the module will not create a new Virtual WAN and will attach hubs/gateways to this vWAN.
+
+Type: `string`
+
+Default: `null`
+
 ### <a name="input_virtual_wan_tags"></a> [virtual\_wan\_tags](#input\_virtual\_wan\_tags)
 
 Description:   (Optional) Tags to apply to the Virtual WAN resource only.
@@ -931,10 +939,6 @@ Description: A map of point to site VPN gateway names with the map keys of the `
 
 Description: A map of point to site VPN gateway names with the map keys of the `p2s_gateways` variable.
 
-### <a name="output_resource"></a> [resource](#output\_resource)
-
-Description: The full resource outputs.
-
 ### <a name="output_resource_group_name"></a> [resource\_group\_name](#output\_resource\_group\_name)
 
 Description: Resource Group Name
@@ -958,10 +962,6 @@ Description: A map of Azure Virtual Hub resource IDs with the map keys of the `v
 ### <a name="output_virtual_hub_resource_names"></a> [virtual\_hub\_resource\_names](#output\_virtual\_hub\_resource\_names)
 
 Description: A map of Azure Virtual Hub resource names with the map keys of the `virtual_hubs` variable.
-
-### <a name="output_virtual_wan_id"></a> [virtual\_wan\_id](#output\_virtual\_wan\_id)
-
-Description: Virtual WAN ID
 
 ### <a name="output_vpn_gateway_resource_ids"></a> [vpn\_gateway\_resource\_ids](#output\_vpn\_gateway\_resource\_ids)
 

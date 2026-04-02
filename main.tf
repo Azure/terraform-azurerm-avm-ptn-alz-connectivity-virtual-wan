@@ -45,6 +45,7 @@ module "virtual_wan" {
   type                                  = local.virtual_wan.type
   virtual_hubs                          = local.virtual_hubs
   virtual_network_connections           = local.virtual_network_connections
+  virtual_wan_id                        = local.virtual_wan.id
   virtual_wan_tags                      = local.virtual_wan.tags
   vpn_gateways                          = local.virtual_network_gateways_vpn
   vpn_site_connections                  = local.vpn_site_connections
@@ -90,7 +91,7 @@ module "dns_resolver" {
 
 module "private_dns_zones" {
   source   = "Azure/avm-ptn-network-private-link-private-dns-zones/azurerm"
-  version  = "0.22.2"
+  version  = "0.23.1"
   for_each = local.private_dns_zones
 
   location                                                   = each.value.location

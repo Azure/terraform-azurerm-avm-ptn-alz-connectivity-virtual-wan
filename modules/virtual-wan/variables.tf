@@ -481,6 +481,12 @@ variable "virtual_network_connections" {
   nullable    = false
 }
 
+variable "virtual_wan_id" {
+  type        = string
+  default     = null
+  description = "(Optional) Resource ID of an existing Virtual WAN. If set, the module will not create a new Virtual WAN and will attach hubs/gateways to this vWAN."
+}
+
 variable "virtual_wan_tags" {
   type        = map(string)
   default     = {}
