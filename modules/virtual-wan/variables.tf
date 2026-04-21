@@ -224,6 +224,25 @@ variable "office365_local_breakout_category" {
   }
 }
 
+variable "retry" {
+  type = object({
+    error_message_regex  = list(string)
+    interval_seconds     = number
+    max_interval_seconds = number
+  })
+  default = {
+    error_message_regex = [
+      "AnotherOperationInProgress",
+      "Conflict",
+      "ReferencedResourceNotProvisioned",
+      "UpdateGatewayInProgress"
+    ]
+    interval_seconds     = 10
+    max_interval_seconds = 180
+  }
+  description = "Retry configuration for the resource operations"
+}
+
 variable "p2s_gateway_vpn_server_configurations" {
   type = map(object({
     name                     = string

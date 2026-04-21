@@ -36,6 +36,7 @@ module "er_connections" {
       routing_weight                       = try(conn.routing_weight, null)
     }
   }
+  retry = var.retry
 }
 
 moved {
