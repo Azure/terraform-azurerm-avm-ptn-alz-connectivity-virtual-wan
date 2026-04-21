@@ -40,6 +40,7 @@ module "virtual_wan" {
   office365_local_breakout_category     = local.virtual_wan.office365_local_breakout_category
   p2s_gateway_vpn_server_configurations = local.p2s_gateway_vpn_server_configurations
   p2s_gateways                          = local.p2s_gateways
+  retry                                 = var.retry
   routing_intents                       = local.routing_intents
   tags                                  = var.tags
   type                                  = local.virtual_wan.type
