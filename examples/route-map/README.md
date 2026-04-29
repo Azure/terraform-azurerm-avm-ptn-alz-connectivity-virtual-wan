@@ -40,7 +40,7 @@ locals {
   }
   resource_group = {
     name     = "rg-hub-routemap-${random_string.suffix.result}"
-    location = "northeurope"
+    location = "centralus"
   }
   # Three route map definitions, each demonstrating a different rule pattern.
   # None are attached to any connection (associated_inbound/outbound_connections omitted).
@@ -74,7 +74,7 @@ locals {
 
     drop_prefixes = {
       name           = "rtmap-drop-prefixes-${random_string.suffix.result}"
-      virtual_hub_id = module.vwan.virtual_hub_resource_ids["primary"]
+      virtual_hub_id = module.vwan.virtual_hub_resource_ids["secondary1"]
       rules = [
         {
           name                 = "drop-rfc1918-10"
@@ -111,7 +111,7 @@ locals {
 
     replace_aspath = {
       name           = "rtmap-replace-aspath-${random_string.suffix.result}"
-      virtual_hub_id = module.vwan.virtual_hub_resource_ids["primary"]
+      virtual_hub_id = module.vwan.virtual_hub_resource_ids["secondary2"]
       rules = [
         {
           name                 = "prepend-aspath-for-community"
@@ -127,7 +127,7 @@ locals {
               type = "Replace"
               parameters = [
                 {
-                  as_path = ["65001", "65001", "65001"]
+                  as_path = ["22334", "22334", "22334"]
                 }
               ]
             }
@@ -136,6 +136,8 @@ locals {
       ]
     }
   }
+  secondary1_location = "eastus2"
+  secondary2_location = "westus2"
 }
 
 module "resource_group" {
@@ -159,6 +161,34 @@ module "vwan" {
   virtual_hubs = {
     primary = {
       location          = local.resource_group.location
+      default_parent_id = module.resource_group.resource_id
+      enabled_resources = {
+        firewall                              = false
+        firewall_policy                       = false
+        bastion                               = false
+        virtual_network_gateway_express_route = false
+        virtual_network_gateway_vpn           = false
+        private_dns_zones                     = false
+        private_dns_resolver                  = false
+        sidecar_virtual_network               = false
+      }
+    },
+    secondary1 = {
+      location          = local.secondary1_location
+      default_parent_id = module.resource_group.resource_id
+      enabled_resources = {
+        firewall                              = false
+        firewall_policy                       = false
+        bastion                               = false
+        virtual_network_gateway_express_route = false
+        virtual_network_gateway_vpn           = false
+        private_dns_zones                     = false
+        private_dns_resolver                  = false
+        sidecar_virtual_network               = false
+      }
+    },
+    secondary2 = {
+      location          = local.secondary2_location
       default_parent_id = module.resource_group.resource_id
       enabled_resources = {
         firewall                              = false
