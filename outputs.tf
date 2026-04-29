@@ -83,6 +83,16 @@ output "resource_id" {
   value       = local.has_regions ? module.virtual_wan[0].resource_id : null
 }
 
+output "route_map_resource_ids_by_name" {
+  description = "A map of route map name to resource ID."
+  value       = { for key, value in module.route_map : value.name => value.resource_id }
+}
+
+output "route_map_resources" {
+  description = "The route map resource objects, grouped by the arbitrary map key supplied in the route_maps variable."
+  value       = { for key, value in module.route_map : key => value.resource }
+}
+
 output "sidecar_virtual_network_resource_ids" {
   description = "The resource IDs of the side car virtual networks associated with the virtual WAN, grouped by hub key."
   value       = { for key, value in module.virtual_network_side_car : key => value.resource_id }

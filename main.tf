@@ -182,3 +182,14 @@ module "bastion_host" {
   tunneling_enabled      = each.value.bastion_settings.tunneling_enabled
   zones                  = each.value.zones
 }
+
+module "route_map" {
+  source   = "./modules/route-map"
+  for_each = var.route_maps
+
+  name                            = each.value.name
+  virtual_hub_id                  = each.value.virtual_hub_id
+  associated_inbound_connections  = each.value.associated_inbound_connections
+  associated_outbound_connections = each.value.associated_outbound_connections
+  rules                           = each.value.rules
+}
