@@ -45,6 +45,32 @@ variable "allow_branch_to_branch_traffic" {
   DESCRIPTION
 }
 
+variable "bgp_connections" {
+  type = map(object({
+    name                          = string
+    virtual_hub_key               = string
+    peer_asn                      = number
+    peer_ip                       = string
+    virtual_network_connection_id = optional(string)
+  }))
+  default     = {}
+  description = <<DESCRIPTION
+Map of objects for BGP connections to create on the Virtual Hub's built-in router. This is used to peer Network Virtual Appliances (NVAs) such as Palo Alto, FortiGate or Cisco SD-WAN deployed in spoke virtual networks directly with the Virtual Hub.
+
+The key is deliberately arbitrary to avoid issues with known after apply values. The value is an object, of which there can be multiple in the map:
+
+- `name`: Name for the BGP connection.
+- `virtual_hub_key`: The arbitrary key specified in the map of objects variable called `virtual_hubs` for the object specifying the Virtual Hub on which the BGP connection should be created.
+- `peer_asn`: The peer ASN of the NVA. Must not be `65515` (the Azure-assigned vHub ASN) or any other reserved value documented for Virtual WAN.
+- `peer_ip`: The peer IP address of the NVA.
+- `virtual_network_connection_id`: Optional resource ID of the Virtual Network Connection (`azurerm_virtual_hub_connection`) for the spoke virtual network hosting the NVA.
+
+> Note: There can be multiple objects in this map, one for each BGP peer connection you wish to create on the Virtual WAN Virtual Hubs that have been defined in the variable `virtual_hubs`.
+
+  DESCRIPTION
+  nullable    = false
+}
+
 variable "create_resource_group" {
   type        = bool
   default     = false

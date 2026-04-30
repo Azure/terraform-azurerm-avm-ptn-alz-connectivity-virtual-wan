@@ -66,3 +66,8 @@ output "vpn_gateway_resource_names" {
   description = "A map of Azure VPN Gateway resource names with the map keys of the `vpn_gateways` variable."
   value       = var.vpn_gateways != null ? { for key, value in module.vpn_gateway.resource_object : key => value.id } : null
 }
+
+output "virtual_hub_bgp_connection_resource_ids" {
+  description = "A map of Virtual Hub BGP connection resource IDs with the map keys of the `bgp_connections` map of each entry in the `virtual_hubs` variable, prefixed with the virtual hub key (i.e. `<hub_key>-<bgp_connection_key>`)."
+  value       = { for key, value in azurerm_virtual_hub_bgp_connection.bgp_connection : key => value.id }
+}

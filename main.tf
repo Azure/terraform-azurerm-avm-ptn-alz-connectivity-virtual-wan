@@ -32,6 +32,7 @@ module "virtual_wan" {
   resource_group_name                   = local.virtual_wan.resource_group_name
   virtual_wan_name                      = local.virtual_wan.name
   allow_branch_to_branch_traffic        = local.virtual_wan.allow_branch_to_branch_traffic
+  bgp_connections                       = local.bgp_connections
   disable_vpn_encryption                = local.virtual_wan.disable_vpn_encryption
   enable_telemetry                      = var.enable_telemetry
   er_circuit_connections                = local.express_route_circuit_connections
