@@ -93,6 +93,11 @@ output "sidecar_virtual_network_resources" {
   value       = module.virtual_network_side_car
 }
 
+output "virtual_hub_bgp_connection_resource_ids" {
+  description = "The resource IDs of the Virtual Hub BGP connections (NVA peers), keyed by `<virtual_hub_key>-<bgp_connection_key>`."
+  value       = local.has_regions ? module.virtual_wan[0].virtual_hub_bgp_connection_resource_ids : null
+}
+
 output "virtual_hub_resource_ids" {
   description = "The resource IDs of the virtual hubs associated with the virtual WAN."
   value       = local.has_regions ? module.virtual_wan[0].virtual_hub_resource_ids : null
