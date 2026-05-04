@@ -127,6 +127,7 @@ The following resources are used by this module:
 
 - [azurerm_point_to_site_vpn_gateway.p2s_gateway](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/point_to_site_vpn_gateway) (resource)
 - [azurerm_resource_group.rg](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) (resource)
+- [azurerm_virtual_hub_bgp_connection.bgp_connection](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_hub_bgp_connection) (resource)
 - [azurerm_virtual_hub_route_table.virtual_hub_route_table](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_hub_route_table) (resource)
 - [azurerm_virtual_hub_routing_intent.routing_intent](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_hub_routing_intent) (resource)
 - [azurerm_virtual_wan.virtual_wan](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_wan) (resource)
@@ -178,6 +179,34 @@ Description:   Boolean toggle to toggle support for VWAN branch to branch traffi
 Type: `bool`
 
 Default: `true`
+
+### <a name="input_bgp_connections"></a> [bgp\_connections](#input\_bgp\_connections)
+
+Description: Map of objects for BGP connections to create on the Virtual Hub's built-in router. This is used to peer Network Virtual Appliances (NVAs) such as Palo Alto, FortiGate or Cisco SD-WAN deployed in spoke virtual networks directly with the Virtual Hub.
+
+The key is deliberately arbitrary to avoid issues with known after apply values. The value is an object, of which there can be multiple in the map:
+
+- `name`: Name for the BGP connection.
+- `virtual_hub_key`: The arbitrary key specified in the map of objects variable called `virtual_hubs` for the object specifying the Virtual Hub on which the BGP connection should be created.
+- `peer_asn`: The peer ASN of the NVA. Must not be `65515` (the Azure-assigned vHub ASN) or any other reserved value documented for Virtual WAN.
+- `peer_ip`: The peer IP address of the NVA.
+- `virtual_network_connection_id`: Optional resource ID of the Virtual Network Connection (`azurerm_virtual_hub_connection`) for the spoke virtual network hosting the NVA.
+
+> Note: There can be multiple objects in this map, one for each BGP peer connection you wish to create on the Virtual WAN Virtual Hubs that have been defined in the variable `virtual_hubs`.
+
+Type:
+
+```hcl
+map(object({
+    name                          = string
+    virtual_hub_key               = string
+    peer_asn                      = number
+    peer_ip                       = string
+    virtual_network_connection_id = optional(string)
+  }))
+```
+
+Default: `{}`
 
 ### <a name="input_create_resource_group"></a> [create\_resource\_group](#input\_create\_resource\_group)
 
@@ -954,6 +983,10 @@ Description: S2S VPN Gateway Objects
 ### <a name="output_s2s_vpn_gw_id"></a> [s2s\_vpn\_gw\_id](#output\_s2s\_vpn\_gw\_id)
 
 Description: S2S VPN Gateway ID
+
+### <a name="output_virtual_hub_bgp_connection_resource_ids"></a> [virtual\_hub\_bgp\_connection\_resource\_ids](#output\_virtual\_hub\_bgp\_connection\_resource\_ids)
+
+Description: A map of Virtual Hub BGP connection resource IDs with the map keys of the `bgp_connections` map of each entry in the `virtual_hubs` variable, prefixed with the virtual hub key (i.e. `<hub_key>-<bgp_connection_key>`).
 
 ### <a name="output_virtual_hub_resource_ids"></a> [virtual\_hub\_resource\_ids](#output\_virtual\_hub\_resource\_ids)
 

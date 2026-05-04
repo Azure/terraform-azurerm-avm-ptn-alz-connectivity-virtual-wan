@@ -188,6 +188,7 @@ The following top level attributes are supported:
 - `hub` - (Optional) An object defining the Virtual WAN hub settings.
 - `virtual_network_connections` - (Optional) A map of Virtual Network connections to create.
 - `express_route_circuit_connections` - (Optional) A map of ExpressRoute circuit connections
+- `bgp_connections` - (Optional) A map of BGP connections to create on the Virtual Hub router (for direct NVA peering).
 - `p2s_gateway_vpn_server_configurations` - (Optional) A map of Point-to-Site VPN server configurations.
 - `p2s_gateways` - (Optional) A map of Point-to-Site
 - `routing_intents` - (Optional) A map of routing intents to create.
@@ -238,6 +239,14 @@ The following top level attributes are supported:
   - `express_route_gateway_bypass_enabled` - (Optional) Should ExpressRoute gateway bypass be enabled?
   - `routing` - (Optional) An object with the same fields as virtual\_network\_connections routing.
   - `routing_weight` - (Optional) The routing weight for the connection.
+
+## BGP Connections
+
+- `bgp_connections` - (Optional) A map of BGP connections to create on the Virtual Hub's built-in router. This is the documented Microsoft pattern for peering Network Virtual Appliances (NVAs) such as Palo Alto, FortiGate or Cisco SD-WAN deployed in spoke virtual networks directly with the Virtual Hub. Each connection is an object with the following fields:
+  - `name` - (Required) The name of the BGP connection.
+  - `peer_asn` - (Required) The peer ASN of the NVA. Must not be `65515` (the Azure-assigned vHub ASN) or any other reserved value documented for Virtual WAN.
+  - `peer_ip` - (Required) The peer IP address of the NVA.
+  - `virtual_network_connection_id` - (Optional) The resource ID of the Virtual Network Connection (`azurerm_virtual_hub_connection`) for the spoke virtual network hosting the NVA. This is recommended when the NVA is reachable through a hub virtual network connection.
 
 ## Point-to-Site Gateway VPN Server Configurations
 
@@ -662,6 +671,13 @@ map(object({
         outbound_route_map_id = optional(string)
       }))
       routing_weight = optional(number)
+    })), {})
+
+    bgp_connections = optional(map(object({
+      name                          = string
+      peer_asn                      = number
+      peer_ip                       = string
+      virtual_network_connection_id = optional(string)
     })), {})
 
     p2s_gateway_vpn_server_configurations = optional(map(object({
@@ -1236,6 +1252,10 @@ Description: The resource IDs of the side car virtual networks associated with t
 ### <a name="output_sidecar_virtual_network_resources"></a> [sidecar\_virtual\_network\_resources](#output\_sidecar\_virtual\_network\_resources)
 
 Description: The side car virtual networks associated with the virtual WAN, grouped by hub key.
+
+### <a name="output_virtual_hub_bgp_connection_resource_ids"></a> [virtual\_hub\_bgp\_connection\_resource\_ids](#output\_virtual\_hub\_bgp\_connection\_resource\_ids)
+
+Description: The resource IDs of the Virtual Hub BGP connections (NVA peers), keyed by `<virtual_hub_key>-<bgp_connection_key>`.
 
 ### <a name="output_virtual_hub_resource_ids"></a> [virtual\_hub\_resource\_ids](#output\_virtual\_hub\_resource\_ids)
 
