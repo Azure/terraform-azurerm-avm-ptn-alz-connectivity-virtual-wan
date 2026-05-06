@@ -147,7 +147,7 @@ Default: `{}`
 Description: (Optional) A map of route maps to create. The key is an arbitrary identifier. Each value is an object with the following fields:
 
 - `name` - (Required) The name of the route map.
-- `virtual_hub_id` - (Required) The resource ID of the virtual hub to create the route map in.
+- `virtual_hub_key` - (Required) The key of the virtual hub in `virtual_hubs`. The module resolves the corresponding resource ID automatically.
 - `associated_inbound_connections` - (Optional) List of connection resource IDs associated for inbound traffic. Default `[]`.
 - `associated_outbound_connections` - (Optional) List of connection resource IDs associated for outbound traffic. Default `[]`.
 - `rules` - (Optional) List of route map rules to apply. Default `[]`. Each rule is an object with:
@@ -170,7 +170,7 @@ Type:
 ```hcl
 map(object({
     name                            = string
-    virtual_hub_id                  = string
+    virtual_hub_key                 = string
     associated_inbound_connections  = optional(list(string), [])
     associated_outbound_connections = optional(list(string), [])
     rules = optional(list(object({

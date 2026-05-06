@@ -188,7 +188,7 @@ module "route_map" {
   for_each = var.route_maps
 
   name                            = each.value.name
-  virtual_hub_id                  = each.value.virtual_hub_id
+  virtual_hub_id                  = module.virtual_wan[0].virtual_hub_resource_ids[each.value.virtual_hub_key]
   associated_inbound_connections  = each.value.associated_inbound_connections
   associated_outbound_connections = each.value.associated_outbound_connections
   rules                           = each.value.rules

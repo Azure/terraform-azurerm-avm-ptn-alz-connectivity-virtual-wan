@@ -46,8 +46,8 @@ locals {
   # None are attached to any connection (associated_inbound/outbound_connections omitted).
   route_maps = {
     add_community = {
-      name           = "rtmap-add-community-${random_string.suffix.result}"
-      virtual_hub_id = module.vwan.virtual_hub_resource_ids["primary"]
+      name            = "rtmap-add-community-${random_string.suffix.result}"
+      virtual_hub_key = "primary"
       rules = [
         {
           name                 = "add-community-for-spoke-prefixes"
@@ -73,8 +73,8 @@ locals {
     }
 
     drop_prefixes = {
-      name           = "rtmap-drop-prefixes-${random_string.suffix.result}"
-      virtual_hub_id = module.vwan.virtual_hub_resource_ids["secondary1"]
+      name            = "rtmap-drop-prefixes-${random_string.suffix.result}"
+      virtual_hub_key = "secondary1"
       rules = [
         {
           name                 = "drop-rfc1918-10"
@@ -110,8 +110,8 @@ locals {
     }
 
     replace_aspath = {
-      name           = "rtmap-replace-aspath-${random_string.suffix.result}"
-      virtual_hub_id = module.vwan.virtual_hub_resource_ids["secondary2"]
+      name            = "rtmap-replace-aspath-${random_string.suffix.result}"
+      virtual_hub_key = "secondary2"
       rules = [
         {
           name                 = "prepend-aspath-for-community"
