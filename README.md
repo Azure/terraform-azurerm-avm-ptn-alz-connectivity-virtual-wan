@@ -142,6 +142,60 @@ object({
 
 Default: `{}`
 
+### <a name="input_route_maps"></a> [route\_maps](#input\_route\_maps)
+
+Description: (Optional) A map of route maps to create. The key is an arbitrary identifier. Each value is an object with the following fields:
+
+- `name` - (Required) The name of the route map.
+- `virtual_hub_key` - (Required) The key of the virtual hub in `virtual_hubs`. The module resolves the corresponding resource ID automatically.
+- `associated_inbound_connections` - (Optional) List of connection resource IDs associated for inbound traffic. Default `[]`.
+- `associated_outbound_connections` - (Optional) List of connection resource IDs associated for outbound traffic. Default `[]`.
+- `rules` - (Optional) List of route map rules to apply. Default `[]`. Each rule is an object with:
+  - `name` - (Required) The unique name for the rule.
+  - `next_step_if_matched` - (Optional) Next step after rule is evaluated. Supported values are `Continue`, `Terminate`, `Unknown`. Default `Unknown`.
+  - `actions` - (Optional) List of actions to apply on a match:
+    - `type` - (Required) Type of action. Supported values are `Add`, `Drop`, `Remove`, `Replace`, `Unknown`.
+    - `parameters` - (Optional) List of parameters for the action:
+      - `as_path` - (Optional) List of AS paths.
+      - `community` - (Optional) List of BGP communities.
+      - `route_prefix` - (Optional) List of route prefixes.
+  - `match_criteria` - (Optional) List of criteria to match traffic against:
+    - `match_condition` - (Required) Condition to apply. Supported values are `Contains`, `Equals`, `NotContains`, `NotEquals`, `Unknown`.
+    - `as_path` - (Optional) List of AS paths to match.
+    - `community` - (Optional) List of BGP communities to match.
+    - `route_prefix` - (Optional) List of route prefixes to match.
+
+Type:
+
+```hcl
+map(object({
+    name                            = string
+    virtual_hub_key                 = string
+    associated_inbound_connections  = optional(list(string), [])
+    associated_outbound_connections = optional(list(string), [])
+    rules = optional(list(object({
+      name                 = string
+      next_step_if_matched = optional(string, "Unknown")
+      actions = optional(list(object({
+        type = string
+        parameters = optional(list(object({
+          as_path      = optional(list(string), [])
+          community    = optional(list(string), [])
+          route_prefix = optional(list(string), [])
+        })), [])
+      })), [])
+      match_criteria = optional(list(object({
+        match_condition = string
+        as_path         = optional(list(string), [])
+        community       = optional(list(string), [])
+        route_prefix    = optional(list(string), [])
+      })), [])
+    })), [])
+  }))
+```
+
+Default: `{}`
+
 ### <a name="input_tags"></a> [tags](#input\_tags)
 
 Description: (Optional) Tags of the resource.
@@ -1243,6 +1297,14 @@ Description: Final configuration applied to the private DNS zones and associated
 
 Description: The resource ID of the virtual WAN.
 
+### <a name="output_route_map_resource_ids_by_name"></a> [route\_map\_resource\_ids\_by\_name](#output\_route\_map\_resource\_ids\_by\_name)
+
+Description: A map of route map name to resource ID.
+
+### <a name="output_route_map_resources"></a> [route\_map\_resources](#output\_route\_map\_resources)
+
+Description: The route map resource objects, grouped by the arbitrary map key supplied in the route\_maps variable.
+
 ### <a name="output_sidecar_virtual_network_resource_ids"></a> [sidecar\_virtual\_network\_resource\_ids](#output\_sidecar\_virtual\_network\_resource\_ids)
 
 Description: The resource IDs of the side car virtual networks associated with the virtual WAN, grouped by hub key.
@@ -1314,6 +1376,12 @@ Version: 0.23.1
 Source: Azure/avm-utl-regions/azurerm
 
 Version: 0.5.2
+
+### <a name="module_route_map"></a> [route\_map](#module\_route\_map)
+
+Source: ./modules/route-map
+
+Version:
 
 ### <a name="module_virtual_network_ip_prefixes"></a> [virtual\_network\_ip\_prefixes](#module\_virtual\_network\_ip\_prefixes)
 
