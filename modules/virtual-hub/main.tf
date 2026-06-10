@@ -11,4 +11,5 @@ resource "azurerm_virtual_hub" "virtual_hub" {
   tags                                   = each.value.tags
   virtual_router_auto_scale_min_capacity = each.value.virtual_router_auto_scale_min_capacity
   virtual_wan_id                         = each.value.virtual_wan_id
+  branch_to_branch_traffic_enabled       = each.value.branch_to_branch_traffic_enabled
 }
