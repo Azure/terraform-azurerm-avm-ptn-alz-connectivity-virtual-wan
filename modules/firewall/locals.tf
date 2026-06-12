@@ -15,4 +15,18 @@ locals {
       diagnostic_setting_key = v.diagnostic_setting_key
     }
   }
+  ip_configuration = {
+    for k, v in(var.firewalls != null ? var.firewalls : {}) :
+    k => (length(coalesce(v.firewall_public_ip_id, "")) > 0) ?
+    [
+      {
+        name = "assigned"
+        properties = {
+          publicIPAddress = {
+            id = v.firewall_public_ip_id
+          }
+        }
+      }
+    ] : []
+  }
 }
