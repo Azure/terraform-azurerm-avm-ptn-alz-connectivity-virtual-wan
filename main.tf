@@ -60,7 +60,7 @@ moved {
 
 module "virtual_network_side_car" {
   source   = "Azure/avm-res-network-virtualnetwork/azurerm"
-  version  = "0.15.0"
+  version  = "0.17.1"
   for_each = local.sidecar_virtual_networks
 
   location             = each.value.location
