@@ -1,6 +1,6 @@
 module "firewall_policy" {
   source   = "Azure/avm-res-network-firewallpolicy/azurerm"
-  version  = "0.3.3"
+  version  = "0.3.4"
   for_each = local.firewall_policies
 
   location                                          = each.value.location
