@@ -45,7 +45,7 @@ locals {
 
 module "resource_groups" {
   source   = "Azure/avm-res-resources-resourcegroup/azurerm"
-  version  = "0.2.0"
+  version  = "0.4.0"
   for_each = local.resource_groups
 
   location         = each.value.location
@@ -56,7 +56,7 @@ module "resource_groups" {
 
 module "resource_group_vnet_demo_01" {
   source  = "Azure/avm-res-resources-resourcegroup/azurerm"
-  version = "0.2.0"
+  version = "0.4.0"
 
   location         = local.resource_groups["hub_primary"].location
   name             = "rg-vnet-demo-01"
@@ -66,7 +66,7 @@ module "resource_group_vnet_demo_01" {
 
 module "virtual_network" {
   source  = "Azure/avm-res-network-virtualnetwork/azurerm"
-  version = "0.15.0"
+  version = "0.19.0"
 
   location      = local.resource_groups["hub_primary"].location
   parent_id     = module.resource_group_vnet_demo_01.resource_id
