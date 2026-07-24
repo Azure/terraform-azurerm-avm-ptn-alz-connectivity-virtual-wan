@@ -88,6 +88,8 @@ module "dns_resolver" {
   inbound_endpoints           = each.value.inbound_endpoints
   outbound_endpoints          = each.value.outbound_endpoints
   tags                        = each.value.tags
+
+  depends_on = [module.virtual_network_side_car]
 }
 
 module "private_dns_zones" {

@@ -59,7 +59,7 @@ module "resource_group_vnet_demo_01" {
   version = "0.2.0"
 
   location         = local.resource_groups["hub_primary"].location
-  name             = "rg-vnet-demo-01"
+  name             = "rg-vnet-demo-01-${random_string.suffix.result}"
   enable_telemetry = false
   tags             = local.common_tags
 }

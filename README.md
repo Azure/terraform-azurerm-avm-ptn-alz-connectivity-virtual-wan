@@ -352,6 +352,7 @@ The following top level attributes are supported:
     - `bandwidth_mbps` - (Optional) The bandwidth in Mbps.
     - `bgp_enabled` - (Optional) Should BGP be enabled?
     - `connection_mode` - (Optional) The connection mode. Possible values are `Default`, `InitiatorOnly`, `ResponderOnly`. Default `Default`.
+    - `dpd_timeout_seconds` - (Optional) The dead peer detection timeout in seconds. Possible values are between `9` and `3600`.
     - `ipsec_policy` - (Optional) An object with the following fields:
       - `dh_group` - (Required) The Diffie-Hellman group.
       - `ike_encryption_algorithm` - (Required) The IKE encryption algorithm.
@@ -783,6 +784,7 @@ map(object({
         bandwidth_mbps       = optional(number)
         bgp_enabled          = optional(bool)
         connection_mode      = optional(string, "Default")
+        dpd_timeout_seconds  = optional(number)
 
         ipsec_policy = optional(object({
           dh_group                 = string
