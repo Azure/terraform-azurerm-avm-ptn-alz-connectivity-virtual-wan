@@ -740,6 +740,7 @@ Description:   Map of objects for VPN Site connections to connect VPN Sites to t
     - `bandwidth_mbps`: Optional bandwidth in Mbps for the VPN link.
     - `bgp_enabled`: Optional boolean to enable BGP for the VPN link.
     - `connection_mode`: Optional connection mode for the VPN link. Allowed values are: `Default`, `InitiatorOnly`, `ResponderOnly`. Defaults to `Default`.
+    - `dpd_timeout_seconds`: Optional dead peer detection timeout in seconds for the VPN link. Allowed values are between `9` and `3600`.
     - `ipsec_policy`: Optional IPsec policy object for the VPN link, which includes:
       - `dh_group`: DH group for the IPsec policy. Allowed values are: `DHGroup1`, `DHGroup2`, `DHGroup14`, `DHGroup24`, `DHGroup2048`, `ECP256`, `ECP384`.
       - `ike_encryption_algorithm`: IKE encryption algorithm for the IPsec policy. Allowed values are: `AES128`, `AES192`, `AES256`, `DES`, `DES3`, `GCMAES128`, `GCMAES256`.
@@ -789,6 +790,7 @@ map(object({
       bandwidth_mbps       = optional(number)
       bgp_enabled          = optional(bool)
       connection_mode      = optional(string, "Default")
+      dpd_timeout_seconds  = optional(number)
 
       ipsec_policy = optional(object({
         dh_group                 = string

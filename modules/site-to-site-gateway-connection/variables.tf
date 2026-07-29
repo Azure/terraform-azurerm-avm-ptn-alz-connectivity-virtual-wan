@@ -8,10 +8,11 @@ variable "vpn_site_connection" {
       egress_nat_rule_ids  = optional(list(string))
       ingress_nat_rule_ids = optional(list(string))
       # ID of the link to VPN site. Links are created in the VPN site module.
-      vpn_site_link_id = string
-      bandwidth_mbps   = optional(number)
-      bgp_enabled      = optional(bool)
-      connection_mode  = optional(string)
+      vpn_site_link_id    = string
+      bandwidth_mbps      = optional(number)
+      bgp_enabled         = optional(bool)
+      connection_mode     = optional(string)
+      dpd_timeout_seconds = optional(number)
 
       ipsec_policy = optional(object({
         dh_group                 = string
