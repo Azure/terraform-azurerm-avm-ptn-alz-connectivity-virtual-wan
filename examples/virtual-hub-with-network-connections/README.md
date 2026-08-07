@@ -73,7 +73,7 @@ module "resource_group_vnet_demo_01" {
 
 module "virtual_network" {
   source  = "Azure/avm-res-network-virtualnetwork/azurerm"
-  version = "0.15.0"
+  version = "0.20.0"
 
   location      = local.resource_groups["hub_primary"].location
   parent_id     = module.resource_group_vnet_demo_01.resource_id
@@ -193,7 +193,7 @@ Version:
 
 Source: Azure/avm-res-network-virtualnetwork/azurerm
 
-Version: 0.15.0
+Version: 0.20.0
 
 <!-- markdownlint-disable-next-line MD041 -->
 ## Data Collection
