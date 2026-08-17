@@ -15,7 +15,7 @@ The following requirements are needed by this module:
 
 - <a name="requirement_azapi"></a> [azapi](#requirement\_azapi) (~> 2.4)
 
-- <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (~> 4.0)
+- <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (~> 5.1)
 
 - <a name="requirement_modtm"></a> [modtm](#requirement\_modtm) (~> 0.3)
 
@@ -1335,13 +1335,13 @@ The following Modules are called:
 
 Source: Azure/avm-res-network-bastionhost/azurerm
 
-Version: 0.6.0
+Version: 0.9.0
 
 ### <a name="module_bastion_public_ip"></a> [bastion\_public\_ip](#module\_bastion\_public\_ip)
 
 Source: Azure/avm-res-network-publicipaddress/azurerm
 
-Version: 0.2.0
+Version: 0.2.1
 
 ### <a name="module_ddos_protection_plan"></a> [ddos\_protection\_plan](#module\_ddos\_protection\_plan)
 
@@ -1353,19 +1353,19 @@ Version: 0.3.0
 
 Source: Azure/avm-res-network-dnsresolver/azurerm
 
-Version: 0.7.3
+Version: 0.8.0
 
 ### <a name="module_firewall_policy"></a> [firewall\_policy](#module\_firewall\_policy)
 
 Source: Azure/avm-res-network-firewallpolicy/azurerm
 
-Version: 0.3.3
+Version: 0.3.4
 
 ### <a name="module_private_dns_zone_auto_registration"></a> [private\_dns\_zone\_auto\_registration](#module\_private\_dns\_zone\_auto\_registration)
 
 Source: Azure/avm-res-network-privatednszone/azurerm
 
-Version: 0.4.3
+Version: 0.5.0
 
 ### <a name="module_private_dns_zones"></a> [private\_dns\_zones](#module\_private\_dns\_zones)
 
@@ -1377,7 +1377,7 @@ Version: 0.23.2
 
 Source: Azure/avm-utl-regions/azurerm
 
-Version: 0.5.2
+Version: 0.12.0
 
 ### <a name="module_route_map"></a> [route\_map](#module\_route\_map)
 
@@ -1389,19 +1389,19 @@ Version:
 
 Source: Azure/avm-utl-network-ip-addresses/azurerm
 
-Version: 0.1.0
+Version: 0.1.1
 
 ### <a name="module_virtual_network_side_car"></a> [virtual\_network\_side\_car](#module\_virtual\_network\_side\_car)
 
 Source: Azure/avm-res-network-virtualnetwork/azurerm
 
-Version: 0.15.0
+Version: 0.22.1
 
 ### <a name="module_virtual_network_subnet_ip_prefixes"></a> [virtual\_network\_subnet\_ip\_prefixes](#module\_virtual\_network\_subnet\_ip\_prefixes)
 
 Source: Azure/avm-utl-network-ip-addresses/azurerm
 
-Version: 0.1.0
+Version: 0.1.1
 
 ### <a name="module_virtual_wan"></a> [virtual\_wan](#module\_virtual\_wan)
 
