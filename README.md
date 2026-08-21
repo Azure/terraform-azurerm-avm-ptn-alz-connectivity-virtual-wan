@@ -707,6 +707,19 @@ map(object({
       }))
     })), {})
 
+    route_tables = optional(map(object({
+      name   = string
+      labels = optional(list(string))
+      routes = optional(map(object({
+        name                = string
+        destinations        = list(string)
+        destinations_type   = string
+        next_hop            = optional(string)
+        vnet_connection_key = optional(string)
+        next_hop_type       = optional(string, "ResourceId")
+      })))
+    })), {})
+
     express_route_circuit_connections = optional(map(object({
       name                                 = string
       express_route_circuit_peering_id     = string

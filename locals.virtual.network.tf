@@ -69,3 +69,20 @@ locals {
     } if local.sidecar_virtual_networks_enabled[key]
   }
 }
+
+locals {
+  virtual_hub_route_tables = { for route_table in flatten([for virtual_hub_key, virtual_hub_value in var.virtual_hubs :
+    [for route_table_key, route_table_value in virtual_hub_value.route_tables : {
+      unique_key      = "${virtual_hub_key}-${route_table_key}"
+      name            = route_table_value.name
+      virtual_hub_key = virtual_hub_key
+      labels          = route_table_value.labels
+      routes          = route_table_value.routes
+    }]
+    ]) : route_table.unique_key => {
+    name            = route_table.name
+    virtual_hub_key = route_table.virtual_hub_key
+    labels          = route_table.labels
+    routes          = route_table.routes
+  } }
+}
