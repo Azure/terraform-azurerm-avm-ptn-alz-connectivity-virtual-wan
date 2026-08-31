@@ -195,7 +195,7 @@ variable "virtual_hubs" {
         next_hop            = optional(string)
         vnet_connection_key = optional(string)
         next_hop_type       = optional(string, "ResourceId")
-      })))
+      })), {})
     })), {})
 
     express_route_circuit_connections = optional(map(object({

@@ -109,6 +109,29 @@ module "test" {
           internet_security_enabled = true
         }
       }
+      route_tables = {
+        # Route table that references a sibling virtual network connection by key. The module
+        # resolves `vnet_connection_key` to the connection's resource ID, so consumers never
+        # have to know the generated ID or hand-build it.
+        demo_01 = {
+          name   = "rt-demo-01"
+          labels = ["demo"]
+          routes = {
+            to_vnet_demo_01 = {
+              name                = "to-vnet-demo-01"
+              destinations        = ["10.100.0.0/16"]
+              destinations_type   = "CIDR"
+              vnet_connection_key = "vnet_demo_01"
+            }
+          }
+        }
+        # Route table declared without any routes. Labels-only route tables are valid in
+        # Azure, so `routes` must be safely omittable.
+        labels_only = {
+          name   = "rt-labels-only"
+          labels = ["demo-labels-only"]
+        }
+      }
     }
     secondary = {
       enabled_resources = {
