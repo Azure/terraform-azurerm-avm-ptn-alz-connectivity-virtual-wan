@@ -10,7 +10,7 @@ locals {
     inbound_endpoints = local.private_dns_zones_enabled[key] && value.private_dns_resolver.default_inbound_endpoint_enabled ? merge(tomap({
       dns = {
         name                         = "dns"
-        subnet_name                  = module.virtual_network_side_car[key].subnets["dns_resolver"].name
+        subnet_name                  = local.sidecar_virtual_networks_create[key] ? module.virtual_network_side_car[key].subnets["dns_resolver"].name : value.private_dns_resolver.subnet_name
         private_ip_allocation_method = "Dynamic"
         private_ip_address           = null
         tags                         = coalesce(value.private_dns_resolver.tags, var.tags, {})

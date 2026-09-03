@@ -30,15 +30,15 @@ locals {
     virtual_network_links = {
       auto_registration = {
         name                 = "vnet-link-${key}-auto-registration"
-        virtual_network_id   = module.virtual_network_side_car[key].resource_id
+        virtual_network_id   = local.sidecar_virtual_network_resource_ids[key]
         registration_enabled = true
         tags                 = coalesce(value.private_dns_zones.tags, var.tags, {})
       }
     }
   } if local.private_dns_zones_enabled[key] && value.private_dns_zones.auto_registration_zone_enabled }
   private_dns_zones_virtual_network_link_default_virtual_networks = {
-    for key, value in module.virtual_network_side_car : key => {
-      virtual_network_resource_id                 = value.resource_id
+    for key, value in local.sidecar_virtual_network_resource_ids : key => {
+      virtual_network_resource_id                 = value
       virtual_network_link_name_template_override = var.virtual_hubs[key].private_dns_zones.virtual_network_link_name_template
       resolution_policy                           = var.virtual_hubs[key].private_dns_zones.virtual_network_link_resolution_policy_default
     }
