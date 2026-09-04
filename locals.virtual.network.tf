@@ -62,10 +62,10 @@ locals {
     internet_security_enabled = virtual_network_connection.internet_security_enabled
     routing                   = virtual_network_connection.routing
   } }
-  virtual_network_connections_side_car = { for key, value in local.sidecar_virtual_networks : "private_dns_vnet_${key}" => {
+  virtual_network_connections_side_car = { for key, value in local.sidecar_virtual_network_resource_ids : "private_dns_vnet_${key}" => {
     name                      = coalesce(var.virtual_hubs[key].sidecar_virtual_network.virtual_network_connection_settings.name, "vnet-side-car-${key}")
     virtual_hub_key           = key
-    remote_virtual_network_id = local.sidecar_virtual_network_resource_ids[key]
+    remote_virtual_network_id = value
     internet_security_enabled = var.virtual_hubs[key].sidecar_virtual_network.virtual_network_connection_settings.internet_security_enabled,
     routing                   = var.virtual_hubs[key].sidecar_virtual_network.virtual_network_connection_settings.routing
     } if local.sidecar_virtual_networks_enabled[key]

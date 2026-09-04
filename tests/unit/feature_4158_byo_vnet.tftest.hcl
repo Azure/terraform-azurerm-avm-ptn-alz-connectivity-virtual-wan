@@ -133,3 +133,12 @@ run "validate_4158_byo_vnet_output" {
     error_message = "The Sidecar VNet resource ID output did not return the supplied BYO VNet ID."
   }
 }
+
+run "validate_4158_byo_vnet_hub_connection" {
+  command = plan
+
+  assert {
+    condition     = local.virtual_network_connections_side_car["private_dns_vnet_hub1"].remote_virtual_network_id == var.virtual_hubs["hub1"].sidecar_virtual_network.resource_id
+    error_message = "The automatic Virtual Hub connection did not use the supplied BYO VNet ID."
+  }
+}
