@@ -1,4 +1,3 @@
-
 resource "azapi_resource" "route_map" {
   name      = var.name
   parent_id = var.virtual_hub_id
