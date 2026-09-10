@@ -44,6 +44,7 @@ module "virtual_wan" {
   routing_intents                       = local.routing_intents
   tags                                  = var.tags
   type                                  = local.virtual_wan.type
+  virtual_hub_route_tables              = local.virtual_hub_route_tables
   virtual_hubs                          = local.virtual_hubs
   virtual_network_connections           = local.virtual_network_connections
   virtual_wan_id                        = local.virtual_wan.id

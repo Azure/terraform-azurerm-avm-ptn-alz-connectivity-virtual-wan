@@ -13,7 +13,7 @@ The following requirements are needed by this module:
 
 - <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (~> 1.9)
 
-- <a name="requirement_azapi"></a> [azapi](#requirement\_azapi) (~> 2.4)
+- <a name="requirement_azapi"></a> [azapi](#requirement\_azapi) (~> 2.12)
 
 - <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (~> 4.0)
 
@@ -706,6 +706,19 @@ map(object({
         inbound_route_map_id  = optional(string)
         outbound_route_map_id = optional(string)
       }))
+    })), {})
+
+    route_tables = optional(map(object({
+      name   = string
+      labels = optional(list(string))
+      routes = optional(map(object({
+        name                = string
+        destinations        = list(string)
+        destinations_type   = string
+        next_hop            = optional(string)
+        vnet_connection_key = optional(string)
+        next_hop_type       = optional(string, "ResourceId")
+      })), {})
     })), {})
 
     express_route_circuit_connections = optional(map(object({
