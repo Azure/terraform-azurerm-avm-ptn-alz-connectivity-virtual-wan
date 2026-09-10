@@ -69,3 +69,26 @@ locals {
     } if local.sidecar_virtual_networks_enabled[key]
   }
 }
+
+locals {
+  virtual_hub_route_tables = { for route_table in flatten([for virtual_hub_key, virtual_hub_value in var.virtual_hubs :
+    [for route_table_key, route_table_value in virtual_hub_value.route_tables : {
+      unique_key      = "${virtual_hub_key}-${route_table_key}"
+      name            = route_table_value.name
+      virtual_hub_key = virtual_hub_key
+      labels          = route_table_value.labels
+      # `vnet_connection_key` is user-supplied and scoped to the same hub as this route table, but the
+      # `virtual_network_connections` map further down is flattened and keyed as `<virtual_hub_key>-<connection_key>`.
+      # Translate the route's sibling connection key here, while `virtual_hub_key` is still in scope, so the
+      # submodule's lookup against `module.virtual_network_connections.resource_object` actually matches.
+      routes = { for route_key, route_value in route_table_value.routes : route_key => merge(route_value, {
+        vnet_connection_key = route_value.vnet_connection_key != null ? "${virtual_hub_key}-${route_value.vnet_connection_key}" : null
+      }) }
+    }]
+    ]) : route_table.unique_key => {
+    name            = route_table.name
+    virtual_hub_key = route_table.virtual_hub_key
+    labels          = route_table.labels
+    routes          = route_table.routes
+  } }
+}
