@@ -7,7 +7,7 @@ module "vpn_site" {
       name                = value.name
       resource_group_name = module.virtual_hubs.resource_object[value.virtual_hub_key].resource_group
       location            = module.virtual_hubs.resource_object[value.virtual_hub_key].location
-      virtual_wan_id      = azurerm_virtual_wan.virtual_wan.id
+      virtual_wan_id      = local.effective_virtual_wan_id
       address_cidrs       = value.address_cidrs
       device_vendor       = value.device_vendor
       device_model        = value.device_model
@@ -40,6 +40,7 @@ module "vpn_site_connection" {
           bandwidth_mbps                        = try(link.bandwidth_mbps, null)
           bgp_enabled                           = try(link.bgp_enabled, null)
           connection_mode                       = try(link.connection_mode, null)
+          dpd_timeout_seconds                   = try(link.dpd_timeout_seconds, null)
           egress_nat_rule_ids                   = try(link.egress_nat_rule_ids, null)
           ingress_nat_rule_ids                  = try(link.ingress_nat_rule_ids, null)
           ipsec_policy                          = try(link.ipsec_policy, null)

@@ -84,6 +84,7 @@ The key is deliberately arbitrary to avoid issues with known after apply values.
 - `firewall_policy_id`: Optional Azure Firewall Policy Resource ID to associate with the Azure Firewall.
 - `vhub_public_ip_count`: Optional number of public IP addresses to associate with the Azure Firewall.
 - `tags`: Optional tags to apply to the Azure Firewall resource.
+- `firewall_public_ip_id` - (Optional) Resource id of existing public ip to assign to this firewall.
 
 > Note: There can be multiple objects in this map, one for each Azure Firewall you wish to deploy into the Virtual WAN Virtual Hubs that have been defined in the variable `virtual_hubs`.
 

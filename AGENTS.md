@@ -1,227 +1,62 @@
 ---
-description: ' Azure Verified Modules (AVM) and Terraform'
-applyTo: '**/*.terraform, **/*.tf, **/*.tfvars, **/*.tfstate, **/*.tflint.hcl, **/*.tf.json, **/*.tfvars.json'
+description: " Azure Verified Modules (AVM) and Terraform"
+applyTo: "**/*.terraform, **/*.tf, **/*.tfvars, **/*.tfstate, **/*.tflint.hcl, **/*.tf.json, **/*.tfvars.json"
 ---
 
 # Azure Verified Modules (AVM) Terraform
 
-## Overview
+This repository uses Azure Verified Modules (AVM) for Terraform.
+For detailed module guidance, use the [AVM Terraform agent](.github/agents/avm-tf.agent.md) and load only the relevant skills under [.github/skills](.github/skills/).
 
-Azure Verified Modules (AVM) are pre-built, tested, and validated Terraform and Bicep modules that follow Azure best practices. Use these modules to create, update, or review Azure Infrastructure as Code (IaC) with confidence.
+## AVM Specifications
 
-## Custom Instructions for GitHub Copilot Agents
+The authoritative source for every AVM rule (Bicep, Terraform, shared) is the spec index:
 
-**IMPORTANT**: When GitHub Copilot Agent or GitHub Copilot Coding Agent is working on this repository, the following local unit tests MUST be executed to comply with PR checks. Failure to run these tests will cause PR validation failures:
+- **Index of all specs and docs (raw markdown URLs):** `https://azure.github.io/Azure-Verified-Modules/llms.txt`
+- **Rendered docs site:** `https://azure.github.io/Azure-Verified-Modules/`
 
-```bash
-PORCH_NO_TUI=1 ./avm pre-commit
-git add . && git commit -m "chore: avm pre-commit"
-PORCH_NO_TUI=1 ./avm pr-check
-```
+When a spec ID is mentioned (e.g. `TFFR3`, `RMFR4`, `SNFR1`), fetch `llms.txt` once, look up the raw markdown URL for that ID, and read the current text. Do not cite a spec from memory.
 
-These commands must be run before any pull request is created or updated to ensure compliance with the Azure Verified Modules standards and prevent CI/CD pipeline failures.
-More details on the AVM process can be found in the [Azure Verified Modules Contribution documentation](https://azure.github.io/Azure-Verified-Modules/contributing/terraform/testing/).
+## Terraform Provider Requirement
 
-**Failure to run these tests will cause PR validation failures and prevent successful merges.**
+Managed authoring for a new AVM Terraform module repository MUST use `Azure/azapi` for every control-plane resource and every operation supported by `azapi_data_plane_resource`, `azapi_resource`, `azapi_resource_action`, or `azapi_update_resource`. Do not declare or configure `hashicorp/azurerm`, and do not create any `azurerm_*` resource or data source, for convenience or for ordinary module and supporting infrastructure.
+
+This default prohibition applies everywhere in the repository: the root implementation, submodules, examples, E2E configurations, `.tftest.hcl` files, fixtures, setup or teardown Terraform, migration examples, documentation examples, and generated snippets. Each standalone Terraform root that needs direct Azure resources MUST declare `Azure/azapi` in `required_providers`.
+
+When an example, test, fixture, or E2E setup needs an Azure resource that is not supplied through the module under test, create or read it with `azapi_resource`, `azapi_data_plane_resource`, `azapi_resource_action`, `azapi_update_resource`, or an AzAPI data source as appropriate. Do not use AzureRM as test scaffolding.
+
+`hashicorp/azurerm ~> 4.0` is permitted only when required for a data-plane or other non-ARM operation that genuinely cannot be implemented with any applicable AzAPI resource or action. Each `azurerm_*` resource or data-source block MUST independently satisfy the exception: scope the block to one specific unsupported operation, add the prescribed `provider_azurerm_disallowed` TFLint exclusion, and document the exact block, why AzAPI cannot implement it, and the upstream AzAPI issue or pull request. Replace each block when AzAPI support ships. One valid block does not authorize any other AzureRM use. Examples, E2E configurations, and tests may configure or exercise AzureRM only when required by their independently justified exception blocks; all supporting control-plane resources still use AzAPI.
+
+The migration skill may inspect an existing AzureRM module and refer to legacy `azurerm_*` state addresses as source input. Generated target implementation, examples, tests, fixtures, setup, and documentation follow the same AzAPI-first rule and narrow data-plane/non-ARM exception.
 
 ## Module Discovery
 
-### Terraform Registry
+- **Terraform Registry**: Search for "avm" + resource name, filter by "Partner" tag
+- **Terraform Resource Modules Index**: `https://azure.github.io/Azure-Verified-Modules/indexes/terraform/tf-resource-modules/`
+- **Terraform Pattern Modules Index**: `https://azure.github.io/Azure-Verified-Modules/indexes/terraform/tf-pattern-modules/`
 
-- Search for "avm" + resource name
-- Filter by "Partner" tag to find official AVM modules
-- Example: Search "avm storage account" → filter by Partner
+## New Module Naming Conventions
 
-### Official AVM Index
-
-- **Terraform Resources**: `https://azure.github.io/Azure-Verified-Modules/indexes/terraform/tf-resource-modules/`
-- **Terraform Patterns**: `https://azure.github.io/Azure-Verified-Modules/indexes/terraform/tf-pattern-modules/`
-- **Bicep Resources**: `https://azure.github.io/Azure-Verified-Modules/indexes/bicep/bicep-resource-modules/`
-- **Bicep Patterns**: `https://azure.github.io/Azure-Verified-Modules/indexes/bicep/bicep-pattern-modules/`
-
-## Terraform Module Usage
-
-### From Examples
-
-1. Copy the example code from the module documentation
-2. Replace `source = "../../"` with `source = "Azure/avm-res-{service}-{resource}/azurerm"`
-3. Add `version = "1.0.0"` (use latest available)
-4. Set `enable_telemetry = true`
-
-### From Scratch
-
-1. Copy the Provision Instructions from module documentation
-2. Configure required and optional inputs
-3. Pin the module version
-4. Enable telemetry
-
-### Example Usage
-
-```hcl
-module "storage_account" {
-  source  = "Azure/avm-res-storage-storageaccount/azurerm"
-  version = "0.1.0"
-
-  enable_telemetry    = true
-  location            = "East US"
-  name                = "mystorageaccount"
-  resource_group_name = "my-rg"
-
-  # Additional configuration...
-}
-```
-
-## Naming Conventions
-
-### Module Types
-
-- **Resource Modules**: `Azure/avm-res-{service}-{resource}/azurerm`
-  - Example: `Azure/avm-res-storage-storageaccount/azurerm`
-- **Pattern Modules**: `Azure/avm-ptn-{pattern}/azurerm`
-  - Example: `Azure/avm-ptn-aks-enterprise/azurerm`
-- **Utility Modules**: `Azure/avm-utl-{utility}/azurerm`
-  - Example: `Azure/avm-utl-regions/azurerm`
-
-### Service Naming
-
+- **Resource Modules**: `Azure/avm-res-{service}-{resource}/azure`
+- **Pattern Modules**: `Azure/avm-ptn-{pattern}/azure`
+- **Utility Modules**: `Azure/avm-utl-{utility}/azure`
 - Use kebab-case for services and resources
 - Follow Azure service names (e.g., `storage-storageaccount`, `network-virtualnetwork`)
 
-## Version Management
+Existing modules can retain legacy `terraform-azurerm-avm-*` repository names and `/azurerm` Registry namespaces. Those names are publication identifiers, not provider declarations, and do not permit generated code to use `hashicorp/azurerm` or `azurerm_*` outside the narrow unsupported data-plane/non-ARM exception.
 
-### Check Available Versions
+## Module Usage
 
-- Endpoint: `https://registry.terraform.io/v1/modules/Azure/{module}/azurerm/versions`
-- Example: `https://registry.terraform.io/v1/modules/Azure/avm-res-storage-storageaccount/azurerm/versions`
+When using AVM modules:
 
-### Version Pinning Best Practices
-
-- For providers: use pessimistic version constraints for minor version: `version = "~> 1.0"`
-- For modules: Pin to specific versions: `version = "1.2.3"`
+1. Pin to a specific version: `version = "1.2.3"`
+2. Map enable telemetry to root variable: `enable_telemetry = var.enable_telemetry`
+3. For providers, use pessimistic constraints: `version = "~> 1.0"`
+4. Start from official examples in the module documentation
+5. Replace `source = "../../"` with the registry source when copying examples
 
 ## Module Sources
 
-### Terraform Registry
-
-- **URL Pattern**: `https://registry.terraform.io/modules/Azure/{module}/azurerm/latest`
-- **Example**: `https://registry.terraform.io/modules/Azure/avm-res-storage-storageaccount/azurerm/latest`
-
-### GitHub Repository
-
-- **URL Pattern**: `https://github.com/Azure/terraform-azurerm-avm-{type}-{service}-{resource}`
-- **Examples**:
-  - Resource: `https://github.com/Azure/terraform-azurerm-avm-res-storage-storageaccount`
-  - Pattern: `https://github.com/Azure/terraform-azurerm-avm-ptn-aks-enterprise`
-
-## Development Best Practices
-
-### Module Usage
-
-- ✅ **Always** pin module versions
-- ✅ **Start** with official examples from module documentation
-- ✅ **Review** all inputs and outputs before implementation
-- ✅ **Enable** telemetry: `enable_telemetry = true`
-- ✅ **Use** AVM utility modules for common patterns
-
-### Code Quality
-
-- ✅ **Always** run `terraform fmt` after making changes
-- ✅ **Always** run `terraform validate` after making changes
-- ✅ **Use** meaningful variable names and descriptions
-- ✅ **Use** snake_case
-- ✅ **Add** proper tags and metadata
-- ✅ **Document** complex configurations
-
-### Validation Requirements
-
-Before creating or updating any pull request:
-
-```bash
-# Format code
-terraform fmt -recursive
-
-# Validate syntax
-terraform validate
-
-# AVM-specific validation (MANDATORY)
-export PORCH_NO_TUI=1
-./avm pre-commit
-<commit any changes>
-./avm pr-check
-```
-
-## Tool Integration
-
-### Use Available Tools
-
-- **Deployment Guidance**: Use `azure_get_deployment_best_practices` tool
-- **Service Documentation**: Use `microsoft.docs.mcp` tool for Azure service-specific guidance
-- **Schema Information**: Use `query_azapi_resource_schema` & `query_azapi_resource_document` to query AzAPI resources and schemas.
-- **Provider resources and resource schemas**: Use `list_terraform_provider_items` & `query_terraform_schema` to query azurerm resource schema.
-
-### GitHub Copilot Integration
-
-When working with AVM repositories:
-
-1. Always check for existing modules before creating new resources
-2. Use the official examples as starting points
-3. Run all validation tests before committing
-4. Document any customizations or deviations from examples
-
-## Common Patterns
-
-### Resource Group Module
-
-```hcl
-module "resource_group" {
-  source  = "Azure/avm-res-resources-resourcegroup/azurerm"
-  version = "0.1.0" # use latest
-
-  enable_telemetry = true
-  location         = var.location
-  name            = var.resource_group_name
-}
-```
-
-### Virtual Network Module
-
-```hcl
-module "virtual_network" {
-  source  = "Azure/avm-res-network-virtualnetwork/azurerm"
-  version = "0.1.0" # use latest
-
-  enable_telemetry    = true
-  location            = module.resource_group.location
-  name                = var.vnet_name
-  resource_group_name = module.resource_group.name
-  address_space       = ["10.0.0.0/16"]
-}
-```
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Version Conflicts**: Always check compatibility between module and provider versions
-2. **Missing Dependencies**: Ensure all required resources are created first
-3. **Validation Failures**: Run AVM validation tools before committing
-4. **Documentation**: Always refer to the latest module documentation
-
-### Support Resources
-
-- **AVM Documentation**: `https://azure.github.io/Azure-Verified-Modules/`
-- **GitHub Issues**: Report issues in the specific module's GitHub repository
-- **Community**: Azure Terraform Provider GitHub discussions
-
-## Compliance Checklist
-
-Before submitting any AVM-related code:
-
-- [ ] Module version is pinned
-- [ ] Telemetry is enabled
-- [ ] Code is formatted (`terraform fmt`)
-- [ ] Code is validated (`terraform validate`)
-- [ ] AVM pre-commit checks pass (`./avm pre-commit`)
-- [ ] AVM PR checks pass (`./avm pr-check`)
-- [ ] Documentation is updated
-- [ ] Examples are tested and working
+- **Registry for new modules**: `https://registry.terraform.io/modules/Azure/{module}/azure/latest`
+- **GitHub for new modules**: `https://github.com/Azure/terraform-azure-avm-{type}-{service}-{resource}`
+- **Versions API**: `https://registry.terraform.io/v1/modules/Azure/{module}/[azurerm|azure]/versions`

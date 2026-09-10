@@ -13,7 +13,7 @@ The following requirements are needed by this module:
 
 - <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (~> 1.9)
 
-- <a name="requirement_azapi"></a> [azapi](#requirement\_azapi) (~> 2.4)
+- <a name="requirement_azapi"></a> [azapi](#requirement\_azapi) (~> 2.12)
 
 - <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (~> 4.0)
 
@@ -142,6 +142,60 @@ object({
 
 Default: `{}`
 
+### <a name="input_route_maps"></a> [route\_maps](#input\_route\_maps)
+
+Description: (Optional) A map of route maps to create. The key is an arbitrary identifier. Each value is an object with the following fields:
+
+- `name` - (Required) The name of the route map.
+- `virtual_hub_key` - (Required) The key of the virtual hub in `virtual_hubs`. The module resolves the corresponding resource ID automatically.
+- `associated_inbound_connections` - (Optional) List of connection resource IDs associated for inbound traffic. Default `[]`.
+- `associated_outbound_connections` - (Optional) List of connection resource IDs associated for outbound traffic. Default `[]`.
+- `rules` - (Optional) List of route map rules to apply. Default `[]`. Each rule is an object with:
+  - `name` - (Required) The unique name for the rule.
+  - `next_step_if_matched` - (Optional) Next step after rule is evaluated. Supported values are `Continue`, `Terminate`, `Unknown`. Default `Unknown`.
+  - `actions` - (Optional) List of actions to apply on a match:
+    - `type` - (Required) Type of action. Supported values are `Add`, `Drop`, `Remove`, `Replace`, `Unknown`.
+    - `parameters` - (Optional) List of parameters for the action:
+      - `as_path` - (Optional) List of AS paths.
+      - `community` - (Optional) List of BGP communities.
+      - `route_prefix` - (Optional) List of route prefixes.
+  - `match_criteria` - (Optional) List of criteria to match traffic against:
+    - `match_condition` - (Required) Condition to apply. Supported values are `Contains`, `Equals`, `NotContains`, `NotEquals`, `Unknown`.
+    - `as_path` - (Optional) List of AS paths to match.
+    - `community` - (Optional) List of BGP communities to match.
+    - `route_prefix` - (Optional) List of route prefixes to match.
+
+Type:
+
+```hcl
+map(object({
+    name                            = string
+    virtual_hub_key                 = string
+    associated_inbound_connections  = optional(list(string), [])
+    associated_outbound_connections = optional(list(string), [])
+    rules = optional(list(object({
+      name                 = string
+      next_step_if_matched = optional(string, "Unknown")
+      actions = optional(list(object({
+        type = string
+        parameters = optional(list(object({
+          as_path      = optional(list(string), [])
+          community    = optional(list(string), [])
+          route_prefix = optional(list(string), [])
+        })), [])
+      })), [])
+      match_criteria = optional(list(object({
+        match_condition = string
+        as_path         = optional(list(string), [])
+        community       = optional(list(string), [])
+        route_prefix    = optional(list(string), [])
+      })), [])
+    })), [])
+  }))
+```
+
+Default: `{}`
+
 ### <a name="input_tags"></a> [tags](#input\_tags)
 
 Description: (Optional) Tags of the resource.
@@ -188,6 +242,7 @@ The following top level attributes are supported:
 - `hub` - (Optional) An object defining the Virtual WAN hub settings.
 - `virtual_network_connections` - (Optional) A map of Virtual Network connections to create.
 - `express_route_circuit_connections` - (Optional) A map of ExpressRoute circuit connections
+- `bgp_connections` - (Optional) A map of BGP connections to create on the Virtual Hub router (for direct NVA peering).
 - `p2s_gateway_vpn_server_configurations` - (Optional) A map of Point-to-Site VPN server configurations.
 - `p2s_gateways` - (Optional) A map of Point-to-Site
 - `routing_intents` - (Optional) A map of routing intents to create.
@@ -239,6 +294,14 @@ The following top level attributes are supported:
   - `routing` - (Optional) An object with the same fields as virtual\_network\_connections routing.
   - `routing_weight` - (Optional) The routing weight for the connection.
 
+## BGP Connections
+
+- `bgp_connections` - (Optional) A map of BGP connections to create on the Virtual Hub's built-in router. This is the documented Microsoft pattern for peering Network Virtual Appliances (NVAs) such as Palo Alto, FortiGate or Cisco SD-WAN deployed in spoke virtual networks directly with the Virtual Hub. Each connection is an object with the following fields:
+  - `name` - (Required) The name of the BGP connection.
+  - `peer_asn` - (Required) The peer ASN of the NVA. Must not be `65515` (the Azure-assigned vHub ASN) or any other reserved value documented for Virtual WAN.
+  - `peer_ip` - (Required) The peer IP address of the NVA.
+  - `virtual_network_connection_id` - (Optional) The resource ID of the Virtual Network Connection (`azurerm_virtual_hub_connection`) for the spoke virtual network hosting the NVA. This is recommended when the NVA is reachable through a hub virtual network connection.
+
 ## Point-to-Site Gateway VPN Server Configurations
 
 - `p2s_gateway_vpn_server_configurations` - (Optional) A map of Point-to-Site VPN server configurations. Each configuration is an object with the following fields:
@@ -289,6 +352,7 @@ The following top level attributes are supported:
     - `bandwidth_mbps` - (Optional) The bandwidth in Mbps.
     - `bgp_enabled` - (Optional) Should BGP be enabled?
     - `connection_mode` - (Optional) The connection mode. Possible values are `Default`, `InitiatorOnly`, `ResponderOnly`. Default `Default`.
+    - `dpd_timeout_seconds` - (Optional) The dead peer detection timeout in seconds. Possible values are between `9` and `3600`.
     - `ipsec_policy` - (Optional) An object with the following fields:
       - `dh_group` - (Required) The Diffie-Hellman group.
       - `ike_encryption_algorithm` - (Required) The IKE encryption algorithm.
@@ -386,10 +450,7 @@ The following top level attributes are supported:
   - `zones` - (Optional) A list of availability zones for the Azure Firewall.
   - `firewall_policy_id` - (Optional) The resource ID of the Azure Firewall Policy to associate with the firewall.
   - `vhub_public_ip_count` - (Optional) The number of public IP addresses to assign to the Virtual Hub firewall.
-  - `ip_configuration` - (Optional) A list of ip configurations. Each element is an object with the following fields:
-    - `name` - (Required) Name of the configuration
-    - `public_ip_address_id` - The ID of the Public IP Address associated with the firewall.
-    - `subnet_id` - Reference to the subnet associated with the IP Configuration. Changing this forces a new resource to be created.
+  - `firewall_public_ip_id` - (Optional) Resource id of existing public ip to assign to this firewall.
   - `tags` - (Optional) A map of tags to apply to the Azure Firewall.
 
 ## Azure Firewall Policy
@@ -647,6 +708,19 @@ map(object({
       }))
     })), {})
 
+    route_tables = optional(map(object({
+      name   = string
+      labels = optional(list(string))
+      routes = optional(map(object({
+        name                = string
+        destinations        = list(string)
+        destinations_type   = string
+        next_hop            = optional(string)
+        vnet_connection_key = optional(string)
+        next_hop_type       = optional(string, "ResourceId")
+      })), {})
+    })), {})
+
     express_route_circuit_connections = optional(map(object({
       name                                 = string
       express_route_circuit_peering_id     = string
@@ -665,6 +739,13 @@ map(object({
         outbound_route_map_id = optional(string)
       }))
       routing_weight = optional(number)
+    })), {})
+
+    bgp_connections = optional(map(object({
+      name                          = string
+      peer_asn                      = number
+      peer_ip                       = string
+      virtual_network_connection_id = optional(string)
     })), {})
 
     p2s_gateway_vpn_server_configurations = optional(map(object({
@@ -717,6 +798,7 @@ map(object({
         bandwidth_mbps       = optional(number)
         bgp_enabled          = optional(bool)
         connection_mode      = optional(string, "Default")
+        dpd_timeout_seconds  = optional(number)
 
         ipsec_policy = optional(object({
           dh_group                 = string
@@ -841,18 +923,14 @@ map(object({
     }), {})
 
     firewall = optional(object({
-      name                 = optional(string)
-      sku_name             = optional(string, "AZFW_Hub")
-      sku_tier             = optional(string, "Standard")
-      zones                = optional(list(number))
-      firewall_policy_id   = optional(string)
-      vhub_public_ip_count = optional(string)
-      ip_configuration = optional(list(object({
-        name                 = string
-        public_ip_address_id = optional(string)
-        subnet_id            = optional(string)
-      })))
-      tags = optional(map(string))
+      name                  = optional(string)
+      sku_name              = optional(string, "AZFW_Hub")
+      sku_tier              = optional(string, "Standard")
+      zones                 = optional(list(number))
+      firewall_policy_id    = optional(string)
+      vhub_public_ip_count  = optional(string)
+      firewall_public_ip_id = optional(string)
+      tags                  = optional(map(string))
     }), {})
 
     firewall_policy = optional(object({
@@ -1111,6 +1189,7 @@ Description: The shared settings for the hub and spoke networks. This is where g
 ## Virtual WAN
 
 - `virtual_wan` - (Optional) An object defining the Virtual WAN settings. The object has the following fields:
+  - `id` - (Optional) Resource ID of an existing Virtual WAN. If provided, the module will attach hubs/gateways to this vWAN and will not create a new vWAN.
   - `name` - (Optional) The name of the Virtual WAN resource.
   - `location` - (Optional) The Azure location where the Virtual WAN should be created.
   - `resource_group_name` - (Optional) The name of the resource group where the Virtual WAN should be created.
@@ -1136,6 +1215,7 @@ object({
       ddos_protection_plan = optional(bool, true)
     }), {})
     virtual_wan = optional(object({
+      id                                = optional(string)
       name                              = optional(string)
       location                          = optional(string)
       resource_group_name               = optional(string)
@@ -1234,6 +1314,14 @@ Description: Final configuration applied to the private DNS zones and associated
 
 Description: The resource ID of the virtual WAN.
 
+### <a name="output_route_map_resource_ids_by_name"></a> [route\_map\_resource\_ids\_by\_name](#output\_route\_map\_resource\_ids\_by\_name)
+
+Description: A map of route map name to resource ID.
+
+### <a name="output_route_map_resources"></a> [route\_map\_resources](#output\_route\_map\_resources)
+
+Description: The route map resource objects, grouped by the arbitrary map key supplied in the route\_maps variable.
+
 ### <a name="output_sidecar_virtual_network_resource_ids"></a> [sidecar\_virtual\_network\_resource\_ids](#output\_sidecar\_virtual\_network\_resource\_ids)
 
 Description: The resource IDs of the side car virtual networks associated with the virtual WAN, grouped by hub key.
@@ -1241,6 +1329,10 @@ Description: The resource IDs of the side car virtual networks associated with t
 ### <a name="output_sidecar_virtual_network_resources"></a> [sidecar\_virtual\_network\_resources](#output\_sidecar\_virtual\_network\_resources)
 
 Description: The side car virtual networks associated with the virtual WAN, grouped by hub key.
+
+### <a name="output_virtual_hub_bgp_connection_resource_ids"></a> [virtual\_hub\_bgp\_connection\_resource\_ids](#output\_virtual\_hub\_bgp\_connection\_resource\_ids)
+
+Description: The resource IDs of the Virtual Hub BGP connections (NVA peers), keyed by `<virtual_hub_key>-<bgp_connection_key>`.
 
 ### <a name="output_virtual_hub_resource_ids"></a> [virtual\_hub\_resource\_ids](#output\_virtual\_hub\_resource\_ids)
 
@@ -1294,13 +1386,19 @@ Version: 0.4.3
 
 Source: Azure/avm-ptn-network-private-link-private-dns-zones/azurerm
 
-Version: 0.22.2
+Version: 0.23.2
 
 ### <a name="module_regions"></a> [regions](#module\_regions)
 
 Source: Azure/avm-utl-regions/azurerm
 
 Version: 0.5.2
+
+### <a name="module_route_map"></a> [route\_map](#module\_route\_map)
+
+Source: ./modules/route-map
+
+Version:
 
 ### <a name="module_virtual_network_ip_prefixes"></a> [virtual\_network\_ip\_prefixes](#module\_virtual\_network\_ip\_prefixes)
 

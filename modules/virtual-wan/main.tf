@@ -7,10 +7,15 @@ resource "azurerm_resource_group" "rg" {
 }
 
 locals {
-  resource_group_name = var.create_resource_group ? azurerm_resource_group.rg[0].name : var.resource_group_name
+  create_virtual_wan         = var.virtual_wan_id == null
+  effective_virtual_wan_id   = local.create_virtual_wan ? azurerm_virtual_wan.virtual_wan[0].id : var.virtual_wan_id
+  effective_virtual_wan_name = local.create_virtual_wan ? azurerm_virtual_wan.virtual_wan[0].name : provider::azapi::parse_resource_id("Microsoft.Network/virtualWans", var.virtual_wan_id).name
+  resource_group_name        = var.create_resource_group ? azurerm_resource_group.rg[0].name : var.resource_group_name
 }
 
 resource "azurerm_virtual_wan" "virtual_wan" {
+  count = local.create_virtual_wan ? 1 : 0
+
   location                          = var.location
   name                              = var.virtual_wan_name
   resource_group_name               = local.resource_group_name
@@ -19,6 +24,11 @@ resource "azurerm_virtual_wan" "virtual_wan" {
   office365_local_breakout_category = var.office365_local_breakout_category
   tags                              = merge(var.tags, var.virtual_wan_tags)
   type                              = var.type
+}
+
+moved {
+  from = azurerm_virtual_wan.virtual_wan
+  to   = azurerm_virtual_wan.virtual_wan[0]
 }
 
 module "virtual_hubs" {
@@ -30,7 +40,7 @@ module "virtual_hubs" {
       location                               = value.location
       resource_group_name                    = value.resource_group_name
       address_prefix                         = value.address_prefix
-      virtual_wan_id                         = azurerm_virtual_wan.virtual_wan.id
+      virtual_wan_id                         = local.effective_virtual_wan_id
       hub_routing_preference                 = value.hub_routing_preference
       sku                                    = value.sku
       tags                                   = value.tags
