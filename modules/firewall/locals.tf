@@ -15,4 +15,6 @@ locals {
       diagnostic_setting_key = v.diagnostic_setting_key
     }
   }
+
+  combined_ip_configurations = { for k, v in var.firewalls : k => concat(module.firewall_generated_public_ip_config[k].ip_configurations, v.firewall_public_ip_configurations) }
 }

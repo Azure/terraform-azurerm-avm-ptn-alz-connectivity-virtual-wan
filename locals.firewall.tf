@@ -21,3 +21,8 @@ locals {
     zones              = coalesce(value.firewall.zones, local.availability_zones[key])
   }) if local.firewall_enabled[key] }
 }
+
+locals {
+  //make a fw policy to region map, set region to base policy region if a base policy was provided, otherwise leave the original region
+  firewall_policy_to_base_policy_location_map = { for k, v in var.virtual_hubs : k => try(v.firewall_policy.base_policy.location, v.location) }
+}

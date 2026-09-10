@@ -71,3 +71,7 @@ output "vpn_gateway_resource_names" {
   description = "A map of Azure VPN Gateway resource names with the map keys of the `vpn_gateways` variable."
   value       = var.vpn_gateways != null ? { for key, value in module.vpn_gateway.resource_object : key => value.id } : null
 }
+
+output "fw_ipconfiguration" {
+  value = module.firewalls.fw_ip_configuration
+}

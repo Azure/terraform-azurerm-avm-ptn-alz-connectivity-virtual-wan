@@ -406,7 +406,19 @@ variable "virtual_hubs" {
       zones                = optional(list(number))
       firewall_policy_id   = optional(string)
       vhub_public_ip_count = optional(string)
-      tags                 = optional(map(string))
+      firewall_public_ip_ids = optional(list(object({
+        name         = optional(string)
+        public_ip_id = string
+      })), [])
+      firewall_public_ip_configurations = optional(list(object({
+        name = string
+        properties = object({
+          publicIPAddress = object({
+            id = string
+          })
+        })
+      })), [])
+      tags = optional(map(string))
     }), {})
 
     firewall_policy = optional(object({
@@ -414,8 +426,11 @@ variable "virtual_hubs" {
       resource_group_name               = optional(string)
       sku                               = optional(string, "Standard")
       auto_learn_private_ranges_enabled = optional(bool)
-      base_policy_id                    = optional(string)
-      tags                              = optional(map(string))
+      base_policy = optional(object({
+        id       = string
+        location = string
+      }))
+      tags = optional(map(string))
       dns = optional(object({
         proxy_enabled = optional(bool, false)
         servers       = optional(list(string))
@@ -880,6 +895,7 @@ The following top level attributes are supported:
   - `zones` - (Optional) A list of availability zones for the Azure Firewall.
   - `firewall_policy_id` - (Optional) The resource ID of the Azure Firewall Policy to associate with the firewall.
   - `vhub_public_ip_count` - (Optional) The number of public IP addresses to assign to the Virtual Hub firewall.
+  - `firewall_public_ip_id` - (Optional) Resource id of existing public ip to assign to this firewall.
   - `tags` - (Optional) A map of tags to apply to the Azure Firewall.
 
 ## Azure Firewall Policy

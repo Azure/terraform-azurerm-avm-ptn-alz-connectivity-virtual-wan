@@ -3,12 +3,12 @@ module "firewall_policy" {
   version  = "0.3.3"
   for_each = local.firewall_policies
 
-  location                                          = each.value.location
+  location                                          = local.firewall_policy_to_base_policy_location_map[each.key] //needs to be set to the region of the base policy if that was provided
   name                                              = each.value.name
   resource_group_name                               = each.value.resource_group_name
   enable_telemetry                                  = var.enable_telemetry
   firewall_policy_auto_learn_private_ranges_enabled = each.value.auto_learn_private_ranges_enabled
-  firewall_policy_base_policy_id                    = each.value.base_policy_id
+  firewall_policy_base_policy_id                    = try(each.value.base_policy.id, null)
   firewall_policy_dns                               = each.value.dns
   firewall_policy_explicit_proxy                    = each.value.explicit_proxy
   firewall_policy_identity                          = each.value.identity
