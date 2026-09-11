@@ -84,7 +84,7 @@ module "dns_resolver" {
   location                    = each.value.location
   name                        = each.value.name
   resource_group_name         = each.value.resource_group_name
-  virtual_network_resource_id = module.virtual_network_side_car[each.key].resource_id
+  virtual_network_resource_id = local.sidecar_virtual_network_resource_ids[each.key]
   enable_telemetry            = var.enable_telemetry
   inbound_endpoints           = each.value.inbound_endpoints
   outbound_endpoints          = each.value.outbound_endpoints

@@ -342,6 +342,7 @@ variable "virtual_hubs" {
     })), {})
 
     sidecar_virtual_network = optional(object({
+      resource_id   = optional(string)
       name          = optional(string)
       parent_id     = optional(string)
       address_space = optional(list(string))
@@ -839,6 +840,7 @@ The following top level attributes are supported:
 ## Sidecar Virtual Network
 
 - `sidecar_virtual_network` - (Optional) An object defining a sidecar virtual network that can be connected to the Virtual Hub. The object has the following fields:
+  - `resource_id` - (Optional) The resource ID of an existing virtual network to use as the sidecar virtual network. When provided, the module will use the existing virtual network instead of creating a new sidecar virtual network.
   - `name` - (Optional) The name of the sidecar virtual network.
   - `parent_id` - (Optional) The ID of the parent resource group where the sidecar virtual network should be created.
   - `address_space` - (Optional) A list of IPv4 address spaces for the sidecar virtual network in CIDR format.
@@ -1092,6 +1094,15 @@ The following top level attributes are supported:
   - `tags` - (Optional) A map of tags to apply to the DNS resolver.
 
 DESCRIPTION
+
+  validation {
+    condition = alltrue([
+      for hub in values(var.virtual_hubs) :
+      hub.sidecar_virtual_network.resource_id == null ||
+      can(provider::azapi::parse_resource_id("Microsoft.Network/virtualNetworks", hub.sidecar_virtual_network.resource_id).name)
+    ])
+    error_message = "If provided, sidecar_virtual_network.resource_id must be a valid Virtual Network resource ID."
+  }
 }
 
 variable "virtual_wan_settings" {
