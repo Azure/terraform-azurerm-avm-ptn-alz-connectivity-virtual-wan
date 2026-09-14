@@ -11,7 +11,7 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 4.21"
+      version = "~> 5.4"
     }
   }
 }
@@ -38,19 +38,19 @@ module "config" {
   source = "github.com/Azure/alz-terraform-accelerator//templates/platform_landing_zone/modules/config-templating?ref=main"
 
   custom_replacements             = var.custom_replacements
-  enable_telemetry                = var.enable_telemetry
   inputs                          = local.config_templating_inputs
-  root_parent_management_group_id = ""
   starter_locations               = var.starter_locations
   subscription_id_connectivity    = data.azurerm_client_config.current.subscription_id
   subscription_id_identity        = data.azurerm_client_config.current.subscription_id
   subscription_id_management      = data.azurerm_client_config.current.subscription_id
   subscription_id_security        = data.azurerm_client_config.current.subscription_id
+  enable_telemetry                = var.enable_telemetry
+  root_parent_management_group_id = ""
 }
 
 module "resource_groups" {
   source   = "Azure/avm-res-resources-resourcegroup/azurerm"
-  version  = "0.2.0"
+  version  = "0.4.0"
   for_each = module.config.outputs.connectivity_resource_groups
 
   location         = each.value.location
@@ -77,7 +77,6 @@ module "test" {
   virtual_hubs         = local.virtual_wan_virtual_hubs
   virtual_wan_settings = local.virtual_wan_settings
 }
-
 ```
 
 <!-- markdownlint-disable MD033 -->
@@ -87,7 +86,7 @@ The following requirements are needed by this module:
 
 - <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (~> 1.5)
 
-- <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (~> 4.21)
+- <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (~> 5.4)
 
 ## Resources
 
@@ -273,7 +272,7 @@ Version: main
 
 Source: Azure/avm-res-resources-resourcegroup/azurerm
 
-Version: 0.2.0
+Version: 0.4.0
 
 ### <a name="module_test"></a> [test](#module\_test)
 
