@@ -2,7 +2,7 @@ locals {
   has_regions                               = length(var.virtual_hubs) > 0
   hub_virtual_networks_resource_group_names = { for key, value in var.virtual_hubs : key => provider::azapi::parse_resource_id("Microsoft.Resources/resourceGroups", coalesce(value.default_parent_id, value.hub.parent_id)).resource_group_name }
   primary_location                          = local.has_regions ? var.virtual_hubs[local.primary_region_key].location : null
-  primary_region_key                        = local.has_regions ? keys(var.virtual_hubs)[0] : null
+  primary_region_key                        = local.has_regions ? coalesce(one([for k, v in var.virtual_hubs : k if v.is_primary]), keys(var.virtual_hubs)[0]) : null
   virtual_hubs = { for virtual_hub_key, virtual_hub_value in var.virtual_hubs : virtual_hub_key => merge(virtual_hub_value.hub, {
     name                = coalesce(virtual_hub_value.hub.name, local.default_names[virtual_hub_key].virtual_hub_name)
     location            = virtual_hub_value.location
