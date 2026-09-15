@@ -19,6 +19,7 @@ moved {
   to   = module.express_route_gateways.azurerm_express_route_gateway.express_route_gateway
 }
 
+
 # Create the Express Route Connection
 module "er_connections" {
   source = "../expressroute-gateway-connection"

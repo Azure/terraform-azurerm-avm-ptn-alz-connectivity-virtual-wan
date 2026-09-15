@@ -31,7 +31,6 @@ resource "azurerm_vpn_site" "vpn_site" {
       }
     }
   }
-
   dynamic "o365_policy" {
     for_each = each.value.o365_policy != null ? [each.value.o365_policy] : []
 

@@ -1,3 +1,4 @@
+
 resource "azurerm_virtual_hub" "virtual_hub" {
   for_each = var.virtual_hubs != null ? var.virtual_hubs : {}
 
