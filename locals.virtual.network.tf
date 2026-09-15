@@ -1,5 +1,7 @@
 locals {
-  sidecar_virtual_networks_enabled = { for key, value in var.virtual_hubs : key => value.enabled_resources.sidecar_virtual_network }
+  sidecar_virtual_networks_enabled     = { for key, value in var.virtual_hubs : key => value.enabled_resources.sidecar_virtual_network }
+  sidecar_virtual_networks_create      = { for key, value in var.virtual_hubs : key => value.enabled_resources.sidecar_virtual_network && value.sidecar_virtual_network.resource_id == null }
+  sidecar_virtual_network_resource_ids = { for key, value in var.virtual_hubs : key => value.sidecar_virtual_network.resource_id != null ? value.sidecar_virtual_network.resource_id : module.virtual_network_side_car[key].resource_id if local.sidecar_virtual_networks_enabled[key] }
 }
 
 locals {
@@ -13,7 +15,7 @@ locals {
       enable = true
     } : value.sidecar_virtual_network.ddos_protection_plan
     tags = coalesce(value.sidecar_virtual_network.tags, var.tags, {})
-  } if local.sidecar_virtual_networks_enabled[key] }
+  } if local.sidecar_virtual_networks_create[key] }
 }
 
 locals {
@@ -60,10 +62,10 @@ locals {
     internet_security_enabled = virtual_network_connection.internet_security_enabled
     routing                   = virtual_network_connection.routing
   } }
-  virtual_network_connections_side_car = { for key, value in local.sidecar_virtual_networks : "private_dns_vnet_${key}" => {
+  virtual_network_connections_side_car = { for key, value in local.sidecar_virtual_network_resource_ids : "private_dns_vnet_${key}" => {
     name                      = coalesce(var.virtual_hubs[key].sidecar_virtual_network.virtual_network_connection_settings.name, "vnet-side-car-${key}")
     virtual_hub_key           = key
-    remote_virtual_network_id = module.virtual_network_side_car[key].resource_id
+    remote_virtual_network_id = value
     internet_security_enabled = var.virtual_hubs[key].sidecar_virtual_network.virtual_network_connection_settings.internet_security_enabled,
     routing                   = var.virtual_hubs[key].sidecar_virtual_network.virtual_network_connection_settings.routing
     } if local.sidecar_virtual_networks_enabled[key]

@@ -1,7 +1,7 @@
-rule "required_module_source_tffr1" {
+rule "avm_terraform_module_source_required" {
   enabled = false
 }
 
-rule "diagnostic_settings" {
+rule "avm_interface_diagnostic_settings" {
   enabled = false
 }
