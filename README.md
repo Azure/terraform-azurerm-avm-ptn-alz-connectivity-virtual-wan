@@ -241,6 +241,7 @@ The following top level attributes are supported:
 - `location` - (Required) The Azure location where the Virtual WAN hub resources should be created.
 - `hub` - (Optional) An object defining the Virtual WAN hub settings.
 - `virtual_network_connections` - (Optional) A map of Virtual Network connections to create.
+- `route_tables` - (Optional) A map of route tables to create in this Virtual Hub. Default `{}`.
 - `express_route_circuit_connections` - (Optional) A map of ExpressRoute circuit connections
 - `bgp_connections` - (Optional) A map of BGP connections to create on the Virtual Hub router (for direct NVA peering).
 - `p2s_gateway_vpn_server_configurations` - (Optional) A map of Point-to-Site VPN server configurations.
@@ -282,6 +283,19 @@ The following top level attributes are supported:
       - `labels` - (Optional) A list of labels for route propagation.
     - `inbound_route_map_id` - (Optional) The ID of the inbound route map.
     - `outbound_route_map_id` - (Optional) The ID of the outbound route map.
+
+## Virtual Hub Route Tables
+
+- `route_tables` - (Optional) A map of route tables to create in this Virtual Hub. The map key is an arbitrary identifier scoped to this hub. Default `{}`. Each route table is an object with the following fields:
+  - `name` - (Required) The name of the Virtual Hub Route Table. Changing this forces a new resource to be created.
+  - `labels` - (Optional) A list of labels associated with the route table.
+  - `routes` - (Optional) A map of routes in the Virtual Hub Route Table. The map key is an arbitrary identifier. Default `{}`. Each route is an object with the following fields:
+    - `name` - (Required) The name of the route.
+    - `destinations` - (Required) A list of destination addresses for the route.
+    - `destinations_type` - (Required) The destination type. Possible values are `CIDR`, `ResourceId`, and `Service`.
+    - `next_hop` - (Optional) The next hop resource ID. Required when `vnet_connection_key` is not specified.
+    - `vnet_connection_key` - (Optional) The key of a Virtual Network connection in this hub's `virtual_network_connections` map. The module resolves the connection's resource ID automatically. Required when `next_hop` is not specified.
+    - `next_hop_type` - (Optional) The next hop type. The only supported value is `ResourceId`. Default `ResourceId`.
 
 ## ExpressRoute Circuit Connections
 
