@@ -29,9 +29,9 @@ resource "random_string" "suffix" {
 }
 
 locals {
-  base_policy_name    = "afwp-base-${random_string.suffix.result}"
-  primary_location    = "italynorth"
-  secondary_location  = "swedencentral"
+  base_policy_name   = "afwp-base-${random_string.suffix.result}"
+  primary_location   = "italynorth"
+  secondary_location = "swedencentral"
   common_tags = {
     created_by  = "terraform"
     environment = "test"
@@ -64,10 +64,10 @@ module "resource_groups" {
 # shared base policy is provisioned directly with AzAPI, per repository
 # convention for direct Azure dependencies outside the module under test.
 resource "azapi_resource" "base_policy" {
-  type      = "Microsoft.Network/firewallPolicies@2024-07-01"
+  location  = local.primary_location
   name      = local.base_policy_name
   parent_id = module.resource_groups["hub_primary"].resource_id
-  location  = local.primary_location
+  type      = "Microsoft.Network/firewallPolicies@2024-07-01"
   body = {
     properties = {
       sku = {
