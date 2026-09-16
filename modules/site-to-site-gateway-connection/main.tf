@@ -50,6 +50,7 @@ resource "azurerm_vpn_gateway_connection" "vpn_site_connection" {
       }
     }
   }
+
   dynamic "routing" {
     for_each = each.value.routing != null ? [each.value.routing] : []
 
@@ -66,6 +67,7 @@ resource "azurerm_vpn_gateway_connection" "vpn_site_connection" {
       }
     }
   }
+
   dynamic "traffic_selector_policy" {
     for_each = each.value.traffic_selector_policy != null ? [each.value.traffic_selector_policy] : []
 
@@ -75,4 +77,3 @@ resource "azurerm_vpn_gateway_connection" "vpn_site_connection" {
     }
   }
 }
-

@@ -24,6 +24,7 @@ module "virtual_network_connections" {
     }
   }
 }
+
 # Routing intent
 resource "azurerm_virtual_hub_routing_intent" "routing_intent" {
   for_each = local.routing_intents != null ? local.routing_intents : {}

@@ -1,11 +1,11 @@
 output "actual_dpd_timeout_seconds" {
   description = "The DPD timeout read back from the deployed Azure VPN link connection."
-  value       = local.actual_dpd_timeout_seconds
 
   precondition {
     condition     = local.actual_dpd_timeout_seconds == local.expected_dpd_timeout_seconds
     error_message = "Expected Azure to report dpdTimeoutSeconds=${local.expected_dpd_timeout_seconds}, but received ${coalesce(tostring(local.actual_dpd_timeout_seconds), "null")}. The module did not preserve dpd_timeout_seconds across the VPN site connection pass-through chain."
   }
+  value = local.actual_dpd_timeout_seconds
 }
 
 output "vpn_gateway_connection_resource_id" {

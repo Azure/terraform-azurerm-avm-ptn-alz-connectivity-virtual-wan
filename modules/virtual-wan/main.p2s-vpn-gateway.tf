@@ -17,6 +17,7 @@ resource "azurerm_vpn_server_configuration" "p2s_gateway_vpn_server_configuratio
       tenant   = each.value.azure_active_directory_authentication.tenant
     }
   }
+
   dynamic "client_root_certificate" {
     for_each = each.value.client_root_certificate != null ? [each.value.client_root_certificate] : []
 

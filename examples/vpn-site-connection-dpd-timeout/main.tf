@@ -137,7 +137,6 @@ data "azapi_resource" "vpn_gateway_connection" {
   name      = local.vpn_connection_name
   parent_id = "${module.resource_group.resource_id}/providers/Microsoft.Network/vpnGateways/${local.vpn_gateway_name}"
   type      = "Microsoft.Network/vpnGateways/vpnConnections@2025-01-01"
-
   response_export_values = {
     dpd_timeout_seconds = "properties.vpnLinkConnections[0].properties.dpdTimeoutSeconds"
   }
