@@ -68,11 +68,12 @@ module "virtual_network" {
   source  = "Azure/avm-res-network-virtualnetwork/azurerm"
   version = "0.15.0"
 
-  location      = local.resource_groups["hub_primary"].location
-  parent_id     = module.resource_group_vnet_demo_01.resource_id
-  address_space = ["10.100.0.0/16"]
-  name          = "vnet-demo-01"
-  tags          = local.common_tags
+  location         = local.resource_groups["hub_primary"].location
+  parent_id        = module.resource_group_vnet_demo_01.resource_id
+  address_space    = ["10.100.0.0/16"]
+  enable_telemetry = false
+  name             = "vnet-demo-01"
+  tags             = local.common_tags
 }
 
 # This is the module call
