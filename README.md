@@ -440,6 +440,7 @@ The following top level attributes are supported:
         - `name` - (Required) The name of the service delegation.
         - `actions` - (Optional) A list of actions for the delegation.
     - `default_outbound_access_enabled` - (Optional) Should default outbound access be enabled? Default `false`.
+    - `ignore_body_changes` - (Optional) A list of subnet body property paths, in dot notation (for example `properties.routeTable`), that the `azapi` provider stops reconciling after creation. Use this when an out-of-band controller such as Azure Virtual Network Manager or an Azure Policy `DeployIfNotExists` assignment owns the property, so that it does not produce perpetual drift. Leave the matching dedicated input (`route_table`, `network_security_group`, `service_endpoints`, `delegations`) unset for any path you ignore, and note that while a path is ignored, configuration changes at that path are no longer sent to Azure. The value is write-only provider state, so a change only takes effect after an `apply`, and supplying a non-empty list requires Terraform 1.11 or later. Default `[]`.
 
 ## Azure Firewall
 
@@ -904,6 +905,7 @@ map(object({
             )
           ))
           default_outbound_access_enabled = optional(bool, false)
+          ignore_body_changes             = optional(list(string), [])
         }
       )), {})
     }), {})

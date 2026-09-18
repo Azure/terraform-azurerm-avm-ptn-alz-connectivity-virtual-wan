@@ -155,6 +155,40 @@ run "custom_subnet_contract" {
   }
 }
 
+# ignore_body_changes is write-only provider state, so its value cannot be read back here.
+run "subnet_ignore_body_changes_passthrough" {
+  command = apply
+
+  variables {
+    virtual_hubs = {
+      hub1 = merge(var.virtual_hubs.hub1, {
+        sidecar_virtual_network = merge(var.virtual_hubs.hub1.sidecar_virtual_network, {
+          subnets = {
+            workload = {
+              name                = "snet-workload"
+              address_prefixes    = ["10.100.1.0/24"]
+              ignore_body_changes = ["properties.routeTable"]
+            }
+          }
+        })
+      })
+    }
+  }
+
+  assert {
+    condition = (
+      module.virtual_network_side_car["hub1"].subnets["workload"].name == "snet-workload" &&
+      toset(module.virtual_network_side_car["hub1"].subnets["workload"].resource.body.properties.addressPrefixes) == toset(["10.100.1.0/24"])
+    )
+    error_message = "Supplying ignore_body_changes must not disturb subnet identity or address prefixes."
+  }
+
+  assert {
+    condition     = try(module.virtual_network_side_car["hub1"].subnets["workload"].resource.body.properties.routeTable, null) == null
+    error_message = "An ignored path must be left unmanaged, so no route table may be sent for this subnet."
+  }
+}
+
 run "generated_dns_and_bastion_subnets" {
   command   = apply
   state_key = "generated_subnets"
