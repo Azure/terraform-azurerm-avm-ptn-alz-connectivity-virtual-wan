@@ -1,0 +1,7 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Azure/azure-verified-modules-tools/main/src/Avm.Authoring/Resources/Schemas/v1/avm-module-metadata.schema.json",
+  "moduleDisplayName": "Azure ExpressRoute Gateway",
+  "moduleDescription": "Deploys an Azure ExpressRoute Gateway in a Virtual Hub.",
+  "canonicalType": "alz-connectivity-virtual-wan/expressroute-gateway",
+  "telemetryIdPrefix": "46d3xtrf.ptn.df3101b"
+}

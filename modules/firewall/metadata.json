@@ -1,0 +1,7 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Azure/azure-verified-modules-tools/main/src/Avm.Authoring/Resources/Schemas/v1/avm-module-metadata.schema.json",
+  "moduleDisplayName": "Azure Virtual Hub Firewall",
+  "moduleDescription": "Deploys an Azure Firewall to secure a Virtual Hub.",
+  "canonicalType": "alz-connectivity-virtual-wan/firewall",
+  "telemetryIdPrefix": "46d3xtrf.ptn.afa54f2"
+}
