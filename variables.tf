@@ -59,6 +59,9 @@ DESCRIPTION
 
 variable "ignore_body_changes" {
   type = object({
+    virtual_hubs_route_maps = optional(object({
+      virtual_hubs_route_maps = optional(list(string), [])
+    }), {})
     virtual_networks = optional(list(string), [])
     virtual_networks_subnets = optional(object({
       virtual_networks_subnets = optional(list(string), [])
@@ -66,9 +69,11 @@ variable "ignore_body_changes" {
   })
   default     = {}
   description = <<DESCRIPTION
-(Optional) Body property paths on the sidecar virtual network resources that the `azapi` provider stops reconciling after creation, so an out-of-band controller such as Azure Virtual Network Manager or an Azure Policy `DeployIfNotExists` assignment can own them without producing perpetual drift. Paths use dot notation and apply to the sidecar virtual network of every hub.
+(Optional) Body property paths on the resources this module creates through the `azapi` provider that the provider stops reconciling after creation, so an out-of-band controller such as Azure Virtual Network Manager or an Azure Policy `DeployIfNotExists` assignment can own them without producing perpetual drift. Paths use dot notation.
 
-- `virtual_networks` - (Optional) Ignored body paths for the sidecar virtual network itself, for example `["tags"]` when Azure Policy applies tags out-of-band. Default `[]`.
+- `virtual_hubs_route_maps` - (Optional) An object with the following field:
+  - `virtual_hubs_route_maps` - (Optional) Ignored body paths applied to every route map in `route_maps`. Default `[]`.
+- `virtual_networks` - (Optional) Ignored body paths for the sidecar virtual network of every hub, for example `["tags"]` when Azure Policy applies tags out-of-band. Default `[]`.
 - `virtual_networks_subnets` - (Optional) An object with the following field:
   - `virtual_networks_subnets` - (Optional) Ignored body paths applied to every sidecar subnet, for example `["properties.routeTable"]`. A per-subnet `ignore_body_changes` entry in `virtual_hubs.<key>.sidecar_virtual_network.subnets` takes precedence over this shared value. Default `[]`.
 
@@ -81,6 +86,7 @@ DESCRIPTION
   validation {
     condition = alltrue([
       for path in concat(
+        var.ignore_body_changes.virtual_hubs_route_maps.virtual_hubs_route_maps,
         var.ignore_body_changes.virtual_networks,
         var.ignore_body_changes.virtual_networks_subnets.virtual_networks_subnets
       ) : length(trimspace(path)) > 0

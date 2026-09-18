@@ -68,7 +68,10 @@ module "virtual_network_side_car" {
   address_space        = each.value.address_space
   ddos_protection_plan = each.value.ddos_protection_plan
   enable_telemetry     = var.enable_telemetry
-  ignore_body_changes  = var.ignore_body_changes
+  ignore_body_changes  = {
+    virtual_networks         = var.ignore_body_changes.virtual_networks
+    virtual_networks_subnets = var.ignore_body_changes.virtual_networks_subnets
+  }
   name                 = each.value.name
   retry                = var.retry
   subnets              = local.subnets[each.key]
@@ -195,5 +198,8 @@ module "route_map" {
   virtual_hub_id                  = module.virtual_wan[0].virtual_hub_resource_ids[each.value.virtual_hub_key]
   associated_inbound_connections  = each.value.associated_inbound_connections
   associated_outbound_connections = each.value.associated_outbound_connections
+  ignore_body_changes             = var.ignore_body_changes.virtual_hubs_route_maps
+  retry                           = var.retry
   rules                           = each.value.rules
+  timeouts                        = var.timeouts
 }
