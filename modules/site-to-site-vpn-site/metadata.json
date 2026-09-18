@@ -1,0 +1,7 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Azure/azure-verified-modules-tools/main/src/Avm.Authoring/Resources/Schemas/v1/avm-module-metadata.schema.json",
+  "moduleDisplayName": "Azure Site-to-Site VPN Site",
+  "moduleDescription": "Deploys an Azure site-to-site gateway site in a Virtual Hub.",
+  "canonicalType": "alz-connectivity-virtual-wan/site-to-site-vpn-site",
+  "telemetryIdPrefix": "46d3xtrf.ptn.a8a3c3c"
+}

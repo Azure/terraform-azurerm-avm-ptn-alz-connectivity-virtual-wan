@@ -1,0 +1,7 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Azure/azure-verified-modules-tools/main/src/Avm.Authoring/Resources/Schemas/v1/avm-module-metadata.schema.json",
+  "moduleDisplayName": "Azure Virtual WAN Hub Networking",
+  "moduleDescription": "Simplifies the creation of Virtual WAN based networks in Azure.",
+  "canonicalType": "alz-connectivity-virtual-wan/virtual-wan",
+  "telemetryIdPrefix": "46d3xtrf.ptn.9ffe7da"
+}
