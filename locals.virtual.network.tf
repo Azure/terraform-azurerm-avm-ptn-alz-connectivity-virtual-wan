@@ -33,7 +33,8 @@ locals {
       delegations = [{
         name = "Microsoft.Network.dnsResolvers"
         service_delegation = {
-          name = "Microsoft.Network/dnsResolvers"
+          name    = "Microsoft.Network/dnsResolvers"
+          actions = ["Microsoft.Network/virtualNetworks/subnets/join/action"]
         }
       }]
       default_outbound_access_enabled = value.private_dns_resolver.subnet_default_outbound_access_enabled
