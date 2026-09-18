@@ -1,7 +1,7 @@
 resource "azapi_resource" "route_map" {
   name      = var.name
   parent_id = var.virtual_hub_id
-  type      = "Microsoft.Network/virtualHubs/routeMaps@2025-05-01"
+  type      = var.resource_types.virtual_hubs_route_maps
   body = {
     properties = {
       associatedInboundConnections  = var.associated_inbound_connections
@@ -25,5 +25,15 @@ resource "azapi_resource" "route_map" {
         }]
       }]
     }
+  }
+  # Write-only argument, so collapse an empty list to null to keep it absent when unused.
+  ignore_body_changes = length(var.ignore_body_changes.virtual_hubs_route_maps) > 0 ? var.ignore_body_changes.virtual_hubs_route_maps : null
+  retry               = var.retry
+
+  timeouts {
+    create = var.timeouts.create
+    delete = var.timeouts.delete
+    read   = var.timeouts.read
+    update = var.timeouts.update
   }
 }

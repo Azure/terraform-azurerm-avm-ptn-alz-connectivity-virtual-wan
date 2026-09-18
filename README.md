@@ -111,6 +111,36 @@ Type: `bool`
 
 Default: `true`
 
+### <a name="input_ignore_body_changes"></a> [ignore\_body\_changes](#input\_ignore\_body\_changes)
+
+Description: (Optional) Body property paths on the resources this module creates through the `azapi` provider that the provider stops reconciling after creation, so an out-of-band controller such as Azure Virtual Network Manager or an Azure Policy `DeployIfNotExists` assignment can own them without producing perpetual drift. Paths use dot notation.
+
+- `virtual_hubs_route_maps` - (Optional) An object with the following field:
+  - `virtual_hubs_route_maps` - (Optional) Ignored body paths applied to every route map in `route_maps`. Default `[]`.
+- `virtual_networks` - (Optional) Ignored body paths for the sidecar virtual network of every hub, for example `["tags"]` when Azure Policy applies tags out-of-band. Default `[]`.
+- `virtual_networks_subnets` - (Optional) An object with the following field:
+  - `virtual_networks_subnets` - (Optional) Ignored body paths applied to every sidecar subnet, for example `["properties.routeTable"]`. A per-subnet `ignore_body_changes` entry in `virtual_hubs.<key>.sidecar_virtual_network.subnets` takes precedence over this shared value. Default `[]`.
+
+Leave the matching dedicated input unset for any path you ignore, because while a path is ignored, configuration changes at that path are no longer sent to Azure. The value is write-only provider state, so a change only takes effect after an `apply`, and supplying a non-empty list requires Terraform 1.11 or later.
+
+Virtual network peerings are deliberately not exposed here, because this module connects the sidecar virtual network through the Virtual WAN hub rather than through peerings it manages itself.
+
+Type:
+
+```hcl
+object({
+    virtual_hubs_route_maps = optional(object({
+      virtual_hubs_route_maps = optional(list(string), [])
+    }), {})
+    virtual_networks = optional(list(string), [])
+    virtual_networks_subnets = optional(object({
+      virtual_networks_subnets = optional(list(string), [])
+    }), {})
+  })
+```
+
+Default: `{}`
+
 ### <a name="input_private_link_private_dns_zone_virtual_network_link_moved_block_template_module_prefix"></a> [private\_link\_private\_dns\_zone\_virtual\_network\_link\_moved\_block\_template\_module\_prefix](#input\_private\_link\_private\_dns\_zone\_virtual\_network\_link\_moved\_block\_template\_module\_prefix)
 
 Description: (Optional) A prefix to use for the moved block template module for virtual network links.
@@ -455,6 +485,7 @@ The following top level attributes are supported:
         - `name` - (Required) The name of the service delegation.
         - `actions` - (Optional) A list of actions for the delegation.
     - `default_outbound_access_enabled` - (Optional) Should default outbound access be enabled? Default `false`.
+    - `ignore_body_changes` - (Optional) A list of subnet body property paths, in dot notation (for example `properties.routeTable`), that the `azapi` provider stops reconciling after creation. Use this when an out-of-band controller such as Azure Virtual Network Manager or an Azure Policy `DeployIfNotExists` assignment owns the property, so that it does not produce perpetual drift. Leave the matching dedicated input (`route_table`, `network_security_group`, `service_endpoints`, `delegations`) unset for any path you ignore, and note that while a path is ignored, configuration changes at that path are no longer sent to Azure. The value is write-only provider state, so a change only takes effect after an `apply`, and supplying a non-empty list requires Terraform 1.11 or later. Default `[]`.
 
 ## Azure Firewall
 
@@ -933,6 +964,7 @@ map(object({
             )
           ))
           default_outbound_access_enabled = optional(bool, false)
+          ignore_body_changes             = optional(list(string), [])
         }
       )), {})
     }), {})
@@ -1424,7 +1456,7 @@ Version: 0.1.0
 
 Source: Azure/avm-res-network-virtualnetwork/azurerm
 
-Version: 0.15.0
+Version: 0.22.2
 
 ### <a name="module_virtual_network_subnet_ip_prefixes"></a> [virtual\_network\_subnet\_ip\_prefixes](#module\_virtual\_network\_subnet\_ip\_prefixes)
 

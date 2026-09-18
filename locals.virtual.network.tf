@@ -2,6 +2,14 @@ locals {
   sidecar_virtual_networks_enabled = { for key, value in var.virtual_hubs : key => value.enabled_resources.sidecar_virtual_network }
 }
 
+# Only the slots that belong to the sidecar virtual network module are cascaded.
+locals {
+  sidecar_virtual_network_ignore_body_changes = {
+    virtual_networks         = var.ignore_body_changes.virtual_networks
+    virtual_networks_subnets = var.ignore_body_changes.virtual_networks_subnets
+  }
+}
+
 locals {
   sidecar_virtual_networks = { for key, value in var.virtual_hubs : key => {
     name          = coalesce(value.sidecar_virtual_network.name, local.default_names[key].sidecar_virtual_network_name)
