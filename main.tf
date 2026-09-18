@@ -68,6 +68,7 @@ module "virtual_network_side_car" {
   address_space        = each.value.address_space
   ddos_protection_plan = each.value.ddos_protection_plan
   enable_telemetry     = var.enable_telemetry
+  ignore_body_changes  = var.ignore_body_changes
   name                 = each.value.name
   retry                = var.retry
   subnets              = local.subnets[each.key]

@@ -111,6 +111,31 @@ Type: `bool`
 
 Default: `true`
 
+### <a name="input_ignore_body_changes"></a> [ignore\_body\_changes](#input\_ignore\_body\_changes)
+
+Description: (Optional) Body property paths on the sidecar virtual network resources that the `azapi` provider stops reconciling after creation, so an out-of-band controller such as Azure Virtual Network Manager or an Azure Policy `DeployIfNotExists` assignment can own them without producing perpetual drift. Paths use dot notation and apply to the sidecar virtual network of every hub.
+
+- `virtual_networks` - (Optional) Ignored body paths for the sidecar virtual network itself, for example `["tags"]` when Azure Policy applies tags out-of-band. Default `[]`.
+- `virtual_networks_subnets` - (Optional) An object with the following field:
+  - `virtual_networks_subnets` - (Optional) Ignored body paths applied to every sidecar subnet, for example `["properties.routeTable"]`. A per-subnet `ignore_body_changes` entry in `virtual_hubs.<key>.sidecar_virtual_network.subnets` takes precedence over this shared value. Default `[]`.
+
+Leave the matching dedicated input unset for any path you ignore, because while a path is ignored, configuration changes at that path are no longer sent to Azure. The value is write-only provider state, so a change only takes effect after an `apply`, and supplying a non-empty list requires Terraform 1.11 or later.
+
+Virtual network peerings are deliberately not exposed here, because this module connects the sidecar virtual network through the Virtual WAN hub rather than through peerings it manages itself.
+
+Type:
+
+```hcl
+object({
+    virtual_networks = optional(list(string), [])
+    virtual_networks_subnets = optional(object({
+      virtual_networks_subnets = optional(list(string), [])
+    }), {})
+  })
+```
+
+Default: `{}`
+
 ### <a name="input_private_link_private_dns_zone_virtual_network_link_moved_block_template_module_prefix"></a> [private\_link\_private\_dns\_zone\_virtual\_network\_link\_moved\_block\_template\_module\_prefix](#input\_private\_link\_private\_dns\_zone\_virtual\_network\_link\_moved\_block\_template\_module\_prefix)
 
 Description: (Optional) A prefix to use for the moved block template module for virtual network links.

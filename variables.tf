@@ -57,6 +57,38 @@ DESCRIPTION
   nullable    = false
 }
 
+variable "ignore_body_changes" {
+  type = object({
+    virtual_networks = optional(list(string), [])
+    virtual_networks_subnets = optional(object({
+      virtual_networks_subnets = optional(list(string), [])
+    }), {})
+  })
+  default     = {}
+  description = <<DESCRIPTION
+(Optional) Body property paths on the sidecar virtual network resources that the `azapi` provider stops reconciling after creation, so an out-of-band controller such as Azure Virtual Network Manager or an Azure Policy `DeployIfNotExists` assignment can own them without producing perpetual drift. Paths use dot notation and apply to the sidecar virtual network of every hub.
+
+- `virtual_networks` - (Optional) Ignored body paths for the sidecar virtual network itself, for example `["tags"]` when Azure Policy applies tags out-of-band. Default `[]`.
+- `virtual_networks_subnets` - (Optional) An object with the following field:
+  - `virtual_networks_subnets` - (Optional) Ignored body paths applied to every sidecar subnet, for example `["properties.routeTable"]`. A per-subnet `ignore_body_changes` entry in `virtual_hubs.<key>.sidecar_virtual_network.subnets` takes precedence over this shared value. Default `[]`.
+
+Leave the matching dedicated input unset for any path you ignore, because while a path is ignored, configuration changes at that path are no longer sent to Azure. The value is write-only provider state, so a change only takes effect after an `apply`, and supplying a non-empty list requires Terraform 1.11 or later.
+
+Virtual network peerings are deliberately not exposed here, because this module connects the sidecar virtual network through the Virtual WAN hub rather than through peerings it manages itself.
+DESCRIPTION
+  nullable    = false
+
+  validation {
+    condition = alltrue([
+      for path in concat(
+        var.ignore_body_changes.virtual_networks,
+        var.ignore_body_changes.virtual_networks_subnets.virtual_networks_subnets
+      ) : length(trimspace(path)) > 0
+    ])
+    error_message = "Every ignore_body_changes entry must be a non-empty body path in dot notation, for example \"properties.routeTable\" or \"tags\"."
+  }
+}
+
 variable "retry" {
   type = object({
     error_message_regex = optional(list(string), [

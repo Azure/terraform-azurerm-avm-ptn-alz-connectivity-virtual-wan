@@ -189,6 +189,55 @@ run "subnet_ignore_body_changes_passthrough" {
   }
 }
 
+run "module_level_ignore_body_changes" {
+  command = apply
+
+  variables {
+    ignore_body_changes = {
+      virtual_networks = ["tags"]
+      virtual_networks_subnets = {
+        virtual_networks_subnets = ["properties.routeTable"]
+      }
+    }
+
+    virtual_hubs = {
+      hub1 = merge(var.virtual_hubs.hub1, {
+        sidecar_virtual_network = merge(var.virtual_hubs.hub1.sidecar_virtual_network, {
+          subnets = {
+            workload = {
+              name             = "snet-workload"
+              address_prefixes = ["10.100.1.0/24"]
+            }
+          }
+        })
+      })
+    }
+  }
+
+  assert {
+    condition = (
+      module.virtual_network_side_car["hub1"].name == "vnet-sidecar-test" &&
+      module.virtual_network_side_car["hub1"].subnets["workload"].name == "snet-workload" &&
+      try(module.virtual_network_side_car["hub1"].subnets["workload"].resource.body.properties.routeTable, null) == null
+    )
+    error_message = "The shared ignore_body_changes slots must not disturb the virtual network or its subnets."
+  }
+}
+
+run "ignore_body_changes_rejects_empty_path" {
+  command = plan
+
+  variables {
+    ignore_body_changes = {
+      virtual_networks_subnets = {
+        virtual_networks_subnets = ["   "]
+      }
+    }
+  }
+
+  expect_failures = [var.ignore_body_changes]
+}
+
 run "generated_dns_and_bastion_subnets" {
   command   = apply
   state_key = "generated_subnets"
