@@ -50,7 +50,7 @@ module "resource_groups" {
 
   location         = each.value.location
   name             = each.value.name
-  enable_telemetry = false
+  enable_telemetry = var.enable_telemetry
   tags             = local.common_tags
 }
 
@@ -60,7 +60,7 @@ module "resource_group_vnet_demo_01" {
 
   location         = local.resource_groups["hub_primary"].location
   name             = "rg-vnet-demo-01-${random_string.suffix.result}"
-  enable_telemetry = false
+  enable_telemetry = var.enable_telemetry
   tags             = local.common_tags
 }
 
@@ -71,7 +71,7 @@ module "virtual_network" {
   location         = local.resource_groups["hub_primary"].location
   parent_id        = module.resource_group_vnet_demo_01.resource_id
   address_space    = ["10.100.0.0/16"]
-  enable_telemetry = false
+  enable_telemetry = var.enable_telemetry
   name             = "vnet-demo-01"
   tags             = local.common_tags
 }
@@ -80,7 +80,7 @@ module "virtual_network" {
 module "test" {
   source = "../../"
 
-  enable_telemetry = false
+  enable_telemetry = var.enable_telemetry
   tags             = local.common_tags
   virtual_hubs = {
     primary = {

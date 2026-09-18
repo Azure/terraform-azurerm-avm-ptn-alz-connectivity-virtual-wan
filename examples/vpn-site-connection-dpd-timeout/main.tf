@@ -52,7 +52,7 @@ module "resource_group" {
 
   location         = local.location
   name             = local.resource_group_name
-  enable_telemetry = false
+  enable_telemetry = var.enable_telemetry
   tags             = local.common_tags
 }
 
@@ -60,7 +60,7 @@ module "resource_group" {
 module "test" {
   source = "../../"
 
-  enable_telemetry = false
+  enable_telemetry = var.enable_telemetry
   tags             = local.common_tags
   virtual_hubs = {
     primary = {
