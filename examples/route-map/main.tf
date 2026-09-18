@@ -139,7 +139,7 @@ module "resource_group" {
 
   location         = local.resource_group.location
   name             = local.resource_group.name
-  enable_telemetry = false
+  enable_telemetry = var.enable_telemetry
   tags             = local.common_tags
 }
 
@@ -148,7 +148,7 @@ module "resource_group" {
 module "vwan" {
   source = "../../"
 
-  enable_telemetry = false
+  enable_telemetry = var.enable_telemetry
   route_maps       = local.route_maps
   tags             = local.common_tags
   virtual_hubs = {
