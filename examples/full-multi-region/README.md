@@ -169,7 +169,7 @@ Description: Flag to enable/disable telemetry
 
 Type: `bool`
 
-Default: `false`
+Default: `true`
 
 ### <a name="input_management_group_settings"></a> [management\_group\_settings](#input\_management\_group\_settings)
 
