@@ -1,8 +1,6 @@
-# RELEASE QUALIFICATION EVIDENCE (issue #352 offline review) - NOT a new fix. These runs are all GREEN
-# against the ownership precondition in main.tf, independent of the separate NAT-Gateway (a)/(b) decision
-# (see nat_gateway_ownership_gap.tftest.hcl and the release qualification report §5A.6): they exist purely
-# to substantiate, with concrete citations, the genericity claim about the `ipConfiguration`-based
-# association check.
+# These runs pin down that the ownership precondition in main.tf is generic across association surfaces,
+# not specific to network interfaces. They are independent of the NAT Gateway decision documented in
+# nat_gateway_ownership_gap.tftest.hcl.
 #
 # Per Microsoft.Network/publicIPAddresses@2024-10-01 (this module's default API version - see variables.tf
 # and the ARM template reference at learn.microsoft.com/azure/templates/microsoft.network/2024-10-01/
@@ -16,8 +14,8 @@
 #     they all funnel through this single, generic reference. This module checks this field.
 #   - `natGateway` (a `{id: string}` reference) - the one consumer type that does NOT use an IP
 #     configuration. This module deliberately does NOT check this field client-side (see
-#     nat_gateway_ownership_gap.tftest.hcl for the full (a)/(b) reasoning); Azure's own live, synchronous
-#     rejection on this module's actual attach path is the enforced backstop for that prerequisite instead.
+#     nat_gateway_ownership_gap.tftest.hcl for the reasoning); Azure's own synchronous rejection on the
+#     firewall-attach path is the enforced backstop for that prerequisite instead.
 # There is no separate `natRule`/`natRules` or `loadBalancerBackendAddressPools` property directly on this
 # resource at this API version - confirmed via the same ARM template reference.
 #
@@ -27,8 +25,8 @@
 # already proved this for a network-interface-shaped association), the check is generic across resource
 # *type* - it was never NIC-specific. The runs below simply substitute a Load Balancer frontend IP
 # configuration and an Application Gateway frontend IP configuration in place of the NIC shape already
-# tested, to make that genericity concrete for two more of the specific surfaces named in the release
-# qualification follow-up (Load Balancer frontend/backend attachment, Application Gateway attachment).
+# tested, to make that genericity concrete for two more common surfaces (Load Balancer frontend attachment
+# and Application Gateway attachment).
 # Azure Bastion, Route Server, VPN/ExpressRoute Gateway, and VMSS/API-Management-via-NIC all present the
 # same `.../<resourceType>/<name>/ipConfigurations/<name>`-shaped association value and are covered by the
 # identical code path - they are not re-enumerated here to avoid redundant, purely-cosmetic test runs
@@ -37,10 +35,8 @@
 # Explicitly NOT covered by this check, and not claimed to be: `linkedPublicIPAddress` (dual-stack IPv4/IPv6
 # sibling PIP reference) and `servicePublicIPAddress` (Basic-to-Standard migration sibling PIP reference).
 # Both exist on this same schema but represent a PIP-to-PIP relationship, not "in use by a consuming network
-# resource" - checking them was out of this fix's authorized scope, and doing so speculatively risks
-# rejecting legitimate configurations (e.g. a customer deliberately supplying both halves of a dual-stack
-# pair). This exclusion is called out explicitly in the release qualification report rather than left
-# silently unstated.
+# resource" - checking them speculatively risks rejecting legitimate configurations (e.g. a customer
+# deliberately supplying both halves of a dual-stack pair).
 mock_provider "modtm" {}
 mock_provider "random" {}
 mock_provider "azapi" {

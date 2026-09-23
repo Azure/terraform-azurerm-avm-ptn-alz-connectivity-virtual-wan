@@ -40,11 +40,11 @@ variables {
 
 # Same-shape regression as modules/firewall/tests/unit/mode_detection_heterogeneous_ipconfigurations.tftest.hcl,
 # but exercised directly against this leaf module's own character-identical precondition on
-# azapi_resource.this (see main.tf's decision-record comment on that precondition). A pre-existing
+# azapi_resource.this (see the comment on that precondition in main.tf). A pre-existing
 # customer-mode firewall's real ipConfigurations response is a heterogeneous, unification-impossible tuple
 # (one element carries privateIPAddress as a string, the other omits that key entirely - real ARM
-# key-omission, not null). Before the fix, coalesce()-based misclassification silently read this genuine
-# customer-mode firewall as managed, and this precondition wrongly rejected an ordinary same-mode grow
+# key-omission, not null). A coalesce()-based check would silently read this genuine
+# customer-mode firewall as managed, and this precondition would wrongly reject an ordinary same-mode grow
 # (adding a third customer IP).
 run "grow_third_customer_ip_on_existing_two_ip_firewall_with_heterogeneous_ipconfigurations" {
   command = plan

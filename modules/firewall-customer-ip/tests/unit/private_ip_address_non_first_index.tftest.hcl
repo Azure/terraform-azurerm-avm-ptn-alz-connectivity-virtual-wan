@@ -34,25 +34,21 @@ variables {
   }
 }
 
-# Regression coverage for a real-Azure finding: local.virtual_hub[0].private_ip_address previously hardcoded
-# properties.ipConfigurations[0], an unsafe index. A live multi-ipConfiguration observation (one firewall,
-# two ipConfigurations, api-version 2024-10-01, one region) showed exactly one element carries
-# privateIPAddress and the other omits the key entirely (not null); in that observation the address
-# happened to be at index 0, so the defect was latent there, not actively triggered. Azure's return order
-# was NOT measured to be guaranteed to match declaration order, and misordering was NOT measured to occur
-# either - this test does not assert either direction, it only proves the fix no longer depends on order.
-# Before the fix, if index 0 lacked privateIPAddress but a later index had it, the expression did NOT
-# degrade to null - it hard-failed with an opaque
+# Guards against assuming the private IP address is on properties.ipConfigurations[0]. Azure GETs for a
+# multi-ipConfiguration firewall (api-version 2024-10-01) report privateIPAddress on exactly one element
+# and omit the key entirely (not null) on the others, and nothing guarantees that element is at index 0.
+# This test does not assert how Azure orders the elements; it proves the module does not depend on order.
+# An index-0-only lookup would not degrade to null when index 0 lacks privateIPAddress but a later index
+# has it - it would hard-fail with an opaque
 # `Call to function "coalesce" failed: no non-null, non-empty-string arguments.` error naming neither the
-# firewall nor the cause, even though the private IP address was genuinely available at another index.
+# firewall nor the cause, even though the private IP address is genuinely available at another index.
 #
 # This is the only run in this file that applies azapi_resource.this, so its override_resource output is
 # guaranteed authoritative and not shadowed by state accumulated from an earlier run in the same file (see
 # real_azure_optional_response_properties.tftest.hcl for the same convention/rationale).
 #
-# RED (before the fix): this run fails during apply with the opaque coalesce error above, even though
-# ipConfigurations[1] plainly carries a usable private IP address.
-# GREEN (after the fix): the module searches every ipConfiguration, not only index 0, and this run passes.
+# The module searches every ipConfiguration, not only index 0, so this run must resolve the address from
+# ipConfigurations[1].
 run "resolves_private_ip_from_non_first_ip_configuration" {
   command = apply
   override_resource {
@@ -65,8 +61,7 @@ run "resolves_private_ip_from_non_first_ip_configuration" {
             {
               name = "internet-primary"
               properties = {
-                # index 0 genuinely lacks a private IP in this Azure response shape (key absent), per the
-                # real-Azure finding this test reproduces.
+                # index 0 genuinely lacks a private IP in this Azure response shape (key absent).
                 publicIPAddress = { id = "/subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/rg-ips/providers/Microsoft.Network/publicIPAddresses/pip-primary" }
               }
             },

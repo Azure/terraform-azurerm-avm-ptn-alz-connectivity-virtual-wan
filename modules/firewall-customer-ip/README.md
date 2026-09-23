@@ -12,7 +12,7 @@ Firewall requests use stable API `2024-10-01` by default. The diagnostic-setting
 
 Direct leaf consumers can configure canonical `role_assignments` and `lock` interfaces. Both are disabled by default, and the existing pattern does not expose new root-level role or lock capabilities. These extensions are scoped only to this firewall; they do not change or lock the caller-owned public IPs, hub or policy. Roles use the released AVM interface utility's name/definition handling. `skip_service_principal_aad_check` has no effect with AzAPI. The lock is created after diagnostics and roles and removed before them; utility version `0.6.0` does not expose lock notes, so this module adds the canonical `notes` property to its generated body.
 
-Same-mode IP add/remove/replace operations require maintenance planning and measured traffic evidence. Real-Azure create/update/idempotence, association readback and traffic qualification remain release gates for this candidate.
+Same-mode IP add/remove/replace operations are maintenance operations and are not guaranteed to be outage-free.
 
 <!-- markdownlint-disable MD033 -->
 ## Requirements

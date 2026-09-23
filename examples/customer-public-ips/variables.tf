@@ -5,7 +5,7 @@ variable "location" {
 
 variable "name_prefix" {
   type        = string
-  description = "Unique prefix for the disposable qualification deployment."
+  description = "Unique prefix for the resources this example creates."
 }
 
 variable "resource_group_name" {
@@ -27,7 +27,7 @@ variable "ignore_body_changes" {
   })
   default     = {}
   description = <<DESCRIPTION
-Body-relative dot paths for this caller's supporting resources. Changes take effect after apply; ignored configuration is not sent to Azure. Leave empty for qualification so drift remains visible.
+Body-relative dot paths for this caller's supporting resources. Changes take effect after apply; ignored configuration is not sent to Azure. Leave empty so drift remains visible.
 
 - `resources_resource_groups` - Resource group body paths.
 - `network_public_ip_addresses` - Public IP body paths.
@@ -76,7 +76,7 @@ variable "retry" {
 variable "sku_tier" {
   type        = string
   default     = "Standard"
-  description = "Firewall and policy tier for the qualification deployment."
+  description = "Firewall and policy tier for this example."
 
   validation {
     condition     = contains(["Standard", "Premium"], var.sku_tier)

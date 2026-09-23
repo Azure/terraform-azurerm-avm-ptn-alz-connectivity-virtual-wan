@@ -1,4 +1,4 @@
-# RELEASE QUALIFICATION PROBE (issue #352 offline review) - documents current behavior only.
+# Documents current behavior only.
 #
 # The only zone-related precondition on azapi_resource.this (see main.tf) is:
 #
@@ -16,7 +16,7 @@
 # documents the module's own current plan/apply-time acceptance behavior so a future change to the
 # precondition is a visible, deliberate decision instead of a silent regression.
 #
-# LIVE-AZURE ANSWER, measured 2026-09-22 (centralindia, api-version 2024-10-01):
+# Verified against Azure (api-version 2024-10-01):
 # Azure REJECTS the mismatch this module accepts. A direct ARM PUT attaching a public IP zoned ["1"] to a
 # firewall zoned ["1","2","3"] returned:
 #
@@ -98,7 +98,7 @@ run "current_behavior_accepts_single_zone_subset_on_zone_redundant_firewall" {
   }
   assert {
     condition     = length(azapi_resource.this.body.properties.ipConfigurations) == 1
-    error_message = "Current behavior (documented gap, not a fix): the module accepts a customer public IP whose zones ([\"1\"]) are a strict, non-matching subset of the firewall's zones ([\"1\",\"2\",\"3\"]) instead of rejecting the mismatch. Only zone-list emptiness is validated, not zone-SET compatibility. See the KNOWN GAP comment at the top of this file and the release qualification report for the proposed bounded fix."
+    error_message = "Current behavior (documented gap, not a fix): the module accepts a customer public IP whose zones ([\"1\"]) are a strict, non-matching subset of the firewall's zones ([\"1\",\"2\",\"3\"]) instead of rejecting the mismatch. Only zone-list emptiness is validated, not zone-SET compatibility. See the KNOWN GAP comment at the top of this file."
   }
 }
 

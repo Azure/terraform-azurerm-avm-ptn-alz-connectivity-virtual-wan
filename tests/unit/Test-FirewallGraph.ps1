@@ -6,7 +6,7 @@ Runs provider-mocked upgrade and negative graph regressions without Azure access
 Terraform downloads the pinned published baseline during init. Every Azure
 provider is mocked. No state commands, imports or artificial migration blocks
 are used. Generated test cases and JSON evidence stay under the fixture's
-ignored work directory. Real-Azure upgrade testing remains a separate gate.
+ignored work directory.
 .EXAMPLE
 pwsh -File tests\unit\Test-FirewallGraph.ps1
 #>

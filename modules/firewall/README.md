@@ -12,7 +12,7 @@ Customer opt-in requires subscription-scoped firewall read permission for AzAPI 
 
 The state-only `terraform_data.public_ip_mode` record deliberately keeps its original input. Its postcondition raises an error for a requested mode change even when the marker otherwise has no planned changes. No Azure resource/IP drift is ignored. Keep this resource address stable in future refactors. Removing a firewall also removes the marker normally; no manual state migration is required.
 
-Old resource, virtual-hub, null/empty and diagnostic composite-ID output contracts remain available. Customer maintenance is not guaranteed to be outage-free. The root documentation describes prerequisites and outstanding real-Azure release gates.
+Old resource, virtual-hub, null/empty and diagnostic composite-ID output contracts remain available. Customer maintenance is not guaranteed to be outage-free. The root documentation describes prerequisites and maintenance guidance.
 
 <!-- markdownlint-disable MD033 -->
 ## Requirements

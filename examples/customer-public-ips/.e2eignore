@@ -1,1 +1,1 @@
-Manual qualification requires explicit disposable-lab inputs and ownership approval.
+Requires caller-supplied inputs, so it is excluded from automatic E2E testing.

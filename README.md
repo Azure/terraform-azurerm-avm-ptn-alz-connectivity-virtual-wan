@@ -64,11 +64,11 @@ Only customer-mode configurations perform subscription firewall inventory. The A
 
 Normal input-value dependencies on newly created resource groups are retained. Discovery does not depend on new public IP or hub IDs. Genuinely deferred inventory or an unresolved target identity cannot be treated as absence: planning stops rather than risking deletion. An explicit, broad `depends_on` on the entire module can defer discovery and is not a substitute for ordinary resource/input dependencies.
 
-### Maintenance and qualification
+### Maintenance
 
-Adding, removing or replacing customer IP entries while keeping at least one entry is a maintenance operation. It is not a zero-downtime guarantee. Keep map keys stable, plan the address/rule changes explicitly, and measure control-plane duration and traffic impact separately. Removing the final customer IP or adding customer IPs to an existing managed firewall is a mode conversion and is blocked. Cross-mode conversion is a separate, deferred procedure; disabling/removing the whole firewall remains a destructive operation.
+Adding, removing or replacing customer IP entries while keeping at least one entry is a maintenance operation. It is not a zero-downtime guarantee. Keep map keys stable, plan the address/rule changes explicitly, and measure control-plane duration and traffic impact separately. Removing the final customer IP or adding customer IPs to an existing managed firewall is a mode conversion and is blocked. Cross-mode conversion is not supported by this module; disabling/removing the whole firewall remains a destructive operation.
 
-This candidate uses firewall API `2024-10-01`. Real-Azure unchanged managed-state upgrades, customer create/update/idempotence, public-IP association readback, diagnostic identities, and traffic impact must be qualified before release. Mocked tests and control-plane elapsed time are not evidence of a zero-outage upgrade or maintenance operation.
+Customer-mode firewall requests use API version `2024-10-01` by default.
 
 <!-- markdownlint-disable MD033 -->
 ## Requirements

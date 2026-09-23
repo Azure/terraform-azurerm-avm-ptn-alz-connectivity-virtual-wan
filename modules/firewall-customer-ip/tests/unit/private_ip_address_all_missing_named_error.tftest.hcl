@@ -35,10 +35,10 @@ variables {
 }
 
 # Negative case: no ipConfiguration reports a private IP address at all, and hubIPAddresses is also absent.
-# Before the fix, this shape hit the exact same opaque, unnamed `coalesce` failure as
-# private_ip_address_non_first_index.tftest.hcl's RED case - "all missing" and "present-but-wrong-index" are
-# indistinguishable failure modes under the old code. After the fix, this must degrade to a clear, named
-# postcondition failure on azapi_resource.this (identifying the firewall itself), not the opaque error.
+# Like the wrong-index shape in private_ip_address_non_first_index.tftest.hcl, a naive coalesce() lookup
+# would fail here with an opaque, unnamed error - "all missing" and "present-but-wrong-index" would be
+# indistinguishable. This must instead degrade to a clear, named postcondition failure on
+# azapi_resource.this (identifying the firewall itself), not the opaque error.
 run "all_ip_configurations_missing_private_address_produces_named_error" {
   command = apply
   override_resource {

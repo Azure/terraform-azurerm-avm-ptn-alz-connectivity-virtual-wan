@@ -14,6 +14,6 @@ output "caller_owned_public_ip_ids" {
 }
 
 output "resource_group_id" {
-  description = "Qualification resource group identity."
+  description = "Resource group created by this example."
   value       = azapi_resource.resource_group.id
 }

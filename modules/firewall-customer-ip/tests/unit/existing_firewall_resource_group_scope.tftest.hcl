@@ -30,15 +30,13 @@ variables {
   }
 }
 
-# Reproduces the real-Azure mis-resolution the parent measured against subscription 9f5f4d40: two Azure
-# Firewalls named identically ("fw-alz352-customer-ip-eastus") existing in two different resource groups
-# (the one this module is actually creating/managing, and a wholly unrelated pre-existing firewall
-# elsewhere). existing_firewall's pre-fix filter only checks firewall.name, never the resource group, so
-# it cannot distinguish "the firewall this apply owns" from "some other firewall that merely shares a
-# name" once more than one same-named firewall exists in the subscription-wide response. With two matches
-# for the same name, the pre-fix filter yields two elements and one() itself errors, rather than
-# transparently picking the correct one - the lookup does not resolve on identity, it happens to work only
-# while at most one same-named firewall exists anywhere.
+# Two Azure Firewalls can share a name in different resource groups: the one this module is creating or
+# managing, and an unrelated pre-existing firewall elsewhere. A filter that only checks firewall.name,
+# never the resource group, cannot distinguish "the firewall this apply owns" from "some other firewall
+# that merely shares a name" once more than one same-named firewall exists in the subscription-wide
+# response. With two matches for the same name, a name-only filter yields two elements and one() itself
+# errors, rather than transparently picking the correct one - such a lookup does not resolve on identity,
+# it happens to work only while at most one same-named firewall exists anywhere.
 run "resolves_the_firewall_in_its_own_resource_group_not_a_same_named_one_elsewhere" {
   command = plan
   override_data {
@@ -76,11 +74,11 @@ run "resolves_the_firewall_in_its_own_resource_group_not_a_same_named_one_elsewh
   }
 }
 
-# The more consequential "silent wrong answer" case (parent's own framing): no firewall of this name
+# The more consequential "silent wrong answer" case: no firewall of this name
 # exists yet in this module's own resource group (a genuine fresh create), but an entirely unrelated
-# firewall elsewhere in the subscription happens to share the name and is in MANAGED mode. The pre-fix
-# name-only filter finds that one unrelated match, misreads it as "the pre-existing firewall this apply is
-# managing", sees it has no customer IP (managed), and wrongly rejects this legitimate customer-mode
+# firewall elsewhere in the subscription happens to share the name and is in MANAGED mode. A name-only
+# filter would find that one unrelated match, misread it as "the pre-existing firewall this apply is
+# managing", see it has no customer IP (managed), and wrongly reject this legitimate customer-mode
 # create as an unsupported managed-to-customer conversion - even though, from this resource group's own
 # point of view, there is no pre-existing firewall at all.
 run "unrelated_same_named_managed_firewall_in_another_resource_group_does_not_block_a_fresh_create" {

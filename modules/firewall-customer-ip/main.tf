@@ -114,7 +114,7 @@ resource "azapi_resource" "this" {
 
   lifecycle {
     precondition {
-      # See modules/firewall/locals.tf's existing_customer_mode for the full decision record: this
+      # See modules/firewall/locals.tf's existing_customer_mode for the full rationale: this
       # condition is character-identical in shape to that one (both guard a managed<->customer transition
       # based on whether a pre-existing firewall's real ipConfigurations response already carries a
       # customer-owned public IP). Deliberately does NOT pre-filter the source through coalesce(): real
@@ -162,8 +162,8 @@ resource "azapi_resource" "this" {
       # rejects this at apply time with ZonalAzureFirewallCannotReferenceNoZonePublicIp. Surface it as a clear
       # plan-time error instead, since a customer's existing public IP may predate zone redundancy.
       #
-      # This is deliberately a LENGTH check, not a set comparison. Real-Azure probe, 2024-10-01: a firewall
-      # zoned [1,2,3] referencing an IP zoned [1] is rejected with
+      # This is deliberately a LENGTH check, not a set comparison. Verified against Azure with API version
+      # 2024-10-01: a firewall zoned [1,2,3] referencing an IP zoned [1] is rejected with
       # AzureFirewallZoneConstraintDoesNotMatchPublicIpAddressZoneConstraint, so this check does NOT catch a
       # mismatched (as opposed to absent) zone set. Tightening to set equality is NOT justified on the
       # evidence: only IP-zones-narrower-than-firewall was tested, and if the real ARM rule is
@@ -174,41 +174,25 @@ resource "azapi_resource" "this" {
       error_message = "This firewall is configured with availability zones (var.zones), but at least one customer public IP has no configured zones. Either set var.zones = [] to deploy a non-zonal firewall matching the existing public IP(s), or use zone-redundant public IPs. Note this check only detects ABSENT zones: an IP whose zones differ from the firewall's is rejected later by Azure at apply time with AzureFirewallZoneConstraintDoesNotMatchPublicIpAddressZoneConstraint."
     }
     precondition {
-      # DECISION RECORD (issue #352 release qualification, revisited after new real-Azure evidence):
-      # this precondition deliberately checks ONLY `ipConfiguration`, not `natGateway`, and this is a
-      # considered choice (option (b) of an (a)/(b) reconsideration), not an oversight.
+      # This precondition deliberately checks only `ipConfiguration`, not `natGateway`.
       #
-      # An earlier revision of this module (commit `af77839`, since reverted) added a client-side
-      # `natGateway == null` check after finding that a NAT-Gateway-attached public IP presents
-      # `ipConfiguration = null` while `natGateway` is non-null, and would otherwise be silently treated
-      # as unowned. That diagnosis is correct and remains true. The decision to check for it client-side
-      # was reversed after the parent directly tested the exact previously-unverified path: a live ARM PUT
-      # attaching a NAT-Gateway-owned public IP as a THIRD ipConfiguration on this module's own live
-      # secured-hub firewall (`Microsoft.Network/azureFirewalls`, api-version 2024-10-01). Azure rejected
-      # it with a synchronous `400 PublicIPAddressInUse` in ~5 seconds, naming the exact conflicting
-      # `natGateways/...` resource ID and the offending ipConfiguration, BEFORE any mutation - the firewall
-      # was left `Succeeded` with its prior ipConfigurations unchanged, no orphaned config, no partial
-      # state, no takeover of the NAT gateway's IP.
+      # A public IP attached to a NAT Gateway presents `ipConfiguration = null` with a non-null
+      # `natGateway`, so this check treats it as unassociated. A client-side `natGateway == null` check
+      # adds no safety: Azure rejects attaching a NAT-Gateway-owned public IP to a secured-hub firewall
+      # (`Microsoft.Network/azureFirewalls`, api-version 2024-10-01) synchronously and before any mutation,
+      # with `400 PublicIPAddressInUse` naming the conflicting `natGateways/...` resource. The firewall is
+      # left `Succeeded` with its existing ipConfigurations unchanged.
       #
-      # Given that measured result, a client-side natGateway check adds no safety this exact attach path
-      # doesn't already provide, and Azure's own rejection is strictly MORE informative than anything this
-      # precondition could produce (it names the actual owning resource; this precondition can only ever
-      # say "in use by a NAT Gateway" or "in use by another resource"). A natGateway-only client-side check
-      # would also cover exactly one of several possible non-`ipConfiguration` association surfaces on
-      # this resource type, while implying a completeness it does not have for any other surface that
-      # might exist outside the schema fields this module reads - the same "verified free" false-confidence
-      # failure mode this session has flagged elsewhere. `ipConfiguration` itself is deliberately still
-      # checked below (unrelated to the natGateway question): it is a pre-existing, unrelated guard, and it
-      # remains schema-generic across every consumer type that attaches via that field (NIC, Load Balancer
-      # frontend, Application Gateway frontend, VPN/ExpressRoute Gateway, Bastion, Route Server, and
-      # NIC-attached APIM/VMSS - confirmed via the ARM template reference for this API version).
+      # Azure's rejection is also more informative than this precondition could be, because it names the
+      # owning resource. A natGateway-only check would cover just one of several possible
+      # non-`ipConfiguration` association surfaces while implying a completeness it does not have.
+      # `ipConfiguration` is still checked here because it is schema-generic across every consumer type
+      # that attaches through that field (NIC, Load Balancer frontend, Application Gateway frontend,
+      # VPN/ExpressRoute Gateway, Bastion, Route Server, and NIC-attached APIM/VMSS, per the ARM template
+      # reference for this API version).
       #
-      # Ownership by NAT Gateway (or any other surface not reflected in `ipConfiguration`) is therefore an
-      # explicitly accepted, documented prerequisite, not a client-side-enforced one: the caller must supply
-      # a public IP that is not attached elsewhere, and Azure's own control plane is the authoritative,
-      # synchronous, pre-mutation enforcement of that prerequisite for the firewall-attach path specifically
-      # (now directly verified, not merely inferred from other consumer types - see the release
-      # qualification report, §5A.6, for the full evidence and reasoning record).
+      # Supplying a public IP that is not attached elsewhere is therefore a documented prerequisite, which
+      # Azure's control plane enforces on the firewall-attach path.
       condition = alltrue([
         for key, ip in data.azapi_resource.public_ips : ip.output.association == null ? true : (
           lower(local.public_ip_association_parents[key]) == lower(local.firewall_id)

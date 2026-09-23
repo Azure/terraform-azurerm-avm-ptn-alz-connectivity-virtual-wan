@@ -1,7 +1,7 @@
 locals {
-  # Real Azure (subscription 9f5f4d40) was measured to have two Azure Firewalls sharing the same name in
-  # two different resource groups: the one this module is actually creating/managing, and a wholly
-  # unrelated pre-existing firewall elsewhere. Filtering data.azapi_resource_list.firewalls by name alone
+  # Azure Firewall names are unique only within a resource group, so one subscription can hold two
+  # firewalls with the same name in different resource groups: the one this module is creating or
+  # managing, and an unrelated pre-existing firewall elsewhere. Filtering the firewall list by name alone
   # cannot distinguish "the firewall this apply owns" from "some other firewall that merely shares a
   # name" - at best it hard-errors once more than one same-named firewall exists anywhere in the
   # subscription-wide response (one() rejects a multi-element list), and at worst it silently resolves to
@@ -26,19 +26,12 @@ locals {
   public_ip_addresses = [
     for key in sort(keys(var.ip_configurations)) : data.azapi_resource.public_ips[key].output.address
   ]
-  # Real Azure GETs for a multi-ipConfiguration Secured Virtual Hub firewall were observed (one firewall,
-  # two ipConfigurations, api-version 2024-10-01, one region) to report privateIPAddress on exactly one
-  # element and omit the key entirely (not null) on the other. In that single observation the address
-  # happened to be on index 0, so a hardcoded [0] index returned the correct value there - this defect is
-  # latent in that specific configuration, not actively triggered. Azure's return order was NOT measured to
-  # be guaranteed to match declaration order, and misordering was NOT measured to occur either - neither
-  # direction is asserted here. No defense against a different return order was found in the pre-fix code
-  # (a hardcoded ipConfigurations[0] index), and the resulting pre-fix failure mode was opaque (a raw
-  # `coalesce` error naming neither the firewall nor the actual cause) - only these two facts are claimed;
-  # "Azure reorders these" is never asserted, only that "no defense against reordering was found."
-  # To remove the dependency on order entirely, search every ipConfiguration for the one that actually
-  # carries the key, instead of assuming position [0], and treat an empty-string privateIPAddress the same
-  # as an absent one (compact() drops both null-coerced "" placeholders and genuine empty strings).
+  # Azure GETs for a multi-ipConfiguration Secured Virtual Hub firewall (api-version 2024-10-01) report
+  # privateIPAddress on exactly one element and omit the key entirely (not null) on the others. Nothing
+  # guarantees that the element carrying it is at index 0, so search every ipConfiguration for the one
+  # that actually carries the key instead of assuming position [0], and treat an empty-string
+  # privateIPAddress the same as an absent one (compact() drops both null-coerced "" placeholders and
+  # genuine empty strings).
   #
   # Deterministic tie-break, stated explicitly rather than left as an implicit accident of evaluation order:
   # if more than one ipConfiguration element were ever to carry a non-empty privateIPAddress simultaneously,

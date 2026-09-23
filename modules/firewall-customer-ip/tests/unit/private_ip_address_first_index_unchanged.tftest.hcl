@@ -34,8 +34,8 @@ variables {
   }
 }
 
-# Positive regression case (must keep passing, both before and after the fix): index 0 already carries the
-# private IP address - the pre-existing, already-tested happy path (see also
+# Positive regression case (must keep passing): index 0 already carries the
+# private IP address - the common happy path (see also
 # real_azure_optional_response_properties.tftest.hcl's single-ipConfiguration variant). Duplicated here, in
 # its own isolated file/state, so the private-IP-index-safety matrix is self-contained and does not depend
 # on an unrelated file's scenario surviving future edits.
