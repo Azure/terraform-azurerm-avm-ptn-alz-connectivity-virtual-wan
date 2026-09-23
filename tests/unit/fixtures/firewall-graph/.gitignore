@@ -1,0 +1,5 @@
+work/
+d/
+t/
+.terraform/
+.terraform.lock.hcl
