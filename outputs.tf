@@ -117,3 +117,14 @@ output "virtual_hub_resource_names" {
   description = "The names of the virtual hubs associated with the virtual WAN."
   value       = local.has_regions ? module.virtual_wan[0].virtual_hub_resource_names : null
 }
+
+output "firewall_policy_to_base_policy_location_map" {
+  value = local.firewall_policy_to_base_policy_location_map
+}
+
+output "subnets" {
+  value = local.subnets
+}
+output "fw_ip_configuration" {
+  value = module.virtual_wan[0].fw_ipconfiguration
+}
