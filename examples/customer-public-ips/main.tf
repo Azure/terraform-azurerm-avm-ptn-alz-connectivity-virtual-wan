@@ -1,8 +1,12 @@
 data "azapi_client_config" "current" {}
 
+locals {
+  resource_group_name = coalesce(var.resource_group_name, "rg-${var.name_prefix}")
+}
+
 resource "azapi_resource" "resource_group" {
   location               = var.location
-  name                   = var.resource_group_name
+  name                   = local.resource_group_name
   parent_id              = "/subscriptions/${data.azapi_client_config.current.subscription_id}"
   type                   = var.resource_types.resources_resource_groups
   body                   = {}
@@ -88,8 +92,11 @@ module "virtual_wan" {
   tags             = var.tags
   virtual_hubs = {
     primary = {
-      location          = var.location
-      default_parent_id = azapi_resource.resource_group.id
+      location = var.location
+      # Built from the resource group's inputs rather than its id, which is only known
+      # after apply. Customer mode matches existing firewalls by name and resource group
+      # while planning, so both must be known at plan time.
+      default_parent_id = "${azapi_resource.resource_group.parent_id}/resourceGroups/${azapi_resource.resource_group.name}"
       enabled_resources = {
         firewall                              = true
         firewall_policy                       = false

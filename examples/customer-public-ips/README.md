@@ -4,18 +4,22 @@
 
 This example creates a resource group, caller-owned Standard/static IPv4 public IPs and an Azure Firewall policy with AzAPI, then deploys the pattern with a secured-hub firewall that uses those public IPs. The public IP IDs are computed during apply. The surrounding topology uses the existing AzureRM 4 implementation.
 
-Supply `location`, a unique `name_prefix`, `resource_group_name`, and a nonempty `public_ip_names` map. The deploying identity needs deployment permissions and `Microsoft.Network/azureFirewalls/read` at the subscription, which customer mode uses for firewall inventory.
+Every input has a default, so the example runs unattended. The deploying identity needs deployment permissions and `Microsoft.Network/azureFirewalls/read` at the subscription, which customer mode uses for firewall inventory.
 
-This example is excluded from automatic E2E testing because it requires caller-supplied inputs.
+Customer mode matches existing firewalls by name and resource group while planning, so both must be known at plan time. This example therefore builds `default_parent_id` from the resource group's inputs rather than its `id`, and its e2e `pre.ps1` hook sets a random `name_prefix` for each run instead of using a `random` resource.
 
 Keep the resource group and firewall names stable. Because this example owns the public IP resources, removing a `public_ip_names` entry also deletes that public IP. To detach an IP from the firewall while keeping it, manage the public IPs outside this configuration. Do not remove the final firewall IP or attempt a mode conversion; both are blocked.
 
 ```hcl
 data "azapi_client_config" "current" {}
 
+locals {
+  resource_group_name = coalesce(var.resource_group_name, "rg-${var.name_prefix}")
+}
+
 resource "azapi_resource" "resource_group" {
   location               = var.location
-  name                   = var.resource_group_name
+  name                   = local.resource_group_name
   parent_id              = "/subscriptions/${data.azapi_client_config.current.subscription_id}"
   type                   = var.resource_types.resources_resource_groups
   body                   = {}
@@ -101,8 +105,11 @@ module "virtual_wan" {
   tags             = var.tags
   virtual_hubs = {
     primary = {
-      location          = var.location
-      default_parent_id = azapi_resource.resource_group.id
+      location = var.location
+      # Built from the resource group's inputs rather than its id, which is only known
+      # after apply. Customer mode matches existing firewalls by name and resource group
+      # while planning, so both must be known at plan time.
+      default_parent_id = "${azapi_resource.resource_group.parent_id}/resourceGroups/${azapi_resource.resource_group.name}"
       enabled_resources = {
         firewall                              = true
         firewall_policy                       = false
@@ -160,31 +167,7 @@ The following resources are used by this module:
 <!-- markdownlint-disable MD013 -->
 ## Required Inputs
 
-The following input variables are required:
-
-### <a name="input_location"></a> [location](#input\_location)
-
-Description: Region supporting Standard/Premium secured hubs and the selected availability zones.
-
-Type: `string`
-
-### <a name="input_name_prefix"></a> [name\_prefix](#input\_name\_prefix)
-
-Description: Unique prefix for the resources this example creates.
-
-Type: `string`
-
-### <a name="input_public_ip_names"></a> [public\_ip\_names](#input\_public\_ip\_names)
-
-Description: Stable configuration key to public IP resource name. Supply one or more entries; these IPs are owned by this caller, not the pattern.
-
-Type: `map(string)`
-
-### <a name="input_resource_group_name"></a> [resource\_group\_name](#input\_resource\_group\_name)
-
-Description: Resource group created by this example.
-
-Type: `string`
+No required inputs.
 
 ## Optional Inputs
 
@@ -217,6 +200,45 @@ object({
 ```
 
 Default: `{}`
+
+### <a name="input_location"></a> [location](#input\_location)
+
+Description: Region supporting Standard/Premium secured hubs and the selected availability zones.
+
+Type: `string`
+
+Default: `"swedencentral"`
+
+### <a name="input_name_prefix"></a> [name\_prefix](#input\_name\_prefix)
+
+Description: Prefix for the names of the resources this example creates. The e2e `pre.ps1` hook sets a unique value for each test run.
+
+Type: `string`
+
+Default: `"cip"`
+
+### <a name="input_public_ip_names"></a> [public\_ip\_names](#input\_public\_ip\_names)
+
+Description: Stable configuration key to public IP resource name. Supply one or more entries; these IPs are owned by this caller, not the pattern.
+
+Type: `map(string)`
+
+Default:
+
+```json
+{
+  "primary": "pip-fw-primary",
+  "secondary": "pip-fw-secondary"
+}
+```
+
+### <a name="input_resource_group_name"></a> [resource\_group\_name](#input\_resource\_group\_name)
+
+Description: Resource group created by this example. Defaults to `rg-<name_prefix>`.
+
+Type: `string`
+
+Default: `null`
 
 ### <a name="input_resource_types"></a> [resource\_types](#input\_resource\_types)
 

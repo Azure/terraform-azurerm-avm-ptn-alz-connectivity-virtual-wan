@@ -1,16 +1,19 @@
 variable "location" {
   type        = string
+  default     = "swedencentral"
   description = "Region supporting Standard/Premium secured hubs and the selected availability zones."
 }
 
 variable "name_prefix" {
   type        = string
-  description = "Unique prefix for the resources this example creates."
+  default     = "cip"
+  description = "Prefix for the names of the resources this example creates. The e2e `pre.ps1` hook sets a unique value for each test run."
 }
 
 variable "resource_group_name" {
   type        = string
-  description = "Resource group created by this example."
+  default     = null
+  description = "Resource group created by this example. Defaults to `rg-<name_prefix>`."
 }
 
 variable "enable_telemetry" {
@@ -37,7 +40,11 @@ DESCRIPTION
 }
 
 variable "public_ip_names" {
-  type        = map(string)
+  type = map(string)
+  default = {
+    primary   = "pip-fw-primary"
+    secondary = "pip-fw-secondary"
+  }
   description = "Stable configuration key to public IP resource name. Supply one or more entries; these IPs are owned by this caller, not the pattern."
 
   validation {
