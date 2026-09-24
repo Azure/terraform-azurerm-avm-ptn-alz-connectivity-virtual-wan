@@ -6,6 +6,70 @@ This module deploys a virtual WAN topology aligned to the Azure Landing Zones (A
 
 This module is leveraged by the [Azure Landing Zones IaC Accelerator](https://aka.ms/alz), head over there to learn more. It is part of the Azure Verified Modules for Platform Landing Zone (ALZ) set of modules.
 
+## Customer-owned secured-hub public IPs
+
+Configure `virtual_hubs[hub_key].firewall.ip_configurations` to attach caller-owned public IPs. For example, add this firewall configuration to a hub entry:
+
+```hcl
+firewall = {
+  ip_configurations = {
+    primary = {
+      name                 = "internet-primary"
+      public_ip_address_id = azapi_resource.public_ips["primary"].id
+    }
+    secondary = {
+      name                 = "internet-secondary"
+      public_ip_address_id = azapi_resource.public_ips["secondary"].id
+    }
+  }
+}
+```
+
+Keys must be stable and known at plan time; public IP resource IDs and the hub ID can be unknown until apply. Names are explicit, not generated. Configuration names must be unique within a firewall, and public IP IDs must be unique across the configured firewalls, ignoring case.
+
+| `ip_configurations` | `vhub_public_ip_count` | Mode |
+| --- | --- | --- |
+| Empty or omitted | Omitted or null | Managed, one public IP |
+| Empty | Positive integral string | Managed, requested count |
+| Nonempty | Omitted, null, or `"0"` | Customer-only |
+| Nonempty | Positive count | Rejected: modes cannot be mixed |
+| Empty | `"0"` | Rejected: not a no-public-IP mode |
+
+`vhub_public_ip_count` retains its published string type. Negative, fractional and nonnumeric counts are rejected. Existing managed firewalls stay on their original AzureRM 4 resource and diagnostic-setting addresses, including the historical moved-block chain. Their count increases/decreases continue to use AzureRM's retained-address behavior; they do not migrate provider or require user state commands. The module automatically records each firewall's original mode in a state-only `terraform_data` resource.
+
+Customer mode requires a Standard or Premium firewall, a Standard hub, and Standard/Regional static IPv4 public IPs in the same subscription and region. An IP must be unassociated or already associated with this exact firewall. The module reads, but does not own or delete, supplied IP resources. Existing firewall policy references, including `firewall_policy.base_policy_id`, and the original firewall output shapes are preserved. Public-IP outputs contain address strings, not resource IDs.
+
+Customer public IPs must carry a zone set matching the firewall's. The module rejects IPs with no zones at plan time, but an IP whose zones merely *differ* from `firewall.zones` is rejected later by Azure at apply with `AzureFirewallZoneConstraintDoesNotMatchPublicIpAddressZoneConstraint`. Public IPs allocated from a public IP prefix inherit the prefix's zones, so set the prefix zones to match the firewall.
+
+### Deploying a managed hub and a customer-IP hub in the same region
+
+This is the natural comparison and migration-staging topology for this feature, and it requires **explicit** `firewall_policy.name` values on each hub. The default naming convention resolves `fwp-hub-${location}-${sequence}` from a constant sequence, so two hubs sharing a region compute the same firewall policy name and the second apply fails partway with an "already exists" error. Set a distinct `firewall_policy.name` per hub:
+
+```hcl
+virtual_hubs = {
+  managed = {
+    # ...
+    firewall_policy = { name = "fwp-managed-${var.location}" }
+  }
+  customer = {
+    # ...
+    firewall_policy = { name = "fwp-customer-${var.location}" }
+  }
+}
+```
+
+### Discovery and permissions
+
+Only customer-mode configurations perform subscription firewall inventory. The AzAPI identity needs `Microsoft.Network/azureFirewalls/read` at the firewall subscription, plus read access to the selected hub and public IPs. This inventory distinguishes an existing managed firewall from a fresh customer deployment before Terraform can remove the legacy resource. Matching uses the intended subscription, resource group and firewall name, case-insensitively; a same-name firewall in another resource group is not the target. The firewall name and resource group must therefore be known at plan time: derive them from inputs, not from attributes computed during apply such as a new resource group's `id`. Managed-only configurations perform no new inventory reads and acquire no new inventory permission requirement.
+
+Normal input-value dependencies on newly created resource groups are retained. Discovery does not depend on new public IP or hub IDs. Genuinely deferred inventory or an unresolved target identity cannot be treated as absence: planning stops rather than risking deletion. An explicit, broad `depends_on` on the entire module can defer discovery and is not a substitute for ordinary resource/input dependencies.
+
+### Maintenance
+
+Adding, removing or replacing customer IP entries while keeping at least one entry is a maintenance operation. It is not a zero-downtime guarantee. Keep map keys stable, plan the address/rule changes explicitly, and measure control-plane duration and traffic impact separately. Removing the final customer IP or adding customer IPs to an existing managed firewall is a mode conversion and is blocked. Cross-mode conversion is not supported by this module; disabling/removing the whole firewall remains a destructive operation.
+
+Customer-mode firewall requests use API version `2024-10-01` by default.
+
 <!-- markdownlint-disable MD033 -->
 ## Requirements
 
@@ -115,6 +179,8 @@ Default: `true`
 
 Description: (Optional) Body property paths on the resources this module creates through the `azapi` provider that the provider stops reconciling after creation, so an out-of-band controller such as Azure Virtual Network Manager or an Azure Policy `DeployIfNotExists` assignment can own them without producing perpetual drift. Paths use dot notation.
 
+- `virtual_hubs_firewalls` - (Optional) Ignored body paths for the firewall of every secured hub. The paths that carry the firewall's IP configuration and its hub association cannot be ignored, because the module reconciles them. Default `[]`.
+- `virtual_hubs_firewalls_diagnostic_settings` - (Optional) Ignored body paths for the diagnostic settings of every secured hub firewall. Default `[]`.
 - `virtual_hubs_route_maps` - (Optional) An object with the following field:
   - `virtual_hubs_route_maps` - (Optional) Ignored body paths applied to every route map in `route_maps`. Default `[]`.
 - `virtual_networks` - (Optional) Ignored body paths for the sidecar virtual network of every hub, for example `["tags"]` when Azure Policy applies tags out-of-band. Default `[]`.
@@ -129,6 +195,8 @@ Type:
 
 ```hcl
 object({
+    virtual_hubs_firewalls                     = optional(list(string), [])
+    virtual_hubs_firewalls_diagnostic_settings = optional(list(string), [])
     virtual_hubs_route_maps = optional(object({
       virtual_hubs_route_maps = optional(list(string), [])
     }), {})
@@ -150,6 +218,36 @@ NOTE: This is a temporary variable to support migration to the new module and wi
 Type: `string`
 
 Default: `""`
+
+### <a name="input_resource_types"></a> [resource\_types](#input\_resource\_types)
+
+Description: AzAPI resource-type overrides for firewalls. Omitted versions use the owning submodule's defaults.
+
+- `network_virtual_wans` - Virtual WAN submodule resource types.
+- `network_virtual_wans.network_azure_firewalls` - Firewall submodule resource types.
+- `network_virtual_wans.network_azure_firewalls.network_azure_firewalls` - Firewall and inventory API.
+- `network_virtual_wans.network_azure_firewalls.network_public_ip_addresses` - Caller-owned public IP read API.
+- `network_virtual_wans.network_azure_firewalls.network_virtual_hubs` - Secured hub read API.
+- `network_virtual_wans.network_azure_firewalls.network_virtual_wans` - Secured hub's parent Virtual WAN read API.
+- `network_virtual_wans.network_azure_firewalls.insights_diagnostic_settings` - Firewall diagnostic settings API.
+
+Type:
+
+```hcl
+object({
+    network_virtual_wans = optional(object({
+      network_azure_firewalls = optional(object({
+        network_azure_firewalls      = optional(string)
+        network_public_ip_addresses  = optional(string)
+        network_virtual_hubs         = optional(string)
+        network_virtual_wans         = optional(string)
+        insights_diagnostic_settings = optional(string)
+      }), {})
+    }), {})
+  })
+```
+
+Default: `{}`
 
 ### <a name="input_retry"></a> [retry](#input\_retry)
 
@@ -495,7 +593,8 @@ The following top level attributes are supported:
   - `sku_tier` - (Optional) The SKU tier for the Azure Firewall. Possible values are `Basic`, `Standard`, `Premium`. Default `Standard`.
   - `zones` - (Optional) A list of availability zones for the Azure Firewall.
   - `firewall_policy_id` - (Optional) The resource ID of the Azure Firewall Policy to associate with the firewall.
-  - `vhub_public_ip_count` - (Optional) The number of public IP addresses to assign to the Virtual Hub firewall.
+  - `vhub_public_ip_count` - (Optional) Managed public IP count, expressed as a string. Null defaults to one managed IP with an empty `ip_configurations` map. With customer IPs, only null or zero is valid; a positive managed count cannot be combined with customer IPs.
+  - `ip_configurations` - (Optional) Map of caller-owned public IP configurations, default `{}`. Stable keys must be known at plan time. Each entry requires `name` and `public_ip_address_id`; resource IDs can be unknown until apply. Names and IDs must be unique ignoring case. A nonempty map selects customer-only mode. IPs must be Standard/Regional, static IPv4, in the hub's subscription and region, and unassociated or already attached to the same firewall. Add/remove/replace operations within customer mode are maintenance changes. Existing mode conversion is blocked.
   - `tags` - (Optional) A map of tags to apply to the Azure Firewall.
 
 ## Azure Firewall Policy
@@ -976,7 +1075,11 @@ map(object({
       zones                = optional(list(number))
       firewall_policy_id   = optional(string)
       vhub_public_ip_count = optional(string)
-      tags                 = optional(map(string))
+      ip_configurations = optional(map(object({
+        name                 = string
+        public_ip_address_id = string
+      })), {})
+      tags = optional(map(string))
     }), {})
 
     firewall_policy = optional(object({

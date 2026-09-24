@@ -4,14 +4,28 @@
 
 This submodule deploys an Azure Firewall in the Virtual Hub to make it secured vHUB.
 
+The existing keyed `azurerm_firewall.fw` and diagnostic-setting resources remain the managed-IP implementation. A nonempty `firewalls[key].ip_configurations` map selects a separate, single-firewall AzAPI child. Each entry requires an explicit `name` and `public_ip_address_id`; stable keys must be known at plan time, while IDs may be computed.
+
+Null `vhub_public_ip_count` remains one managed IP for an empty map, or customer-only mode for a nonempty map. Explicit zero is accepted only with customer IPs. Counts retain their string input type and are converted internally to numbers.
+
+Customer opt-in requires subscription-scoped firewall read permission for AzAPI inventory. The helper reads the AzureRM provider's local client configuration solely to identify the subscription used by its existing resources; this does not perform a new Azure control-plane operation. Managed-only callers instantiate neither this metadata read nor the inventory data source.
+
+The state-only `terraform_data.public_ip_mode` record deliberately keeps its original input. Its postcondition raises an error for a requested mode change even when the marker otherwise has no planned changes. No Azure resource/IP drift is ignored. Keep this resource address stable in future refactors. Removing a firewall also removes the marker normally; no manual state migration is required.
+
+Old resource, virtual-hub, null/empty and diagnostic composite-ID output contracts remain available. Customer maintenance is not guaranteed to be outage-free. The root documentation describes prerequisites and maintenance guidance.
+
 <!-- markdownlint-disable MD033 -->
 ## Requirements
 
 The following requirements are needed by this module:
 
-- <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (~> 1.7)
+- <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (~> 1.9)
+
+- <a name="requirement_azapi"></a> [azapi](#requirement\_azapi) (~> 2.12)
 
 - <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (~> 4.0)
+
+- <a name="requirement_modtm"></a> [modtm](#requirement\_modtm) (~> 0.3)
 
 ## Resources
 
@@ -19,6 +33,9 @@ The following resources are used by this module:
 
 - [azurerm_firewall.fw](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/firewall) (resource)
 - [azurerm_monitor_diagnostic_setting.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/monitor_diagnostic_setting) (resource)
+- [terraform_data.public_ip_mode](https://registry.terraform.io/providers/hashicorp/terraform/latest/docs/resources/data) (resource)
+- [azapi_resource_list.firewalls](https://registry.terraform.io/providers/Azure/azapi/latest/docs/data-sources/resource_list) (data source)
+- [azurerm_client_config.current](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/client_config) (data source)
 
 <!-- markdownlint-disable MD013 -->
 ## Required Inputs
@@ -65,6 +82,14 @@ map(map(object({
 
 Default: `{}`
 
+### <a name="input_enable_telemetry"></a> [enable\_telemetry](#input\_enable\_telemetry)
+
+Description: Controls telemetry for the AVM interface utility. Set false to disable telemetry.
+
+Type: `bool`
+
+Default: `true`
+
 ### <a name="input_firewalls"></a> [firewalls](#input\_firewalls)
 
 Description:   
@@ -78,7 +103,8 @@ The key is deliberately arbitrary to avoid issues with known after apply values.
 - `name`: The name for the Azure Firewall resource.
 - `zones`: Optional list of zones to deploy the Azure Firewall into. Defaults to `[1, 2, 3]`.
 - `firewall_policy_id`: Optional Azure Firewall Policy Resource ID to associate with the Azure Firewall.
-- `vhub_public_ip_count`: Optional number of public IP addresses to associate with the Azure Firewall.
+- `vhub_public_ip_count`: Optional managed public IP count, retaining the string input type. Null defaults to one managed IP when `ip_configurations` is empty. With customer IPs, only null or zero is accepted.
+- `ip_configurations`: Optional map of caller-owned public IP configurations, default `{}`. Keys must be stable and known at plan time; resource IDs may be unknown until apply. Each value requires a unique `name` and `public_ip_address_id`. Customer IPs must be Standard/Regional, static IPv4, in the same subscription and region, and unassociated or already attached to this firewall. Names and IDs must be unique ignoring case. A nonempty map selects customer-only mode; mode conversion is not supported.
 - `tags`: Optional tags to apply to the Azure Firewall resource.
 
 > Note: There can be multiple objects in this map, one for each Azure Firewall you wish to deploy into the Virtual WAN Virtual Hubs that have been defined in the variable `virtual_hubs`.
@@ -96,8 +122,87 @@ map(object({
     zones                = optional(list(number), [1, 2, 3])
     firewall_policy_id   = optional(string)
     vhub_public_ip_count = optional(string, null)
-    tags                 = optional(map(string))
+    ip_configurations = optional(map(object({
+      name                 = string
+      public_ip_address_id = string
+    })), {})
+    tags = optional(map(string))
   }))
+```
+
+Default: `{}`
+
+### <a name="input_ignore_body_changes"></a> [ignore\_body\_changes](#input\_ignore\_body\_changes)
+
+Description: Body-relative dot paths ignored by each AzAPI resource. Changes take effect after apply; ignored configuration is not sent to Azure. Nonempty lists require Terraform 1.11 or later.
+
+- `network_azure_firewalls` - Firewall body paths. IP ownership, IP configuration and hub association paths cannot be ignored.
+- `insights_diagnostic_settings` - Diagnostic setting body paths.
+
+Type:
+
+```hcl
+object({
+    network_azure_firewalls      = optional(list(string), [])
+    insights_diagnostic_settings = optional(list(string), [])
+  })
+```
+
+Default: `{}`
+
+### <a name="input_resource_types"></a> [resource\_types](#input\_resource\_types)
+
+Description: AzAPI resource types and API versions.
+
+- `network_azure_firewalls` - Firewall resource and inventory reads.
+- `network_public_ip_addresses` - Read-only inspection of caller-owned public IPs.
+- `network_virtual_hubs` - Read-only inspection of the secured hub.
+- `network_virtual_wans` - Read-only inspection of the hub's parent Virtual WAN, the authoritative source for the Standard/Basic SKU.
+- `insights_diagnostic_settings` - Diagnostic settings; the preview API supports log category groups.
+
+Type:
+
+```hcl
+object({
+    network_azure_firewalls      = optional(string, "Microsoft.Network/azureFirewalls@2024-10-01")
+    network_public_ip_addresses  = optional(string, "Microsoft.Network/publicIPAddresses@2024-10-01")
+    network_virtual_hubs         = optional(string, "Microsoft.Network/virtualHubs@2024-10-01")
+    network_virtual_wans         = optional(string, "Microsoft.Network/virtualWans@2024-10-01")
+    insights_diagnostic_settings = optional(string, "Microsoft.Insights/diagnosticSettings@2021-05-01-preview")
+  })
+```
+
+Default: `{}`
+
+### <a name="input_retry"></a> [retry](#input\_retry)
+
+Description: AzAPI retries: error\_message\_regex selects retryable errors, interval\_seconds sets the initial delay, and max\_interval\_seconds limits it.
+
+Type:
+
+```hcl
+object({
+    error_message_regex  = optional(list(string))
+    interval_seconds     = optional(number)
+    max_interval_seconds = optional(number)
+  })
+```
+
+Default: `null`
+
+### <a name="input_timeouts"></a> [timeouts](#input\_timeouts)
+
+Description: AzAPI operation timeouts. Firewall create, update and delete default to 90m; read defaults to 5m.
+
+Type:
+
+```hcl
+object({
+    create = optional(string, "90m")
+    read   = optional(string, "5m")
+    update = optional(string, "90m")
+    delete = optional(string, "90m")
+  })
 ```
 
 Default: `{}`
@@ -144,7 +249,13 @@ Description: Azure Firewall resource object
 
 ## Modules
 
-No modules.
+The following Modules are called:
+
+### <a name="module_customer_firewalls"></a> [customer\_firewalls](#module\_customer\_firewalls)
+
+Source: ../firewall-customer-ip
+
+Version:
 
 <!-- markdownlint-disable-next-line MD041 -->
 ## Data Collection

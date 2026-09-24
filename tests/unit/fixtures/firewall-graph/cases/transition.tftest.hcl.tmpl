@@ -1,0 +1,115 @@
+# Intentionally negative; only Test-FirewallGraph.ps1 materializes this template.
+mock_provider "azapi" {
+  mock_data "azapi_resource_list" {
+    defaults = {
+      output = { firewalls = [] }
+    }
+  }
+  mock_data "azapi_resource" {
+    defaults = {
+      output = {
+        address           = "203.0.113.10"
+        allocation_method = "Static"
+        association       = null
+        ip_version        = "IPv4"
+        location          = "uksouth"
+        sku               = "Standard"
+        tier              = "Regional"
+        type              = "Standard"
+        virtual_wan_id    = "/subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/rg-firewall-graph/providers/Microsoft.Network/virtualWans/vwan"
+        # Zone-redundant to match this harness's zone-redundant firewall default (var.zones defaults to
+        # [1, 2, 3]); keeps the customer-IP zone-compatibility precondition satisfied for these fixtures.
+        zones             = ["1", "2", "3"]
+      }
+    }
+  }
+  mock_resource "azapi_resource" {
+    defaults = {
+      id = "/subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/rg-firewall-graph/providers/Microsoft.Network/azureFirewalls/UNEXPECTED-NEW-CUSTOMER"
+      output = {
+        properties = {
+          additionalProperties = {}
+          hubIPAddresses       = { privateIPAddress = "10.0.0.4" }
+          threatIntelMode      = null
+        }
+      }
+    }
+  }
+}
+mock_provider "azurerm" {
+  mock_data "azurerm_client_config" {
+    defaults = {
+      subscription_id = "00000000-0000-0000-0000-000000000001"
+    }
+  }
+  mock_resource "azurerm_virtual_wan" {
+    defaults = {
+      id = "/subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/rg-firewall-graph/providers/Microsoft.Network/virtualWans/vwan"
+    }
+  }
+  mock_resource "azurerm_virtual_hub" {
+    defaults = {
+      id = "/subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/rg-firewall-graph/providers/Microsoft.Network/virtualHubs/hub"
+    }
+  }
+  mock_resource "azurerm_firewall" {
+    defaults = {
+      id = "/subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/rg-firewall-graph/providers/Microsoft.Network/azureFirewalls/UNEXPECTED-NEW-MANAGED"
+    }
+  }
+}
+mock_provider "modtm" {}
+mock_provider "random" {}
+
+run "before" {
+  command   = apply
+  state_key = "mode"
+
+  module {
+    source = "@BEFORE_SOURCE@"
+  }
+
+  variables {
+    configuration = {
+      customer_keys = @BEFORE_CUSTOMER_KEYS@
+    }
+  }
+
+  override_resource {
+    target = @BEFORE_EAST_RESOURCE@
+    values = {
+      id = "/subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/rg-firewall-graph/providers/Microsoft.Network/azureFirewalls/baseline-east"
+      @BEFORE_EAST_OUTPUT@
+    }
+  }
+  override_resource {
+    target = module.virtual_wan[0].module.firewalls.azurerm_firewall.fw["edge-west"]
+    values = {
+      id = "/subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/rg-firewall-graph/providers/Microsoft.Network/azureFirewalls/baseline-west"
+    }
+  }
+
+  assert {
+    condition     = length(output.snapshot.firewall_resource_ids) == 2 && length(output.snapshot.diagnostic_settings_resource_ids) == 2
+    error_message = "The negative case must first apply real nested firewall and diagnostic state."
+  }
+}
+
+run "reject" {
+  command   = apply
+  state_key = "mode"
+
+  module {
+    source = "@AFTER_SOURCE@"
+  }
+
+  variables {
+    configuration = {
+      customer_keys  = @AFTER_CUSTOMER_KEYS@
+      revision       = @REVISION@
+      unknown_values = @UNKNOWN_VALUES@
+    }
+  }
+
+  @INVENTORY_OVERRIDE@
+}

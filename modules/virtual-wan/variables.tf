@@ -206,7 +206,11 @@ variable "firewalls" {
     zones                = optional(list(number), [1, 2, 3])
     firewall_policy_id   = optional(string)
     vhub_public_ip_count = optional(string)
-    tags                 = optional(map(string))
+    ip_configurations = optional(map(object({
+      name                 = string
+      public_ip_address_id = string
+    })), {})
+    tags = optional(map(string))
   }))
   default     = {}
   description = <<DESCRIPTION
@@ -221,7 +225,8 @@ The key is deliberately arbitrary to avoid issues with known after apply values.
 - `name`: The name for the Azure Firewall resource.
 - `zones`: Optional list of zones to deploy the Azure Firewall into. Defaults to `[1, 2, 3]`.
 - `firewall_policy_id`: Optional Azure Firewall Policy Resource ID to associate with the Azure Firewall.
-- `vhub_public_ip_count`: Optional number of public IP addresses to associate with the Azure Firewall.
+- `vhub_public_ip_count`: Optional managed public IP count, retaining its string type. Null defaults to one managed IP when `ip_configurations` is empty; with customer IPs only null or zero is valid.
+- `ip_configurations`: Optional map, default `{}`, keyed by stable caller keys known at plan time. Each entry requires `name` and `public_ip_address_id`; IDs may be unknown until apply. Names and IDs must be unique ignoring case. A nonempty map selects customer-only mode using caller-owned Standard/Regional static IPv4 addresses in the same subscription and region. Same-mode changes are maintenance operations; mode conversion is blocked.
 - `tags`: Optional tags to apply to the Azure Firewall resource.
 
 > Note: There can be multiple objects in this map, one for each Azure Firewall you wish to deploy into the Virtual WAN Virtual Hubs that have been defined in the variable `virtual_hubs`.
