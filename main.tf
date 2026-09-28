@@ -1,6 +1,6 @@
 module "firewall_policy" {
   source   = "Azure/avm-res-network-firewallpolicy/azurerm"
-  version  = "0.3.3"
+  version  = "0.3.4"
   for_each = local.firewall_policies
 
   location                                          = each.value.location
@@ -79,7 +79,7 @@ module "virtual_network_side_car" {
 
 module "dns_resolver" {
   source   = "Azure/avm-res-network-dnsresolver/azurerm"
-  version  = "0.7.3"
+  version  = "0.8.0"
   for_each = local.private_dns_resolver
 
   location                    = each.value.location
@@ -119,7 +119,7 @@ module "private_dns_zones" {
 
 module "private_dns_zone_auto_registration" {
   source   = "Azure/avm-res-network-privatednszone/azurerm"
-  version  = "0.4.3"
+  version  = "0.5.0"
   for_each = local.private_dns_zones_auto_registration
 
   domain_name           = each.value.domain_name
@@ -143,7 +143,7 @@ module "ddos_protection_plan" {
 
 module "bastion_public_ip" {
   source   = "Azure/avm-res-network-publicipaddress/azurerm"
-  version  = "0.2.0"
+  version  = "0.2.1"
   for_each = local.bastion_host_public_ips
 
   location                = each.value.location
@@ -168,7 +168,7 @@ module "bastion_public_ip" {
 
 module "bastion_host" {
   source   = "Azure/avm-res-network-bastionhost/azurerm"
-  version  = "0.6.0"
+  version  = "0.9.0"
   for_each = local.bastion_hosts
 
   location               = each.value.location
