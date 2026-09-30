@@ -2,7 +2,7 @@ locals {
   firewall_enabled = { for key, value in var.virtual_hubs : key => value.enabled_resources.firewall }
   firewall_policies = { for key, value in var.virtual_hubs : key => merge(value.firewall_policy, {
     name                = coalesce(value.firewall_policy.name, local.default_names[key].firewall_policy_name)
-    location            = value.location
+    location            = coalesce(value.firewall_policy.location, value.location)
     dns                 = value.firewall_policy.dns != null ? value.firewall_policy.dns : local.firewall_policy_dns_defaults[key]
     resource_group_name = coalesce(value.firewall_policy.resource_group_name, local.hub_virtual_networks_resource_group_names[key])
     tags                = coalesce(value.firewall_policy.tags, var.tags, {})
