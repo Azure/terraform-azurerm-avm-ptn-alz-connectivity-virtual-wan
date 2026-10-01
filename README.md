@@ -13,7 +13,7 @@ The following requirements are needed by this module:
 
 - <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (~> 1.9)
 
-- <a name="requirement_azapi"></a> [azapi](#requirement\_azapi) (~> 2.4)
+- <a name="requirement_azapi"></a> [azapi](#requirement\_azapi) (~> 2.12)
 
 - <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (~> 4.0)
 
@@ -110,6 +110,36 @@ If it is set to false, then no telemetry will be collected.
 Type: `bool`
 
 Default: `true`
+
+### <a name="input_ignore_body_changes"></a> [ignore\_body\_changes](#input\_ignore\_body\_changes)
+
+Description: (Optional) Body property paths on the resources this module creates through the `azapi` provider that the provider stops reconciling after creation, so an out-of-band controller such as Azure Virtual Network Manager or an Azure Policy `DeployIfNotExists` assignment can own them without producing perpetual drift. Paths use dot notation.
+
+- `virtual_hubs_route_maps` - (Optional) An object with the following field:
+  - `virtual_hubs_route_maps` - (Optional) Ignored body paths applied to every route map in `route_maps`. Default `[]`.
+- `virtual_networks` - (Optional) Ignored body paths for the sidecar virtual network of every hub, for example `["tags"]` when Azure Policy applies tags out-of-band. Default `[]`.
+- `virtual_networks_subnets` - (Optional) An object with the following field:
+  - `virtual_networks_subnets` - (Optional) Ignored body paths applied to every sidecar subnet, for example `["properties.routeTable"]`. A per-subnet `ignore_body_changes` entry in `virtual_hubs.<key>.sidecar_virtual_network.subnets` takes precedence over this shared value. Default `[]`.
+
+Leave the matching dedicated input unset for any path you ignore, because while a path is ignored, configuration changes at that path are no longer sent to Azure. The value is write-only provider state, so a change only takes effect after an `apply`, and supplying a non-empty list requires Terraform 1.11 or later.
+
+Virtual network peerings are deliberately not exposed here, because this module connects the sidecar virtual network through the Virtual WAN hub rather than through peerings it manages itself.
+
+Type:
+
+```hcl
+object({
+    virtual_hubs_route_maps = optional(object({
+      virtual_hubs_route_maps = optional(list(string), [])
+    }), {})
+    virtual_networks = optional(list(string), [])
+    virtual_networks_subnets = optional(object({
+      virtual_networks_subnets = optional(list(string), [])
+    }), {})
+  })
+```
+
+Default: `{}`
 
 ### <a name="input_private_link_private_dns_zone_virtual_network_link_moved_block_template_module_prefix"></a> [private\_link\_private\_dns\_zone\_virtual\_network\_link\_moved\_block\_template\_module\_prefix](#input\_private\_link\_private\_dns\_zone\_virtual\_network\_link\_moved\_block\_template\_module\_prefix)
 
@@ -236,11 +266,13 @@ The following top level attributes are supported:
   - `private_dns_zones` - (Optional) Should private DNS zones be created? Default `true`.
   - `private_dns_resolver` - (Optional) Should the private DNS resolver be created? Default `true`.
   - `sidecar_virtual_network` - (Optional) Should the sidecar virtual network be created? Default `true`.
+- `is_primary` - (Optional) Marks this hub as the primary region. The primary region is used to determine the default location for resources like the Virtual WAN, DDoS Protection Plan, and is used to determine which region hosts the full set of private DNS zones. Only one hub should be marked as primary. If not specified, the first hub key in alphabetical order is used as the primary region. Default `false`.
 - `default_hub_address_space` - (Optional) The default address space to use if not specified in the hub. This defaults to `10.0.0.0/16` and increments to the next /16 for each region if not supplied.
 - `default_parent_id` - (Optional) The default parent resource group ID to use if not specified in hub or individual sections.
 - `location` - (Required) The Azure location where the Virtual WAN hub resources should be created.
 - `hub` - (Optional) An object defining the Virtual WAN hub settings.
 - `virtual_network_connections` - (Optional) A map of Virtual Network connections to create.
+- `route_tables` - (Optional) A map of route tables to create in this Virtual Hub. Default `{}`.
 - `express_route_circuit_connections` - (Optional) A map of ExpressRoute circuit connections
 - `bgp_connections` - (Optional) A map of BGP connections to create on the Virtual Hub router (for direct NVA peering).
 - `p2s_gateway_vpn_server_configurations` - (Optional) A map of Point-to-Site VPN server configurations.
@@ -282,6 +314,19 @@ The following top level attributes are supported:
       - `labels` - (Optional) A list of labels for route propagation.
     - `inbound_route_map_id` - (Optional) The ID of the inbound route map.
     - `outbound_route_map_id` - (Optional) The ID of the outbound route map.
+
+## Virtual Hub Route Tables
+
+- `route_tables` - (Optional) A map of route tables to create in this Virtual Hub. The map key is an arbitrary identifier scoped to this hub. Default `{}`. Each route table is an object with the following fields:
+  - `name` - (Required) The name of the Virtual Hub Route Table. Changing this forces a new resource to be created.
+  - `labels` - (Optional) A list of labels associated with the route table.
+  - `routes` - (Optional) A map of routes in the Virtual Hub Route Table. The map key is an arbitrary identifier. Default `{}`. Each route is an object with the following fields:
+    - `name` - (Required) The name of the route.
+    - `destinations` - (Required) A list of destination addresses for the route.
+    - `destinations_type` - (Required) The destination type. Possible values are `CIDR`, `ResourceId`, and `Service`.
+    - `next_hop` - (Optional) The next hop resource ID. Required when `vnet_connection_key` is not specified.
+    - `vnet_connection_key` - (Optional) The key of a Virtual Network connection in this hub's `virtual_network_connections` map. The module resolves the connection's resource ID automatically. Required when `next_hop` is not specified.
+    - `next_hop_type` - (Optional) The next hop type. The only supported value is `ResourceId`. Default `ResourceId`.
 
 ## ExpressRoute Circuit Connections
 
@@ -441,6 +486,7 @@ The following top level attributes are supported:
         - `name` - (Required) The name of the service delegation.
         - `actions` - (Optional) A list of actions for the delegation.
     - `default_outbound_access_enabled` - (Optional) Should default outbound access be enabled? Default `false`.
+    - `ignore_body_changes` - (Optional) A list of subnet body property paths, in dot notation (for example `properties.routeTable`), that the `azapi` provider stops reconciling after creation. Use this when an out-of-band controller such as Azure Virtual Network Manager or an Azure Policy `DeployIfNotExists` assignment owns the property, so that it does not produce perpetual drift. Leave the matching dedicated input (`route_table`, `network_security_group`, `service_endpoints`, `delegations`) unset for any path you ignore, and note that while a path is ignored, configuration changes at that path are no longer sent to Azure. The value is write-only provider state, so a change only takes effect after an `apply`, and supplying a non-empty list requires Terraform 1.11 or later. Default `[]`.
 
 ## Azure Firewall
 
@@ -458,9 +504,10 @@ The following top level attributes are supported:
 - `firewall_policy` - (Optional) An object with the following fields:
   - `name` - (Optional) The name of the firewall policy. If not specified will use `afw-policy-{vnetname}`.
   - `resource_group_name` - (Optional) The name of the resource group where the firewall policy should be created. If not specified will use the parent resource group of the virtual network.
+  - `location` - (Optional) The Azure region for the firewall policy. Defaults to the hub's location when omitted, `null`, or an empty string, including when `base_policy_id` is set. The module does not infer the region from `base_policy_id`. If the base policy is in a different region from the hub, explicitly set this field to the base policy's region. The associated firewall remains in its hub region. Changing the location of an existing firewall policy replaces it.
   - `sku` - (Optional) The SKU to use for the firewall policy. Possible values include `Standard`, `Premium`. Default `Standard`.
   - `auto_learn_private_ranges_enabled` - (Optional) Should the firewall policy automatically learn private ranges? Default `false`.
-  - `base_policy_id` - (Optional) The resource id of the base policy to use for the firewall policy.
+  - `base_policy_id` - (Optional) The resource ID of the base policy to use for the firewall policy. Azure requires both policies to reside in the same region; see `location` above.
   - `dns` - (Optional) An object with the following fields:
     - `proxy_enabled` - (Optional) Should the DNS proxy be enabled for the firewall policy? Default `false`.
     - `servers` - (Optional) A list of DNS server IP addresses for the firewall policy.
@@ -677,6 +724,7 @@ map(object({
       sidecar_virtual_network               = optional(bool, true)
     }), {})
 
+    is_primary                = optional(bool, false)
     default_hub_address_space = optional(string)
     default_parent_id         = optional(string)
     location                  = string
@@ -706,6 +754,19 @@ map(object({
         inbound_route_map_id  = optional(string)
         outbound_route_map_id = optional(string)
       }))
+    })), {})
+
+    route_tables = optional(map(object({
+      name   = string
+      labels = optional(list(string))
+      routes = optional(map(object({
+        name                = string
+        destinations        = list(string)
+        destinations_type   = string
+        next_hop            = optional(string)
+        vnet_connection_key = optional(string)
+        next_hop_type       = optional(string, "ResourceId")
+      })), {})
     })), {})
 
     express_route_circuit_connections = optional(map(object({
@@ -906,6 +967,7 @@ map(object({
             )
           ))
           default_outbound_access_enabled = optional(bool, false)
+          ignore_body_changes             = optional(list(string), [])
         }
       )), {})
     }), {})
@@ -923,6 +985,7 @@ map(object({
     firewall_policy = optional(object({
       name                              = optional(string)
       resource_group_name               = optional(string)
+      location                          = optional(string)
       sku                               = optional(string, "Standard")
       auto_learn_private_ranges_enabled = optional(bool)
       base_policy_id                    = optional(string)
@@ -1397,7 +1460,7 @@ Version: 0.1.0
 
 Source: Azure/avm-res-network-virtualnetwork/azurerm
 
-Version: 0.15.0
+Version: 0.22.2
 
 ### <a name="module_virtual_network_subnet_ip_prefixes"></a> [virtual\_network\_subnet\_ip\_prefixes](#module\_virtual\_network\_subnet\_ip\_prefixes)
 

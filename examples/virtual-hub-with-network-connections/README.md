@@ -57,7 +57,7 @@ module "resource_groups" {
 
   location         = each.value.location
   name             = each.value.name
-  enable_telemetry = false
+  enable_telemetry = var.enable_telemetry
   tags             = local.common_tags
 }
 
@@ -67,26 +67,27 @@ module "resource_group_vnet_demo_01" {
 
   location         = local.resource_groups["hub_primary"].location
   name             = "rg-vnet-demo-01-${random_string.suffix.result}"
-  enable_telemetry = false
+  enable_telemetry = var.enable_telemetry
   tags             = local.common_tags
 }
 
 module "virtual_network" {
   source  = "Azure/avm-res-network-virtualnetwork/azurerm"
-  version = "0.15.0"
+  version = "0.22.2"
 
-  location      = local.resource_groups["hub_primary"].location
-  parent_id     = module.resource_group_vnet_demo_01.resource_id
-  address_space = ["10.100.0.0/16"]
-  name          = "vnet-demo-01"
-  tags          = local.common_tags
+  location         = local.resource_groups["hub_primary"].location
+  parent_id        = module.resource_group_vnet_demo_01.resource_id
+  address_space    = ["10.100.0.0/16"]
+  enable_telemetry = var.enable_telemetry
+  name             = "vnet-demo-01"
+  tags             = local.common_tags
 }
 
 # This is the module call
 module "test" {
   source = "../../"
 
-  enable_telemetry = false
+  enable_telemetry = var.enable_telemetry
   tags             = local.common_tags
   virtual_hubs = {
     primary = {
@@ -107,6 +108,29 @@ module "test" {
           name                      = "vnet-connection-demo-01"
           remote_virtual_network_id = module.virtual_network.resource_id
           internet_security_enabled = true
+        }
+      }
+      route_tables = {
+        # Route table that references a sibling virtual network connection by key. The module
+        # resolves `vnet_connection_key` to the connection's resource ID, so consumers never
+        # have to know the generated ID or hand-build it.
+        demo_01 = {
+          name   = "rt-demo-01"
+          labels = ["demo"]
+          routes = {
+            to_vnet_demo_01 = {
+              name                = "to-vnet-demo-01"
+              destinations        = ["10.100.0.0/16"]
+              destinations_type   = "CIDR"
+              vnet_connection_key = "vnet_demo_01"
+            }
+          }
+        }
+        # Route table declared without any routes. Labels-only route tables are valid in
+        # Azure, so `routes` must be safely omittable.
+        labels_only = {
+          name   = "rt-labels-only"
+          labels = ["demo-labels-only"]
         }
       }
     }
@@ -157,7 +181,17 @@ No required inputs.
 
 ## Optional Inputs
 
-No optional inputs.
+The following input variables are optional (have default values):
+
+### <a name="input_enable_telemetry"></a> [enable\_telemetry](#input\_enable\_telemetry)
+
+Description: This variable controls whether or not telemetry is enabled for the module.  
+For more information see <https://aka.ms/avm/telemetryinfo>.  
+If it is set to false, then no telemetry will be collected.
+
+Type: `bool`
+
+Default: `true`
 
 ## Outputs
 
@@ -193,7 +227,7 @@ Version:
 
 Source: Azure/avm-res-network-virtualnetwork/azurerm
 
-Version: 0.15.0
+Version: 0.22.2
 
 <!-- markdownlint-disable-next-line MD041 -->
 ## Data Collection

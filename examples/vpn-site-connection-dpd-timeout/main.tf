@@ -52,7 +52,7 @@ module "resource_group" {
 
   location         = local.location
   name             = local.resource_group_name
-  enable_telemetry = false
+  enable_telemetry = var.enable_telemetry
   tags             = local.common_tags
 }
 
@@ -60,7 +60,7 @@ module "resource_group" {
 module "test" {
   source = "../../"
 
-  enable_telemetry = false
+  enable_telemetry = var.enable_telemetry
   tags             = local.common_tags
   virtual_hubs = {
     primary = {
@@ -137,7 +137,6 @@ data "azapi_resource" "vpn_gateway_connection" {
   name      = local.vpn_connection_name
   parent_id = "${module.resource_group.resource_id}/providers/Microsoft.Network/vpnGateways/${local.vpn_gateway_name}"
   type      = "Microsoft.Network/vpnGateways/vpnConnections@2025-01-01"
-
   response_export_values = {
     dpd_timeout_seconds = "properties.vpnLinkConnections[0].properties.dpdTimeoutSeconds"
   }

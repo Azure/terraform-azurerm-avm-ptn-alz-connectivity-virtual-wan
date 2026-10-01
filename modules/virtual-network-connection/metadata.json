@@ -1,0 +1,7 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Azure/azure-verified-modules-tools/main/src/Avm.Authoring/Resources/Schemas/v1/avm-module-metadata.schema.json",
+  "moduleDisplayName": "Azure Virtual Network Connection",
+  "moduleDescription": "Deploys an Azure virtual network connection.",
+  "canonicalType": "alz-connectivity-virtual-wan/virtual-network-connection",
+  "telemetryIdPrefix": "46d3xtrf.ptn.2480870"
+}

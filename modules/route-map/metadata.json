@@ -1,0 +1,7 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Azure/azure-verified-modules-tools/main/src/Avm.Authoring/Resources/Schemas/v1/avm-module-metadata.schema.json",
+  "moduleDisplayName": "Azure Virtual WAN Route Map",
+  "moduleDescription": "Deploys an Azure Route Map for manipulating routing in Virtual WAN.",
+  "canonicalType": "alz-connectivity-virtual-wan/route-map",
+  "telemetryIdPrefix": "46d3xtrf.ptn.fa2e359"
+}

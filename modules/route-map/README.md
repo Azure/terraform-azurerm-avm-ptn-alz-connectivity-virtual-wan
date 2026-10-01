@@ -11,7 +11,7 @@ The following requirements are needed by this module:
 
 - <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (~> 1.7)
 
-- <a name="requirement_azapi"></a> [azapi](#requirement\_azapi) (~> 2.4)
+- <a name="requirement_azapi"></a> [azapi](#requirement\_azapi) (~> 2.12)
 
 ## Resources
 
@@ -56,6 +56,56 @@ Type: `list(string)`
 
 Default: `[]`
 
+### <a name="input_ignore_body_changes"></a> [ignore\_body\_changes](#input\_ignore\_body\_changes)
+
+Description: (Optional) Body property paths whose changes the `azapi` provider ignores after creation, letting an out-of-band controller own those properties without producing perpetual `terraform plan` drift.
+
+- `virtual_hubs_route_maps` - (Optional) Ignored body paths for the route map, in dot notation relative to the request body, for example `["properties.rules"]`. Default `[]`.
+
+While a path is ignored, configuration changes at that path are no longer sent to Azure. The value is write-only provider state, so a change only takes effect after an `apply`, and supplying a non-empty list requires Terraform 1.11 or later.
+
+Type:
+
+```hcl
+object({
+    virtual_hubs_route_maps = optional(list(string), [])
+  })
+```
+
+Default: `{}`
+
+### <a name="input_resource_types"></a> [resource\_types](#input\_resource\_types)
+
+Description: (Optional) The Azure resource type and API version used for each resource created by this module.
+
+- `virtual_hubs_route_maps` - (Optional) The type and API version of the route map. Default `Microsoft.Network/virtualHubs/routeMaps@2025-05-01`.
+
+Type:
+
+```hcl
+object({
+    virtual_hubs_route_maps = optional(string, "Microsoft.Network/virtualHubs/routeMaps@2025-05-01")
+  })
+```
+
+Default: `{}`
+
+### <a name="input_retry"></a> [retry](#input\_retry)
+
+Description: (Optional) Retry configuration for the resource operations.
+
+Type:
+
+```hcl
+object({
+    error_message_regex  = optional(list(string), ["ReferencedResourceNotProvisioned"])
+    interval_seconds     = optional(number, 10)
+    max_interval_seconds = optional(number, 180)
+  })
+```
+
+Default: `{}`
+
 ### <a name="input_rules"></a> [rules](#input\_rules)
 
 Description:   List of route map rules to apply. Each rule is an object with the following attributes:
@@ -98,6 +148,23 @@ list(object({
 ```
 
 Default: `[]`
+
+### <a name="input_timeouts"></a> [timeouts](#input\_timeouts)
+
+Description: (Optional) Timeouts for the resource operations.
+
+Type:
+
+```hcl
+object({
+    create = optional(string, "30m")
+    read   = optional(string, "5m")
+    update = optional(string, "30m")
+    delete = optional(string, "30m")
+  })
+```
+
+Default: `{}`
 
 ## Outputs
 
