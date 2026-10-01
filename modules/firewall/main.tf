@@ -1,5 +1,41 @@
+data "azurerm_client_config" "current" {
+  count = length(local.requested_customer_firewalls) == 0 ? 0 : 1
+}
+
+data "azapi_resource_list" "firewalls" {
+  count = length(local.requested_customer_firewalls) == 0 ? 0 : 1
+
+  parent_id = "/subscriptions/${one(data.azurerm_client_config.current).subscription_id}"
+  type      = var.resource_types.network_azure_firewalls
+  response_export_values = {
+    firewalls = "value[].{id:id,name:name,properties:properties}"
+  }
+}
+
+resource "terraform_data" "public_ip_mode" {
+  for_each = local.firewalls
+
+  input = local.customer_mode[each.key]
+
+  lifecycle {
+    # Keep only this state-only record immutable; the postcondition rejects rather than hides a mode edit.
+    ignore_changes = [input]
+
+    precondition {
+      condition = !local.customer_mode[each.key] ? true : (
+        local.existing_firewalls[each.key] == null ? true : local.existing_customer_mode[each.key]
+      )
+      error_message = "Firewall ${each.key}: changing between managed and customer public IP modes is not supported by normal apply. Keep the existing mode; cross-mode conversion requires a separately approved maintenance procedure."
+    }
+    postcondition {
+      condition     = self.output == local.customer_mode[each.key]
+      error_message = "Firewall ${each.key}: the recorded public IP mode cannot change. Keep the existing managed/customer mode; removing the final customer IP or adding customer IPs to a managed firewall is not supported."
+    }
+  }
+}
+
 resource "azurerm_firewall" "fw" {
-  for_each = var.firewalls != null ? var.firewalls : {}
+  for_each = { for key, firewall in local.firewalls : key => firewall if !local.customer_mode[key] }
 
   location            = each.value.location
   name                = each.value.name
@@ -12,12 +48,43 @@ resource "azurerm_firewall" "fw" {
 
   virtual_hub {
     virtual_hub_id  = each.value.virtual_hub_id
-    public_ip_count = each.value.vhub_public_ip_count
+    public_ip_count = each.value.vhub_public_ip_count == null ? 1 : tonumber(each.value.vhub_public_ip_count)
   }
+
+  depends_on = [terraform_data.public_ip_mode]
+}
+
+module "customer_firewalls" {
+  source   = "../firewall-customer-ip"
+  for_each = local.customer_firewalls
+
+  ip_configurations = each.value.ip_configurations
+  location          = each.value.location
+  name              = each.value.name
+  parent_id         = local.parent_ids[each.key]
+  virtual_hub_id    = each.value.virtual_hub_id
+  diagnostic_settings = {
+    for key, setting in local.diagnostic_settings_v2 : key => setting
+    if local.flattened_diagnostic_settings[key].virtual_hub_key == each.key
+  }
+  enable_telemetry    = var.enable_telemetry
+  firewall_policy_id  = each.value.firewall_policy_id
+  ignore_body_changes = var.ignore_body_changes
+  resource_types      = var.resource_types
+  retry               = var.retry
+  sku_tier            = each.value.sku_tier
+  tags                = each.value.tags
+  timeouts            = var.timeouts
+  zones               = each.value.zones
+
+  depends_on = [terraform_data.public_ip_mode]
 }
 
 resource "azurerm_monitor_diagnostic_setting" "this" {
-  for_each = local.flattened_diagnostic_settings
+  for_each = {
+    for key, setting in local.flattened_diagnostic_settings : key => setting
+    if !local.customer_mode[setting.virtual_hub_key]
+  }
 
   name                           = each.value.data.name != null ? each.value.data.name : "diag-${azurerm_firewall.fw[each.value.virtual_hub_key].name}"
   target_resource_id             = azurerm_firewall.fw[each.value.virtual_hub_key].id
