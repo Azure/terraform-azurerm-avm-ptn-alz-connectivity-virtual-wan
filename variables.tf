@@ -1161,7 +1161,6 @@ DESCRIPTION
     ])
     error_message = "If provided, sidecar_virtual_network.resource_id must be a valid Virtual Network resource ID."
   }
-
   validation {
     condition     = length([for k, v in var.virtual_hubs : k if v.is_primary]) <= 1
     error_message = "Only one virtual hub can be marked as `is_primary = true`."
