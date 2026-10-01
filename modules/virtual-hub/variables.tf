@@ -9,6 +9,7 @@ variable "virtual_hubs" {
     hub_routing_preference                 = optional(string, "ExpressRoute")
     virtual_router_auto_scale_min_capacity = optional(number, 2)
     sku                                    = optional(string, null)
+    branch_to_branch_traffic_enabled       = optional(bool, false)
   }))
   default     = {}
   description = <<DESCRIPTION
@@ -23,6 +24,8 @@ variable "virtual_hubs" {
   - `tags`: Optional tags to apply to the Virtual Hub resource.
   - `hub_routing_preference`: Optional hub routing preference for the Virtual Hub. Possible values are: `ExpressRoute`, `ASPath`, `VpnGateway`. Defaults to `ExpressRoute`. See https://learn.microsoft.com/azure/virtual-wan/hub-settings#routing-preference for more information.
   - `virtual_router_auto_scale_min_capacity`: Optional minimum capacity for the Virtual Router auto scale. Defaults to `2`. See https://learn.microsoft.com/azure/virtual-wan/hub-settings#capacity for more information.
+  - `sku`: Optional The SKU of the Virtual Hub. Possible values are Basic and Standard. Changing this forces a new resource to be created.
+  - `branch_to_branch_traffic_enabled`: Optional Boolean flag to specify whether branch to branch traffic is allowed. Defaults to false
 
   > Note: There can be multiple objects in this map, one for each Virtual Hub you wish to deploy into the Virtual WAN. Multiple Virtual Hubs in the same region/location can be deployed into the same Virtual WAN also.
 
