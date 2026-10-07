@@ -35,6 +35,27 @@ variable "virtual_wan_name" {
   }
 }
 
+variable "retry" {
+  type = object({
+    error_message_regex  = list(string)
+    interval_seconds     = number
+    max_interval_seconds = number
+  })
+
+  default = {
+    error_message_regex = [
+      "AnotherOperationInProgress",
+      "Conflict",
+      "ReferencedResourceNotProvisioned",
+      "UpdateGatewayInProgress"
+    ]
+    interval_seconds     = 10
+    max_interval_seconds = 180
+  }
+
+  description = "Retry configuration for the resource operations"
+}
+
 variable "allow_branch_to_branch_traffic" {
   type        = bool
   default     = true
