@@ -16,12 +16,37 @@ module "vpn_site" {
       tags                = value.tags
     }
   }
+  # TFFR6 / TFFR7 / TFFR8 interface cascade -- register and neutrality argument
+  # are in `main.express_route_gateway.tf` on `module "express_route_gateways"`.
+  ignore_body_changes = var.ignore_body_changes.network_vpn_sites
+  resource_types      = var.resource_types.network_vpn_sites
+  retry               = var.retry
+  timeouts            = var.timeouts
 }
 
-moved {
-  from = azurerm_vpn_site.vpn_site
-  to   = module.vpn_site.azurerm_vpn_site.vpn_site
-}
+# 🔴 A `moved` BLOCK WAS DELETED HERE, and deleting it was the SAFE act.
+#
+#   moved {
+#     from = azurerm_vpn_site.vpn_site
+#     to   = module.vpn_site.azurerm_vpn_site.vpn_site
+#   }
+#
+# Its `to` address NO LONGER EXISTS: `modules/site-to-site-vpn-site` is now `azapi_resource.this`.
+#
+# A `moved` block whose `to` is not in configuration does NOT error and does NOT
+# warn. `terraform validate` is clean. Terraform moves the state entry to the new
+# address, finds nothing declaring it, and plans to DESTROY the live resource:
+#
+#     # <addr> will be destroyed
+#     # (because <old> was moved to <new>, which is not in configuration)
+#     Plan: 1 to add, 0 to change, 1 to destroy.
+#
+# MEASURED, the dangling-`moved` measurement, with a
+# hand-written state and `-refresh=false` -- no Azure involved.
+#
+# Deleting it is safe because the module's supported floor is v0.12.0 and the
+# upgrade guide covers anything older. A consumer still on a pre-v0.12.0 state
+# follows the guide, not this block.
 
 # Create a site to site vpn connection between a vpn gateway and a vpn site.
 module "vpn_site_connection" {
@@ -63,9 +88,34 @@ module "vpn_site_connection" {
     }
 
   }
+  # TFFR6 / TFFR7 / TFFR8 interface cascade -- register and neutrality argument
+  # are in `main.express_route_gateway.tf` on `module "express_route_gateways"`.
+  ignore_body_changes = var.ignore_body_changes.network_vpn_gateways_vpn_connections
+  resource_types      = var.resource_types.network_vpn_gateways_vpn_connections
+  retry               = var.retry
+  timeouts            = var.timeouts
 }
 
-moved {
-  from = azurerm_vpn_gateway_connection.vpn_site_connection
-  to   = module.vpn_site_connection.azurerm_vpn_gateway_connection.vpn_site_connection
-}
+# 🔴 A `moved` BLOCK WAS DELETED HERE, and deleting it was the SAFE act.
+#
+#   moved {
+#     from = azurerm_vpn_gateway_connection.vpn_site_connection
+#     to   = module.vpn_site_connection.azurerm_vpn_gateway_connection.vpn_site_connection
+#   }
+#
+# Its `to` address NO LONGER EXISTS: `modules/site-to-site-gateway-connection` is now `azapi_resource.this`.
+#
+# A `moved` block whose `to` is not in configuration does NOT error and does NOT
+# warn. `terraform validate` is clean. Terraform moves the state entry to the new
+# address, finds nothing declaring it, and plans to DESTROY the live resource:
+#
+#     # <addr> will be destroyed
+#     # (because <old> was moved to <new>, which is not in configuration)
+#     Plan: 1 to add, 0 to change, 1 to destroy.
+#
+# MEASURED, the dangling-`moved` measurement, with a
+# hand-written state and `-refresh=false` -- no Azure involved.
+#
+# Deleting it is safe because the module's supported floor is v0.12.0 and the
+# upgrade guide covers anything older. A consumer still on a pre-v0.12.0 state
+# follows the guide, not this block.

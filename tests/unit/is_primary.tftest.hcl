@@ -3,7 +3,6 @@
 # to the first hub key in alphabetical order, and rejects more than one primary hub.
 
 mock_provider "azapi" {}
-mock_provider "azurerm" {}
 mock_provider "modtm" {}
 mock_provider "random" {}
 

@@ -9,6 +9,11 @@ terraform {
   required_version = "~> 1.5"
 
   required_providers {
+    azapi = {
+      source  = "Azure/azapi"
+      version = "~> 2.12"
+    }
+    # The remote Accelerator config-templating utility still reads AzureRM client config.
     azurerm = {
       source  = "hashicorp/azurerm"
       version = "~> 4.21"
@@ -20,7 +25,7 @@ provider "azurerm" {
   features {}
 }
 
-data "azurerm_client_config" "current" {}
+data "azapi_client_config" "current" {}
 
 locals {
   config_templating_inputs = {
@@ -40,17 +45,17 @@ module "config" {
   custom_replacements             = var.custom_replacements
   inputs                          = local.config_templating_inputs
   starter_locations               = var.starter_locations
-  subscription_id_connectivity    = data.azurerm_client_config.current.subscription_id
-  subscription_id_identity        = data.azurerm_client_config.current.subscription_id
-  subscription_id_management      = data.azurerm_client_config.current.subscription_id
-  subscription_id_security        = data.azurerm_client_config.current.subscription_id
+  subscription_id_connectivity    = data.azapi_client_config.current.subscription_id
+  subscription_id_identity        = data.azapi_client_config.current.subscription_id
+  subscription_id_management      = data.azapi_client_config.current.subscription_id
+  subscription_id_security        = data.azapi_client_config.current.subscription_id
   enable_telemetry                = var.enable_telemetry
   root_parent_management_group_id = ""
 }
 
 module "resource_groups" {
   source   = "Azure/avm-res-resources-resourcegroup/azurerm"
-  version  = "0.2.0"
+  version  = "0.4.0"
   for_each = module.config.outputs.connectivity_resource_groups
 
   location         = each.value.location
@@ -86,13 +91,15 @@ The following requirements are needed by this module:
 
 - <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (~> 1.5)
 
+- <a name="requirement_azapi"></a> [azapi](#requirement\_azapi) (~> 2.12)
+
 - <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (~> 4.21)
 
 ## Resources
 
 The following resources are used by this module:
 
-- [azurerm_client_config.current](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/client_config) (data source)
+- [azapi_client_config.current](https://registry.terraform.io/providers/Azure/azapi/latest/docs/data-sources/client_config) (data source)
 
 <!-- markdownlint-disable MD013 -->
 ## Required Inputs
@@ -272,7 +279,7 @@ Version: main
 
 Source: Azure/avm-res-resources-resourcegroup/azurerm
 
-Version: 0.2.0
+Version: 0.4.0
 
 ### <a name="module_test"></a> [test](#module\_test)
 

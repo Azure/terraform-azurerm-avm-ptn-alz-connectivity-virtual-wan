@@ -60,7 +60,7 @@ Default: `[]`
 
 Description: (Optional) Body property paths whose changes the `azapi` provider ignores after creation, letting an out-of-band controller own those properties without producing perpetual `terraform plan` drift.
 
-- `virtual_hubs_route_maps` - (Optional) Ignored body paths for the route map, in dot notation relative to the request body, for example `["properties.rules"]`. Default `[]`.
+- `network_virtual_hubs_route_maps` - (Optional) Ignored body paths for the route map, in dot notation relative to the request body, for example `["properties.rules"]`. Default `[]`.
 
 While a path is ignored, configuration changes at that path are no longer sent to Azure. The value is write-only provider state, so a change only takes effect after an `apply`, and supplying a non-empty list requires Terraform 1.11 or later.
 
@@ -68,7 +68,7 @@ Type:
 
 ```hcl
 object({
-    virtual_hubs_route_maps = optional(list(string), [])
+    network_virtual_hubs_route_maps = optional(list(string), [])
   })
 ```
 
@@ -78,13 +78,13 @@ Default: `{}`
 
 Description: (Optional) The Azure resource type and API version used for each resource created by this module.
 
-- `virtual_hubs_route_maps` - (Optional) The type and API version of the route map. Default `Microsoft.Network/virtualHubs/routeMaps@2025-05-01`.
+- `network_virtual_hubs_route_maps` - (Optional) The type and API version of the route map. Default `Microsoft.Network/virtualHubs/routeMaps@2025-05-01`.
 
 Type:
 
 ```hcl
 object({
-    virtual_hubs_route_maps = optional(string, "Microsoft.Network/virtualHubs/routeMaps@2025-05-01")
+    network_virtual_hubs_route_maps = optional(string, "Microsoft.Network/virtualHubs/routeMaps@2025-05-01")
   })
 ```
 

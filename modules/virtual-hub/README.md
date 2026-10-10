@@ -4,6 +4,25 @@
 
 This submodule deploys an Azure virtual wan virtual hub
 
+> [!IMPORTANT]
+> This submodule uses the `azapi` provider with a **two-writer shape**: a create-only
+> `azapi_resource` that sends the genesis body once, and an `azapi_update_resource` that performs
+> day-2 changes by GET-then-merge. This exists because `Microsoft.Network/virtualHubs` owns child
+> collections and back-references that other modules and customers create, and a full PUT that
+> omits them is not uniformly safe — `properties.virtualHubRouteTableV2s` is **measured deleted**.
+> `modules/virtual-hub/main.tf` documents the full exposure.
+>
+> Two consequences for consumers:
+>
+> - Day-2 body changes are **additive** — the merge writer cannot un-set a property.
+>   **Tags are the exception**: since 0.19.0 they are written by a separate
+>   `Microsoft.Resources/tags` `PUT` that **replaces the whole tag set**, so removing a key from
+>   `virtual_hubs[*].tags` removes it in Azure, as it did under `azurerm`. The cost is that a tag
+>   set out of band is removed on the next apply and is **not reported as drift**.
+> - `address_prefix`, `sku` and `virtual_wan_id` were `ForceNew` on `azurerm_virtual_hub`.
+>   Changing one is now a **silent no-op** rather than a hub replacement. Replace the hub
+>   explicitly if you need to change them.
+
 <!-- markdownlint-disable MD033 -->
 ## Requirements
 
@@ -11,13 +30,16 @@ The following requirements are needed by this module:
 
 - <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (~> 1.7)
 
-- <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (~> 4.0)
+- <a name="requirement_azapi"></a> [azapi](#requirement\_azapi) (~> 2.12)
 
 ## Resources
 
 The following resources are used by this module:
 
-- [azurerm_virtual_hub.virtual_hub](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_hub) (resource)
+- [azapi_resource.this](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource) (resource)
+- [azapi_resource_action.tags](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource_action) (resource)
+- [azapi_update_resource.this](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/update_resource) (resource)
+- [azapi_client_config.current](https://registry.terraform.io/providers/Azure/azapi/latest/docs/data-sources/client_config) (data source)
 
 <!-- markdownlint-disable MD013 -->
 ## Required Inputs
@@ -27,6 +49,87 @@ No required inputs.
 ## Optional Inputs
 
 The following input variables are optional (have default values):
+
+### <a name="input_ignore_body_changes"></a> [ignore\_body\_changes](#input\_ignore\_body\_changes)
+
+Description: (Optional) Body property paths whose changes the `azapi` provider ignores after creation, letting an out-of-band controller own those properties without producing perpetual `terraform plan` drift.
+
+- `network_virtual_hubs` - (Optional) Ignored body paths for the Virtual Hub, in dot notation relative to the request body, for example `["properties.sku"]`. Default `[]`.
+
+While a path is ignored, configuration changes at that path are no longer sent to Azure. The value is write-only provider state, so a change only takes effect after an `apply`, and supplying a non-empty list requires Terraform 1.11 or later.
+
+> Note: the Virtual Hub full writer is create-only and already carries `body` in its `lifecycle.ignore_changes`, so this variable is close to inert on this module. It is kept for shape-consistency with the sibling modules.
+
+Type:
+
+```hcl
+object({
+    network_virtual_hubs = optional(list(string), [])
+  })
+```
+
+Default: `{}`
+
+### <a name="input_resource_types"></a> [resource\_types](#input\_resource\_types)
+
+Description: (Optional) The Azure resource type and API version used for each resource created by this module.
+
+- `network_virtual_hubs` - (Optional) The type and API version of the Virtual Hub. Default `Microsoft.Network/virtualHubs@2025-07-01`.
+
+Type:
+
+```hcl
+object({
+    network_virtual_hubs = optional(string, "Microsoft.Network/virtualHubs@2025-07-01")
+  })
+```
+
+Default: `{}`
+
+### <a name="input_retry"></a> [retry](#input\_retry)
+
+Description: (Optional) Retry configuration for the resource operations.
+
+Type:
+
+```hcl
+object({
+    error_message_regex  = optional(list(string), ["ReferencedResourceNotProvisioned"])
+    interval_seconds     = optional(number, 10)
+    max_interval_seconds = optional(number, 180)
+  })
+```
+
+Default: `{}`
+
+### <a name="input_tags_depends_on"></a> [tags\_depends\_on](#input\_tags\_depends\_on)
+
+Description: (Optional) Resource IDs whose writes must finish before the hub tags write starts. Only the reference is used, not the values.
+
+The Virtual WAN module passes the firewall policy IDs here. A tags write puts the hub in `Updating` for several minutes. A firewall policy PUT that runs in the same window pushes the policy to the hub firewall, the firewall rejects the push with `ReferencedResourceNotProvisioned`, and the policy fails with `FirewallPolicyUpdateFailed`. The failure is the final state of a long-running operation, so `retry` cannot catch it.
+
+Type: `list(string)`
+
+Default: `[]`
+
+### <a name="input_timeouts"></a> [timeouts](#input\_timeouts)
+
+Description: (Optional) Timeouts for the resource operations.
+
+The defaults are `azurerm_virtual_hub`'s own per-resource defaults at provider v4.81.0 (`virtual_hub_resource.go` L47-52): create `60m`, read `5m`, update `60m`, delete `60m`. They are deliberately NOT the shared `30m` used elsewhere in this repository - a Virtual Hub create polls its `routingState` to `Provisioned` on top of the ARM long-running operation, which is why the create budget is twice the repository default.
+
+Type:
+
+```hcl
+object({
+    create = optional(string, "60m")
+    read   = optional(string, "5m")
+    update = optional(string, "60m")
+    delete = optional(string, "60m")
+  })
+```
+
+Default: `{}`
 
 ### <a name="input_virtual_hubs"></a> [virtual\_hubs](#input\_virtual\_hubs)
 
@@ -65,6 +168,10 @@ Default: `{}`
 ## Outputs
 
 The following outputs are exported:
+
+### <a name="output_default_route_table_id"></a> [default\_route\_table\_id](#output\_default\_route\_table\_id)
+
+Description: Default Hub Route Table ID for each Virtual Hub, constructed from the hub's own resource ID so that it stays known at plan time.
 
 ### <a name="output_location"></a> [location](#output\_location)
 

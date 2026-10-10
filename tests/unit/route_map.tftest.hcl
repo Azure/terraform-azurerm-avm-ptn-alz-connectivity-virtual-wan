@@ -8,7 +8,6 @@ mock_provider "azapi" {
   }
 }
 
-mock_provider "azurerm" {}
 mock_provider "modtm" {}
 mock_provider "random" {}
 
@@ -102,8 +101,8 @@ run "route_map_accepts_operational_inputs" {
 
   variables {
     ignore_body_changes = {
-      virtual_hubs_route_maps = {
-        virtual_hubs_route_maps = ["properties.rules"]
+      network_virtual_hubs_route_maps = {
+        network_virtual_hubs_route_maps = ["properties.rules"]
       }
     }
     retry = {
@@ -125,8 +124,8 @@ run "route_map_ignore_body_changes_rejects_empty_path" {
 
   variables {
     ignore_body_changes = {
-      virtual_hubs_route_maps = {
-        virtual_hubs_route_maps = ["   "]
+      network_virtual_hubs_route_maps = {
+        network_virtual_hubs_route_maps = ["   "]
       }
     }
   }

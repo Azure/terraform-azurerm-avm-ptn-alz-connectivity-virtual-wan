@@ -53,6 +53,25 @@ variable "diagnostic_settings" {
     )
     error_message = "At least one of `workspace_resource_id`, `storage_account_resource_id`, `marketplace_partner_resource_id`, or `event_hub_authorization_rule_resource_id`, must be set."
   }
+  validation {
+    # AzureRM parity, ADDED by the AzAPI migration. `monitor_diagnostic_setting_
+    # resource.go` L285-287 hard-failed with "at least one type of Log or Metric
+    # must be enabled" before ever calling ARM, and the comment above it
+    # (L263) explains why: with neither, the API "creates" but then 404s on
+    # Read. AzAPI has no such guard, so a config AzureRM rejected at plan would
+    # now create an unreadable object. No previously-working configuration can
+    # trip this.
+    condition = alltrue(flatten(
+      [
+        for _, v in var.diagnostic_settings :
+        [
+          for _, v2 in v :
+          length(coalesce(v2.log_categories, [])) > 0 || length(coalesce(v2.log_groups, [])) > 0 || length(coalesce(v2.metric_categories, [])) > 0
+        ]
+      ])
+    )
+    error_message = "At least one of `log_categories`, `log_groups`, or `metric_categories` must be non-empty for every diagnostic setting."
+  }
 }
 
 variable "enable_telemetry" {
@@ -101,6 +120,17 @@ The key is deliberately arbitrary to avoid issues with known after apply values.
   DESCRIPTION
 
   validation {
+    # TFNFR38 (Severity-MUST): a LITERAL type through `parse_resource_id`, never a regex.
+    # `locals.tf` rebuilds `parent_id` via `split(...)[2]`, so the ID must stay RG-scoped;
+    # `parse` alone is looser and admits other scopes -- see `MIGRATION-DEVIATIONS.md`.
+    condition = alltrue([
+      for firewall in(var.firewalls != null ? values(var.firewalls) : []) :
+      can(provider::azapi::parse_resource_id("Microsoft.Network/virtualHubs", firewall.virtual_hub_id)) &&
+      try(provider::azapi::parse_resource_id("Microsoft.Network/virtualHubs", firewall.virtual_hub_id).resource_group_name, "") != ""
+    ])
+    error_message = "Every `firewalls` entry must set `virtual_hub_id` to a resource-group-scoped `Microsoft.Network/virtualHubs` resource ID."
+  }
+  validation {
     condition = var.firewalls == null ? true : alltrue([
       for firewall in var.firewalls :
       firewall == null ? false : length(firewall.ip_configurations) == 0 ? true : (
@@ -111,19 +141,14 @@ The key is deliberately arbitrary to avoid issues with known after apply values.
   }
   validation {
     condition = var.firewalls == null ? true : alltrue([
-      for firewall in var.firewalls :
-      can(provider::azapi::parse_resource_id("Microsoft.Network/virtualHubs", firewall.virtual_hub_id))
-    ])
-    error_message = "Each virtual_hub_id must be a valid Virtual Hub resource ID."
-  }
-  validation {
-    condition = var.firewalls == null ? true : alltrue([
       for firewall in var.firewalls : firewall.firewall_policy_id == null ? true :
       can(provider::azapi::parse_resource_id("Microsoft.Network/firewallPolicies", firewall.firewall_policy_id))
     ])
     error_message = "Each firewall_policy_id must be a valid Firewall Policy resource ID or null."
   }
   validation {
+    # AzureRM parity for managed mode: a non-numeric value failed at plan in the SDK. Explicit zero is accepted
+    # only together with customer ip_configurations (next validation).
     condition = var.firewalls == null ? true : alltrue([
       for firewall in var.firewalls : firewall.vhub_public_ip_count == null ? true : try(
         tonumber(firewall.vhub_public_ip_count) >= 0 &&
@@ -186,18 +211,31 @@ The key is deliberately arbitrary to avoid issues with known after apply values.
 
 variable "ignore_body_changes" {
   type = object({
-    network_azure_firewalls      = optional(list(string), [])
     insights_diagnostic_settings = optional(list(string), [])
+    network_azure_firewalls      = optional(list(string), [])
   })
   default     = {}
   description = <<DESCRIPTION
-Body-relative dot paths ignored by each AzAPI resource. Changes take effect after apply; ignored configuration is not sent to Azure. Nonempty lists require Terraform 1.11 or later.
+(Optional) Body property paths whose changes the `azapi` provider ignores after creation, letting an out-of-band controller own those properties without producing perpetual `terraform plan` drift.
 
-- `network_azure_firewalls` - Firewall body paths. IP ownership, IP configuration and hub association paths cannot be ignored.
-- `insights_diagnostic_settings` - Diagnostic setting body paths.
+- `insights_diagnostic_settings` - (Optional) Ignored body paths for the firewall diagnostic settings, in dot notation relative to the request body, for example `["properties.logs"]`. Default `[]`.
+- `network_azure_firewalls` - (Optional) Ignored body paths for the Azure Firewall, for example `["tags"]`. Default `[]`. **Read the caveat below before setting this.**
+
+While a path is ignored, configuration changes at that path are no longer sent to Azure. The value is write-only provider state, so a change only takes effect after an `apply`, and supplying a non-empty list requires Terraform 1.11 or later.
+
+> 🔴 CAVEAT ON `network_azure_firewalls`. The key exists because AVM spec TFFR8 (Severity-MUST, Class-Pattern) says the argument "**MUST NOT**" be omitted from any module-declared `azapi_resource`, and this module declares two. Its practical reach, however, is close to nil, and that is a property of this module's writer split rather than of the variable:
+>
+> - `azapi_resource.fw` is a CREATE-ONLY writer whose `lifecycle.ignore_changes` already contains `body`, so it never issues an update PUT for body drift at all. The provider only consults `ignore_body_changes` where prior state already exists: `overrideBodyWithPaths` is called at `azapi_resource.go` L630 (guarded by `if state != nil && len(ignoreBodyChanges) != 0` at L619, inside `ModifyPlan` at L542) and at L942 (guarded by `if !isNewResource {` at L930). A path list here therefore has nothing to suppress.
+> - `azapi_update_resource.fw`, the day-2 writer that does the real work, has NO `ignore_body_changes` argument in `Azure/azapi` v2.12.0. `AzapiUpdateResourceModel` (`internal/services/azapi_update_resource.go` L40-L63) declares no such field and the resource's schema declares no such attribute. Measured by reading the provider source at tag v2.12.0, not inferred from docs.
+>
+> Use `firewalls.<key>.tags` and the dedicated inputs to control the firewall body. This key is here for spec conformance and for the day the merge writer gains the argument.
 DESCRIPTION
   nullable    = false
 
+  validation {
+    condition     = alltrue([for path in var.ignore_body_changes.insights_diagnostic_settings : length(trimspace(path)) > 0])
+    error_message = "Every ignore_body_changes.insights_diagnostic_settings entry must be a non-empty body path in dot notation, for example \"properties.logs\"."
+  }
   validation {
     condition = alltrue([
       for path in var.ignore_body_changes.network_azure_firewalls :
@@ -206,46 +244,67 @@ DESCRIPTION
     ])
     error_message = "Firewall IP configurations, managed IP counts, virtual hub association, or all properties cannot be ignored."
   }
+  validation {
+    condition     = alltrue([for path in var.ignore_body_changes.network_azure_firewalls : length(trimspace(path)) > 0])
+    error_message = "Every ignore_body_changes.network_azure_firewalls entry must be a non-empty body path in dot notation, for example \"tags\"."
+  }
 }
 
 variable "resource_types" {
   type = object({
-    network_azure_firewalls      = optional(string, "Microsoft.Network/azureFirewalls@2024-10-01")
+    insights_diagnostic_settings = optional(string, "Microsoft.Insights/diagnosticSettings@2021-05-01-preview")
+    network_azure_firewalls      = optional(string, "Microsoft.Network/azureFirewalls@2025-07-01")
     network_public_ip_addresses  = optional(string, "Microsoft.Network/publicIPAddresses@2024-10-01")
     network_virtual_hubs         = optional(string, "Microsoft.Network/virtualHubs@2024-10-01")
     network_virtual_wans         = optional(string, "Microsoft.Network/virtualWans@2024-10-01")
-    insights_diagnostic_settings = optional(string, "Microsoft.Insights/diagnosticSettings@2021-05-01-preview")
   })
   default     = {}
   description = <<DESCRIPTION
-AzAPI resource types and API versions.
+(Optional) The Azure resource type and API version used for each resource created by this module.
 
-- `network_azure_firewalls` - Firewall resource and inventory reads.
-- `network_public_ip_addresses` - Read-only inspection of caller-owned public IPs.
-- `network_virtual_hubs` - Read-only inspection of the secured hub.
-- `network_virtual_wans` - Read-only inspection of the hub's parent Virtual WAN, the authoritative source for the Standard/Basic SKU.
-- `insights_diagnostic_settings` - Diagnostic settings; the preview API supports log category groups.
+- `insights_diagnostic_settings` - (Optional) The type and API version of the firewall diagnostic settings. Default `Microsoft.Insights/diagnosticSettings@2021-05-01-preview`, which is the version `hashicorp/azurerm` v4.81.0 used (`monitor_diagnostic_setting_resource.go` L18).
+- `network_azure_firewalls` - (Optional) The type and API version of the Azure Firewall. Default `Microsoft.Network/azureFirewalls@2025-07-01`.
+- `network_public_ip_addresses` - (Optional) Read-only inspection of caller-owned public IPs (customer-IP mode only). Default `Microsoft.Network/publicIPAddresses@2024-10-01`.
+- `network_virtual_hubs` - (Optional) Read-only inspection of the secured hub (customer-IP mode only). Default `Microsoft.Network/virtualHubs@2024-10-01`.
+- `network_virtual_wans` - (Optional) Read-only inspection of the hub's parent Virtual WAN (customer-IP mode only). Default `Microsoft.Network/virtualWans@2024-10-01`.
+
+> 🔴 Changing `network_azure_firewalls` on an EXISTING deployment is a breaking change, not a routine bump. `type` is not a replacement trigger on `azapi_resource` (v2.12.0 `azapi_resource.go` L206-212 declares no `RequiresReplace`) and it carries no `skip_on:"update"` tag either, so a changed value drags the create-only full writer into a full PUT of its stale `state.body`. Plan it, read it, and do not apply it casually.
 DESCRIPTION
   nullable    = false
 }
 
 variable "retry" {
   type = object({
-    error_message_regex  = optional(list(string))
-    interval_seconds     = optional(number)
-    max_interval_seconds = optional(number)
+    error_message_regex  = optional(list(string), ["ReferencedResourceNotProvisioned"])
+    interval_seconds     = optional(number, 10)
+    max_interval_seconds = optional(number, 180)
   })
-  default     = null
-  description = "AzAPI retries: error_message_regex selects retryable errors, interval_seconds sets the initial delay, and max_interval_seconds limits it."
+  default     = {}
+  description = "(Optional) Retry configuration for the resource operations."
 }
 
 variable "timeouts" {
   type = object({
-    create = optional(string, "90m")
-    read   = optional(string, "5m")
-    update = optional(string, "90m")
-    delete = optional(string, "90m")
+    create = optional(string)
+    read   = optional(string)
+    update = optional(string)
+    delete = optional(string)
   })
   default     = {}
-  description = "AzAPI operation timeouts. Firewall create, update and delete default to 90m; read defaults to 5m."
+  description = <<DESCRIPTION
+(Optional) Timeouts for the resource operations. Each value is a Go duration string, for example `30m` or `1h`.
+
+- `create` - (Optional) Timeout for create operations.
+- `read`   - (Optional) Timeout for read operations.
+- `update` - (Optional) Timeout for update operations.
+- `delete` - (Optional) Timeout for delete operations.
+
+An attribute left unset does NOT fall back to a single blanket value. It falls back PER RESOURCE to the timeout default of the `hashicorp/azurerm` v4.81.0 resource that resource replaced, so a migrated deployment keeps the timeouts it had. The fallbacks and their source lines are in `local.timeouts` in `locals.tf`:
+
+- The Azure Firewall - create `90m`, read `5m`, update `90m`, delete `90m` (`firewall_resource.go` L46-51). Applied to BOTH the create-only full writer and the day-2 merge writer.
+- The firewall diagnostic settings - create `30m`, read `5m`, update `30m`, delete `60m` (`monitor_diagnostic_setting_resource.go` L43-48). Note the `60m` delete, which is NOT the firewall's `90m`.
+
+🔴 THE SHAPE IS THE FLAT TFFR7 ONE, not a per-resource-keyed object. It used to be keyed by resource type (`network_azure_firewalls` / `insights_diagnostic_settings`), which was untypeable as a cascade target: TFFR7 requires the parent to pass `timeouts = var.timeouts` through unchanged, and the parent's `timeouts` is the flat four-attribute object the spec shows. The per-resource fallbacks were not lost, only moved from the variable into `local.timeouts`, so behaviour at the defaults is unchanged. This variable was never published -- v0.17.2 declared no `timeouts` in this submodule -- so the reshape breaks no released consumer.
+DESCRIPTION
+  nullable    = false
 }

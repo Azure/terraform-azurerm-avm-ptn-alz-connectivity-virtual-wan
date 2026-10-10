@@ -4,6 +4,45 @@
 
 This submodule deploys an Azure ExpressRoute Connection between ExpressRoute Gateway and ExpressRoute Circuit in the Virtual Hub
 
+## Provider migration: AzureRM to AzAPI
+
+This module now creates `Microsoft.Network/expressRouteGateways/expressRouteConnections` through
+the AzAPI provider instead of `azurerm_express_route_connection`. The input variable
+`er_circuit_connections` is **unchanged** — no consumer edit is required.
+
+Two behaviour notes:
+
+- **`resource` output element type changed.** It is still a list, in the same order and with the
+  same cardinality, but each element is an `azapi_resource` object rather than an
+  `azurerm_express_route_connection` one. Per-attribute reads such as `.routing_weight` are no
+  longer available; `.id` and `.name` are. `resource_id` is unchanged.
+- **`express_route_gateway_bypass_enabled` is still inert, on purpose.** The variable is accepted
+  and documented but has never been wired to the resource, so AzureRM sent the schema default
+  `false` on every create. The AzAPI module reproduces that literal rather than starting to honour
+  the input, because honouring it could enable ExpressRoute Fast Path on existing connections at
+  the first post-migration apply. Making the input live is a separate, deliberate change.
+
+## Design notes
+
+### Per-resource timeout defaults
+
+`var.timeouts` keeps its published shape -- same variable name, same four attributes, same
+types -- but its attributes no longer carry a blanket `"30m"`/`"5m"` default. Each is now
+`optional(string)` (null when unset) and falls back to the timeout default of the `azurerm`
+resource this module replaced. A consumer that sets `var.timeouts` today keeps working
+unchanged; only the *unset* attributes changed meaning.
+
+Cited against `terraform-provider-azurerm@5782a75422c68a0d0804ac16d97dcaf3df5ee2fa` (v4.81.0):
+
+| `azapi_resource` | AzureRM resource | Source | Create | Read | Update | Delete |
+| --- | --- | --- | --- | --- | --- | --- |
+| `this` | `azurerm_express_route_connection` | `express_route_connection_resource.go` L34-L39 | 30m | 5m | 30m | 30m |
+
+The effective values are unchanged for this module -- the AzureRM defaults happened to be the
+blanket ones -- but they are now sourced rather than assumed.
+
+Passing `var.timeouts = null` still omits the `timeouts` block entirely, exactly as before.
+
 <!-- markdownlint-disable MD033 -->
 ## Requirements
 
@@ -11,13 +50,13 @@ The following requirements are needed by this module:
 
 - <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (~> 1.7)
 
-- <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (~> 4.0)
+- <a name="requirement_azapi"></a> [azapi](#requirement\_azapi) (~> 2.12)
 
 ## Resources
 
 The following resources are used by this module:
 
-- [azurerm_express_route_connection.er_connection](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/express_route_connection) (resource)
+- [azapi_resource.this](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource) (resource)
 
 <!-- markdownlint-disable MD013 -->
 ## Required Inputs
@@ -72,6 +111,95 @@ map(object({
     }))
     routing_weight = optional(number)
   }))
+```
+
+Default: `{}`
+
+### <a name="input_ignore_body_changes"></a> [ignore\_body\_changes](#input\_ignore\_body\_changes)
+
+Description: (Optional) Body property paths whose changes the `azapi` provider ignores after creation, letting an out-of-band controller own those properties without producing perpetual `terraform plan` drift.
+
+- `network_express_route_gateways_express_route_connections` - (Optional) Ignored body paths for the ExpressRoute connection, in dot notation relative to the request body, for example `["properties.routingConfiguration"]`. Default `[]`.
+
+While a path is ignored, configuration changes at that path are no longer sent to Azure. The value is write-only provider state, so a change only takes effect after an `apply`, and supplying a non-empty list requires Terraform 1.11 or later.
+
+Type:
+
+```hcl
+object({
+    network_express_route_gateways_express_route_connections = optional(list(string), [])
+  })
+```
+
+Default: `{}`
+
+### <a name="input_resource_types"></a> [resource\_types](#input\_resource\_types)
+
+Description: (Optional) The Azure resource type and API version used for each resource created by this module.
+
+- `network_express_route_gateways_express_route_connections` - (Optional) The type and API version of the ExpressRoute connection. Default `Microsoft.Network/expressRouteGateways/expressRouteConnections@2025-07-01`.
+
+Type:
+
+```hcl
+object({
+    network_express_route_gateways_express_route_connections = optional(string, "Microsoft.Network/expressRouteGateways/expressRouteConnections@2025-07-01")
+  })
+```
+
+Default: `{}`
+
+### <a name="input_retry"></a> [retry](#input\_retry)
+
+Description: (Optional) Retry configuration for the resource operations.
+
+`error_message_regex` is matched against the ARM error MESSAGE. It defaults to
+`["ReferencedResourceNotProvisioned", "AnotherOperationInProgress", "(?s)OperationNotAllowed.*Updating"]`.
+
+The last two entries exist because this module writes a CHILD of an ExpressRoute gateway
+(`Microsoft.Network/expressRouteGateways/expressRouteConnections`). A write to the parent gateway --  
+including a tags-only change -- returns to Terraform while the RP keeps the gateway, and its  
+connections, in `provisioningState: Updating` for minutes afterwards. A connection write landing in  
+that window fails with a transient `409`. Retrying is the mitigation.
+
+The `(?s)` prefix is required, not stylistic: the provider matches against a multi-line rendering of  
+the error in which the code and the `Updating` state never share a line, and Go's `.` does not cross  
+a newline without it.
+
+Setting this attribute REPLACES the whole list rather than adding to it, so an override that drops  
+those entries also drops the mitigation.
+
+Type:
+
+```hcl
+object({
+    error_message_regex = optional(list(string), [
+      "ReferencedResourceNotProvisioned",
+      "AnotherOperationInProgress",
+      "(?s)OperationNotAllowed.*Updating",
+    ])
+    interval_seconds     = optional(number, 10)
+    max_interval_seconds = optional(number, 180)
+  })
+```
+
+Default: `{}`
+
+### <a name="input_timeouts"></a> [timeouts](#input\_timeouts)
+
+Description: (Optional) Timeouts for the resource operations.
+
+Any attribute left unset falls back, per resource, to the timeout default of the `azurerm` resource this module replaced, rather than to a single blanket value. The fallbacks and their source lines are in `local.timeouts` in `main.tf`. See "Design notes -> Per-resource timeout defaults" in `_header.md`.
+
+Type:
+
+```hcl
+object({
+    create = optional(string)
+    read   = optional(string)
+    update = optional(string)
+    delete = optional(string)
+  })
 ```
 
 Default: `{}`

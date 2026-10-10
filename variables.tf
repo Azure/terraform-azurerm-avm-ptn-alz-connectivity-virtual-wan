@@ -59,10 +59,53 @@ DESCRIPTION
 
 variable "ignore_body_changes" {
   type = object({
+    # Deprecated aliases for the shape introduced in v0.18.0. Each is merged into its replacement below.
     virtual_hubs_firewalls                     = optional(list(string), [])
     virtual_hubs_firewalls_diagnostic_settings = optional(list(string), [])
     virtual_hubs_route_maps = optional(object({
       virtual_hubs_route_maps = optional(list(string), [])
+    }), {})
+    network_virtual_hubs_route_maps = optional(object({
+      network_virtual_hubs_route_maps = optional(list(string), [])
+    }), {})
+    # TFFR8 (Severity-MUST, Class-Pattern) cascade slot for `module.virtual_wan`. The shape is
+    # `modules/virtual-wan`'s own `ignore_body_changes` verbatim, including its own eight
+    # submodule slots, so the argument passes straight through unmodified. Every leaf defaults
+    # to `[]`, which is what each receiving module already defaults to -- so with this input
+    # unset the cascade is behaviour-neutral.
+    network_virtual_wans = optional(object({
+      network_p2s_vpn_gateways              = optional(list(string), [])
+      network_virtual_hubs_bgp_connections  = optional(list(string), [])
+      network_virtual_hubs_hub_route_tables = optional(list(string), [])
+      network_virtual_hubs_routing_intent   = optional(list(string), [])
+      network_virtual_wans                  = optional(list(string), [])
+      network_vpn_server_configurations     = optional(list(string), [])
+      resources_resource_groups             = optional(list(string), [])
+      network_azure_firewalls = optional(object({
+        insights_diagnostic_settings = optional(list(string), [])
+        network_azure_firewalls      = optional(list(string), [])
+      }), {})
+      network_express_route_gateways = optional(object({
+        network_express_route_gateways = optional(list(string), [])
+      }), {})
+      network_express_route_gateways_express_route_connections = optional(object({
+        network_express_route_gateways_express_route_connections = optional(list(string), [])
+      }), {})
+      network_virtual_hubs = optional(object({
+        network_virtual_hubs = optional(list(string), [])
+      }), {})
+      network_virtual_hubs_hub_virtual_network_connections = optional(object({
+        network_virtual_hubs_hub_virtual_network_connections = optional(list(string), [])
+      }), {})
+      network_vpn_gateways = optional(object({
+        network_vpn_gateways = optional(list(string), [])
+      }), {})
+      network_vpn_gateways_vpn_connections = optional(object({
+        network_vpn_gateways_vpn_connections = optional(list(string), [])
+      }), {})
+      network_vpn_sites = optional(object({
+        network_vpn_sites = optional(list(string), [])
+      }), {})
     }), {})
     virtual_networks = optional(list(string), [])
     virtual_networks_subnets = optional(object({
@@ -73,10 +116,12 @@ variable "ignore_body_changes" {
   description = <<DESCRIPTION
 (Optional) Body property paths on the resources this module creates through the `azapi` provider that the provider stops reconciling after creation, so an out-of-band controller such as Azure Virtual Network Manager or an Azure Policy `DeployIfNotExists` assignment can own them without producing perpetual drift. Paths use dot notation.
 
-- `virtual_hubs_firewalls` - (Optional) Ignored body paths for the firewall of every secured hub. The paths that carry the firewall's IP configuration and its hub association cannot be ignored, because the module reconciles them. Default `[]`.
-- `virtual_hubs_firewalls_diagnostic_settings` - (Optional) Ignored body paths for the diagnostic settings of every secured hub firewall. Default `[]`.
-- `virtual_hubs_route_maps` - (Optional) An object with the following field:
-  - `virtual_hubs_route_maps` - (Optional) Ignored body paths applied to every route map in `route_maps`. Default `[]`.
+- `virtual_hubs_firewalls` - (Optional, deprecated) Alias kept for callers of v0.18.0. Merged into `network_virtual_wans.network_azure_firewalls.network_azure_firewalls`. Default `[]`.
+- `virtual_hubs_firewalls_diagnostic_settings` - (Optional, deprecated) Alias kept for callers of v0.18.0. Merged into `network_virtual_wans.network_azure_firewalls.insights_diagnostic_settings`. Default `[]`.
+- `virtual_hubs_route_maps` - (Optional, deprecated) Alias kept for callers of v0.18.0, same shape. Merged into `network_virtual_hubs_route_maps`. Default `[]`.
+- `network_virtual_hubs_route_maps` - (Optional) An object with the following field:
+  - `network_virtual_hubs_route_maps` - (Optional) Ignored body paths applied to every route map in `route_maps`. Default `[]`.
+- `network_virtual_wans` - (Optional) Ignored body paths for everything below the Virtual WAN submodule. One key per resource type it declares itself (`network_p2s_vpn_gateways`, `network_virtual_hubs_bgp_connections`, `network_virtual_hubs_hub_route_tables`, `network_virtual_hubs_routing_intent`, `network_virtual_wans`, `network_vpn_server_configurations`, `resources_resource_groups`), plus one nested object per submodule it calls (`network_azure_firewalls`, `network_express_route_gateways`, `network_express_route_gateways_express_route_connections`, `network_virtual_hubs`, `network_virtual_hubs_hub_virtual_network_connections`, `network_vpn_gateways`, `network_vpn_gateways_vpn_connections`, `network_vpn_sites`). Every leaf defaults to `[]`.
 - `virtual_networks` - (Optional) Ignored body paths for the sidecar virtual network of every hub, for example `["tags"]` when Azure Policy applies tags out-of-band. Default `[]`.
 - `virtual_networks_subnets` - (Optional) An object with the following field:
   - `virtual_networks_subnets` - (Optional) Ignored body paths applied to every sidecar subnet, for example `["properties.routeTable"]`. A per-subnet `ignore_body_changes` entry in `virtual_hubs.<key>.sidecar_virtual_network.subnets` takes precedence over this shared value. Default `[]`.
@@ -88,11 +133,34 @@ DESCRIPTION
   nullable    = false
 
   validation {
+    # 🔴 EVERY LEAF IS LISTED EXPLICITLY, deliberately. The obvious shorthand --
+    # `flatten([for v in values(var.ignore_body_changes) : v])` -- would fold the nested OBJECT
+    # members in alongside the lists and silently `trimspace` their keys, so a bad path inside
+    # `network_virtual_wans` would never be caught. An explicit `concat` of lists cannot do that,
+    # and it fails to compile rather than silently skipping if a slot is added without being
+    # wired in here.
     condition = alltrue([
       for path in concat(
         var.ignore_body_changes.virtual_hubs_firewalls,
         var.ignore_body_changes.virtual_hubs_firewalls_diagnostic_settings,
         var.ignore_body_changes.virtual_hubs_route_maps.virtual_hubs_route_maps,
+        var.ignore_body_changes.network_virtual_hubs_route_maps.network_virtual_hubs_route_maps,
+        var.ignore_body_changes.network_virtual_wans.network_p2s_vpn_gateways,
+        var.ignore_body_changes.network_virtual_wans.network_virtual_hubs_bgp_connections,
+        var.ignore_body_changes.network_virtual_wans.network_virtual_hubs_hub_route_tables,
+        var.ignore_body_changes.network_virtual_wans.network_virtual_hubs_routing_intent,
+        var.ignore_body_changes.network_virtual_wans.network_virtual_wans,
+        var.ignore_body_changes.network_virtual_wans.network_vpn_server_configurations,
+        var.ignore_body_changes.network_virtual_wans.resources_resource_groups,
+        var.ignore_body_changes.network_virtual_wans.network_azure_firewalls.insights_diagnostic_settings,
+        var.ignore_body_changes.network_virtual_wans.network_azure_firewalls.network_azure_firewalls,
+        var.ignore_body_changes.network_virtual_wans.network_express_route_gateways.network_express_route_gateways,
+        var.ignore_body_changes.network_virtual_wans.network_express_route_gateways_express_route_connections.network_express_route_gateways_express_route_connections,
+        var.ignore_body_changes.network_virtual_wans.network_virtual_hubs.network_virtual_hubs,
+        var.ignore_body_changes.network_virtual_wans.network_virtual_hubs_hub_virtual_network_connections.network_virtual_hubs_hub_virtual_network_connections,
+        var.ignore_body_changes.network_virtual_wans.network_vpn_gateways.network_vpn_gateways,
+        var.ignore_body_changes.network_virtual_wans.network_vpn_gateways_vpn_connections.network_vpn_gateways_vpn_connections,
+        var.ignore_body_changes.network_virtual_wans.network_vpn_sites.network_vpn_sites,
         var.ignore_body_changes.virtual_networks,
         var.ignore_body_changes.virtual_networks_subnets.virtual_networks_subnets
       ) : length(trimspace(path)) > 0
@@ -101,19 +169,106 @@ DESCRIPTION
   }
 }
 
-variable "retry" {
+variable "resource_types" {
   type = object({
-    error_message_regex = optional(list(string), [
-      "ReferencedResourceNotProvisioned",
-      "UpdateGatewayInProgress",
-      "CannotDeleteVirtualHubWhenItIsInUse",
-      "InUseVirtualWanCannotBeDeleted"
-    ])
-    interval_seconds     = optional(number, 10)
-    max_interval_seconds = optional(number, 180)
+    network_virtual_hubs_route_maps = optional(object({
+      network_virtual_hubs_route_maps = optional(string)
+    }), {})
+    network_virtual_wans = optional(object({
+      network_p2s_vpn_gateways              = optional(string)
+      network_virtual_hubs_bgp_connections  = optional(string)
+      network_virtual_hubs_hub_route_tables = optional(string)
+      network_virtual_hubs_routing_intent   = optional(string)
+      network_virtual_wans                  = optional(string)
+      network_vpn_server_configurations     = optional(string)
+      resources_resource_groups             = optional(string)
+      network_azure_firewalls = optional(object({
+        insights_diagnostic_settings = optional(string)
+        network_azure_firewalls      = optional(string)
+        network_public_ip_addresses  = optional(string)
+        network_virtual_hubs         = optional(string)
+        network_virtual_wans         = optional(string)
+      }), {})
+      network_express_route_gateways = optional(object({
+        network_express_route_gateways = optional(string)
+      }), {})
+      network_express_route_gateways_express_route_connections = optional(object({
+        network_express_route_gateways_express_route_connections = optional(string)
+      }), {})
+      network_virtual_hubs = optional(object({
+        network_virtual_hubs = optional(string)
+      }), {})
+      network_virtual_hubs_hub_virtual_network_connections = optional(object({
+        network_virtual_hubs_hub_virtual_network_connections = optional(string)
+      }), {})
+      network_vpn_gateways = optional(object({
+        network_vpn_gateways = optional(string)
+      }), {})
+      network_vpn_gateways_vpn_connections = optional(object({
+        network_vpn_gateways_vpn_connections = optional(string)
+      }), {})
+      network_vpn_sites = optional(object({
+        network_vpn_sites = optional(string)
+      }), {})
+    }), {})
   })
   default     = {}
-  description = "Retry configuration for the resource operations"
+  description = <<DESCRIPTION
+(Optional) The Azure resource type and API version used for each resource this module creates through the `azapi` provider, in `Namespace/type@apiVersion` form. TFFR6 (Severity-MUST) requires the input; this module declares no `azapi` resources of its own, so every key here is a pass-through to a module it calls.
+
+- `network_virtual_hubs_route_maps` - (Optional) An object with the following field:
+  - `network_virtual_hubs_route_maps` - (Optional) The type and API version of every route map in `route_maps`.
+- `network_virtual_wans` - (Optional) Types for everything below the Virtual WAN submodule. One key per resource type it declares itself (`network_p2s_vpn_gateways`, `network_virtual_hubs_bgp_connections`, `network_virtual_hubs_hub_route_tables`, `network_virtual_hubs_routing_intent`, `network_virtual_wans`, `network_vpn_server_configurations`, `resources_resource_groups`), plus one nested object per submodule it calls (`network_azure_firewalls`, `network_express_route_gateways`, `network_express_route_gateways_express_route_connections`, `network_virtual_hubs`, `network_virtual_hubs_hub_virtual_network_connections`, `network_vpn_gateways`, `network_vpn_gateways_vpn_connections`, `network_vpn_sites`).
+
+🔴 EVERY LEAF IS `optional(string)` WITH NO DEFAULT, on purpose. The module that declares a resource stays the single source of truth for that resource's API version, so this input cannot drift out of step with it. A leaf left unset arrives at the declaring module as a null and Terraform substitutes that module's own declared default -- MEASURED on Terraform 1.16.2 -- which is what makes adding this variable behaviour-neutral: with it unset, the plan is unchanged.
+
+🔴 Changing a type on an EXISTING deployment is a breaking change, not a routine bump. `type` is not a replacement trigger on `azapi_resource` (v2.12.0 `azapi_resource.go` L206-212 declares no `RequiresReplace`) and carries no `skip_on:"update"` tag, so a changed value drags a create-only full writer into a full PUT of its stale `state.body`. Plan it, read it, and do not apply it casually.
+DESCRIPTION
+  nullable    = false
+
+  validation {
+    # Same explicit-leaf discipline as `ignore_body_changes` above, and for the same reason: a
+    # `values()` shorthand would fold the nested objects in and check nothing inside them.
+    condition = alltrue([
+      for type in compact([
+        var.resource_types.network_virtual_hubs_route_maps.network_virtual_hubs_route_maps,
+        var.resource_types.network_virtual_wans.network_p2s_vpn_gateways,
+        var.resource_types.network_virtual_wans.network_virtual_hubs_bgp_connections,
+        var.resource_types.network_virtual_wans.network_virtual_hubs_hub_route_tables,
+        var.resource_types.network_virtual_wans.network_virtual_hubs_routing_intent,
+        var.resource_types.network_virtual_wans.network_virtual_wans,
+        var.resource_types.network_virtual_wans.network_vpn_server_configurations,
+        var.resource_types.network_virtual_wans.resources_resource_groups,
+        var.resource_types.network_virtual_wans.network_azure_firewalls.insights_diagnostic_settings,
+        var.resource_types.network_virtual_wans.network_azure_firewalls.network_azure_firewalls,
+        var.resource_types.network_virtual_wans.network_azure_firewalls.network_public_ip_addresses,
+        var.resource_types.network_virtual_wans.network_azure_firewalls.network_virtual_hubs,
+        var.resource_types.network_virtual_wans.network_azure_firewalls.network_virtual_wans,
+        var.resource_types.network_virtual_wans.network_express_route_gateways.network_express_route_gateways,
+        var.resource_types.network_virtual_wans.network_express_route_gateways_express_route_connections.network_express_route_gateways_express_route_connections,
+        var.resource_types.network_virtual_wans.network_virtual_hubs.network_virtual_hubs,
+        var.resource_types.network_virtual_wans.network_virtual_hubs_hub_virtual_network_connections.network_virtual_hubs_hub_virtual_network_connections,
+        var.resource_types.network_virtual_wans.network_vpn_gateways.network_vpn_gateways,
+        var.resource_types.network_virtual_wans.network_vpn_gateways_vpn_connections.network_vpn_gateways_vpn_connections,
+        var.resource_types.network_virtual_wans.network_vpn_sites.network_vpn_sites,
+      ]) : can(regex("^[^/@]+/[^@]+@[^@]+$", type))
+    ])
+    error_message = "Every resource_types entry that is set must be of the form \"Namespace/type@apiVersion\", for example \"Microsoft.Network/virtualWans@2025-07-01\"."
+  }
+}
+
+variable "retry" {
+  type = object({
+    error_message_regex  = optional(list(string))
+    interval_seconds     = optional(number)
+    max_interval_seconds = optional(number)
+  })
+  default     = {}
+  description = <<DESCRIPTION
+(Optional) Retry configuration for the AzAPI resource operations. The module passes it to the Virtual WAN submodule, the sidecar virtual networks and the route maps. The firewall policies do not receive it and keep the retry default of the firewall policy module.
+
+Any attribute left unset keeps the default of the module that receives it. The sidecar virtual networks and the route maps retry on `ReferencedResourceNotProvisioned`, `UpdateGatewayInProgress`, `CannotDeleteVirtualHubWhenItIsInUse` and `InUseVirtualWanCannotBeDeleted`, every 10 seconds up to 180 seconds (see `locals.retry.tf`). The Virtual WAN submodule and its children keep their own per-resource defaults. An attribute you set applies to every resource that receives this input.
+DESCRIPTION
 }
 
 variable "route_maps" {
@@ -175,13 +330,17 @@ variable "tags" {
 
 variable "timeouts" {
   type = object({
-    create = optional(string, "60m")
-    read   = optional(string, "5m")
-    update = optional(string, "60m")
-    delete = optional(string, "60m")
+    create = optional(string)
+    read   = optional(string)
+    update = optional(string)
+    delete = optional(string)
   })
   default     = {}
-  description = "Timeouts for the resource operations"
+  description = <<DESCRIPTION
+(Optional) Timeouts for the resource operations, cascaded to every AzAPI resource this module and its submodules create.
+
+Any attribute left unset keeps the default of the resource that receives it. The sidecar virtual networks, the route maps and the firewall policies default to create 60m, read 5m, update 60m, delete 60m (see `locals.timeouts.tf`). The Virtual WAN submodule and its children fall back per resource to the timeout of the `azurerm` resource each replaced, for example 90m for a firewall create, update and delete. An attribute you set applies everywhere.
+DESCRIPTION
 }
 
 variable "virtual_hubs" {

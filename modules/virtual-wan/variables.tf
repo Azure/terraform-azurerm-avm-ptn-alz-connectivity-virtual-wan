@@ -39,10 +39,11 @@ variable "allow_branch_to_branch_traffic" {
   type        = bool
   default     = true
   description = <<DESCRIPTION
-  Boolean toggle to toggle support for VWAN branch to branch traffic. Branches are locations connected over ExpressRoute or Site-to-Site VPNs to a Virtual WAN Hub. Defaults to true.
+  Boolean toggle to toggle support for VWAN branch to branch traffic. Branches are locations connected over ExpressRoute or Site-to-Site VPNs to a Virtual WAN Hub. Omitted or explicitly null values default to true; an explicit false is preserved.
 
   For more information review: https://learn.microsoft.com/azure/virtual-wan/virtual-wan-global-transit-network-architecture
   DESCRIPTION
+  nullable    = false
 }
 
 variable "bgp_connections" {
@@ -234,6 +235,99 @@ The key is deliberately arbitrary to avoid issues with known after apply values.
   DESCRIPTION
 }
 
+variable "ignore_body_changes" {
+  type = object({
+    network_p2s_vpn_gateways              = optional(list(string), [])
+    network_virtual_hubs_bgp_connections  = optional(list(string), [])
+    network_virtual_hubs_hub_route_tables = optional(list(string), [])
+    network_virtual_hubs_routing_intent   = optional(list(string), [])
+    network_virtual_wans                  = optional(list(string), [])
+    network_vpn_server_configurations     = optional(list(string), [])
+    resources_resource_groups             = optional(list(string), [])
+
+    # Nested submodule slots, per TFFR8 "Variable shape": one per submodule that directly
+    # declares a supported AzAPI resource, keyed by that submodule's primary ARM type, shaped
+    # exactly like that submodule's own `ignore_body_changes`, and cascaded through unchanged.
+    # Body paths are meaningful only against the resource that owns them, which is why this
+    # variable nests instead of cascading flat the way `retry` and `timeouts` do.
+    network_azure_firewalls = optional(object({
+      insights_diagnostic_settings = optional(list(string), [])
+      network_azure_firewalls      = optional(list(string), [])
+    }), {})
+    network_express_route_gateways = optional(object({
+      network_express_route_gateways = optional(list(string), [])
+    }), {})
+    network_express_route_gateways_express_route_connections = optional(object({
+      network_express_route_gateways_express_route_connections = optional(list(string), [])
+    }), {})
+    network_virtual_hubs = optional(object({
+      network_virtual_hubs = optional(list(string), [])
+    }), {})
+    network_virtual_hubs_hub_virtual_network_connections = optional(object({
+      network_virtual_hubs_hub_virtual_network_connections = optional(list(string), [])
+    }), {})
+    network_vpn_gateways = optional(object({
+      network_vpn_gateways = optional(list(string), [])
+    }), {})
+    network_vpn_gateways_vpn_connections = optional(object({
+      network_vpn_gateways_vpn_connections = optional(list(string), [])
+    }), {})
+    network_vpn_sites = optional(object({
+      network_vpn_sites = optional(list(string), [])
+    }), {})
+  })
+  default     = {}
+  description = <<DESCRIPTION
+(Optional) Body property paths whose changes the `azapi` provider ignores after creation, letting an out-of-band controller own those properties without producing perpetual `terraform plan` drift.
+
+Resources this module declares itself:
+
+- `network_p2s_vpn_gateways` - (Optional) Ignored body paths for the Point-to-Site VPN gateways, for example `["properties.vpnGatewayScaleUnit"]`. Default `[]`.
+- `network_virtual_hubs_bgp_connections` - (Optional) Ignored body paths for the Virtual Hub BGP connections, in dot notation relative to the request body, for example `["properties.peerIp"]`. Default `[]`.
+- `network_virtual_hubs_hub_route_tables` - (Optional) Ignored body paths for the Virtual Hub route tables, for example `["properties.routes"]`. Default `[]`.
+- `network_virtual_hubs_routing_intent` - (Optional) Ignored body paths for the Virtual Hub routing intents, for example `["properties.routingPolicies"]`. Default `[]`.
+- `network_virtual_wans` - (Optional) Ignored body paths for the Virtual WAN, for example `["properties.type"]`. Default `[]`.
+- `network_vpn_server_configurations` - (Optional) Ignored body paths for the Point-to-Site VPN server configurations, for example `["properties.vpnClientIpsecPolicies"]`. Default `[]`. Note that this only applies to the create-only writer, which already ignores every body change after creation; day-2 writes go through a separate merge writer that this variable does not affect.
+- `resources_resource_groups` - (Optional) Ignored body paths for the resource group, for example `["tags"]`. Default `[]`.
+
+Submodule slots. Each is cascaded to the named submodule unchanged:
+
+- `network_azure_firewalls` - (Optional) Slot for `./modules/firewall`, with `insights_diagnostic_settings`, `network_azure_firewalls` and the customer-IP read types `network_public_ip_addresses`, `network_virtual_hubs` and `network_virtual_wans`. Read that module's own variable description before setting `network_azure_firewalls`; its reach is bounded by the module's create-only/merge writer split.
+- `network_express_route_gateways` - (Optional) Slot for `./modules/expressroute-gateway`, with `network_express_route_gateways`.
+- `network_express_route_gateways_express_route_connections` - (Optional) Slot for `./modules/expressroute-gateway-connection`, with `network_express_route_gateways_express_route_connections`.
+- `network_virtual_hubs` - (Optional) Slot for `./modules/virtual-hub`, with `network_virtual_hubs`.
+- `network_virtual_hubs_hub_virtual_network_connections` - (Optional) Slot for `./modules/virtual-network-connection`, with `network_virtual_hubs_hub_virtual_network_connections`.
+- `network_vpn_gateways` - (Optional) Slot for `./modules/site-to-site-gateway`, with `network_vpn_gateways`.
+- `network_vpn_gateways_vpn_connections` - (Optional) Slot for `./modules/site-to-site-gateway-connection`, with `network_vpn_gateways_vpn_connections`.
+- `network_vpn_sites` - (Optional) Slot for `./modules/site-to-site-vpn-site`, with `network_vpn_sites`.
+
+While a path is ignored, configuration changes at that path are no longer sent to Azure. The value is write-only provider state, so a change only takes effect after an `apply`, and supplying a non-empty list requires Terraform 1.11 or later.
+DESCRIPTION
+  nullable    = false
+
+  validation {
+    # 🔴 This used to be `for paths in values(var.ignore_body_changes)`. That stopped working the
+    # moment the nested submodule slots were added: `values()` on a mixed object yields a tuple
+    # holding both `list(string)` and `object(...)` members, and `for path in paths` over an
+    # object iterates its KEYS, so a slot like `{network_vpn_sites = []}` would have had its key
+    # string length-checked instead of its paths. The direct keys are now named one by one, and
+    # the nested slots are validated by the submodule that owns them -- each submodule declares
+    # the identical non-empty-path check against its own variable.
+    condition = alltrue([
+      for path in concat(
+        var.ignore_body_changes.network_p2s_vpn_gateways,
+        var.ignore_body_changes.network_virtual_hubs_bgp_connections,
+        var.ignore_body_changes.network_virtual_hubs_hub_route_tables,
+        var.ignore_body_changes.network_virtual_hubs_routing_intent,
+        var.ignore_body_changes.network_virtual_wans,
+        var.ignore_body_changes.network_vpn_server_configurations,
+        var.ignore_body_changes.resources_resource_groups,
+      ) : length(trimspace(path)) > 0
+    ])
+    error_message = "Every ignore_body_changes entry must be a non-empty body path in dot notation, for example \"properties.routes\"."
+  }
+}
+
 variable "office365_local_breakout_category" {
   type        = string
   default     = "None"
@@ -345,6 +439,101 @@ variable "resource_group_tags" {
   DESCRIPTION
 }
 
+variable "resource_types" {
+  type = object({
+    network_p2s_vpn_gateways              = optional(string, "Microsoft.Network/p2sVpnGateways@2025-07-01")
+    network_virtual_hubs_bgp_connections  = optional(string, "Microsoft.Network/virtualHubs/bgpConnections@2025-07-01")
+    network_virtual_hubs_hub_route_tables = optional(string, "Microsoft.Network/virtualHubs/hubRouteTables@2025-07-01")
+    network_virtual_hubs_routing_intent   = optional(string, "Microsoft.Network/virtualHubs/routingIntent@2025-07-01")
+    network_virtual_wans                  = optional(string, "Microsoft.Network/virtualWans@2025-07-01")
+    network_vpn_server_configurations     = optional(string, "Microsoft.Network/vpnServerConfigurations@2025-07-01")
+    resources_resource_groups             = optional(string, "Microsoft.Resources/resourceGroups@2025-04-01")
+
+    # Nested submodule slots, per TFFR6 "Cascading to submodules". Each mirrors the shape of the
+    # named submodule's own `resource_types` variable, and the inner strings are deliberately
+    # `optional(string)` with NO default -- the submodule stays the single source of truth for
+    # its own tested API version, and an unset slot arrives at the submodule as an all-null
+    # object, which Terraform then fills from the submodule's declared defaults.
+    network_azure_firewalls = optional(object({
+      insights_diagnostic_settings = optional(string)
+      network_azure_firewalls      = optional(string)
+      network_public_ip_addresses  = optional(string)
+      network_virtual_hubs         = optional(string)
+      network_virtual_wans         = optional(string)
+    }), {})
+    network_express_route_gateways = optional(object({
+      network_express_route_gateways = optional(string)
+    }), {})
+    network_express_route_gateways_express_route_connections = optional(object({
+      network_express_route_gateways_express_route_connections = optional(string)
+    }), {})
+    network_virtual_hubs = optional(object({
+      network_virtual_hubs = optional(string)
+    }), {})
+    network_virtual_hubs_hub_virtual_network_connections = optional(object({
+      network_virtual_hubs_hub_virtual_network_connections = optional(string)
+    }), {})
+    network_vpn_gateways = optional(object({
+      network_vpn_gateways = optional(string)
+    }), {})
+    network_vpn_gateways_vpn_connections = optional(object({
+      network_vpn_gateways_vpn_connections = optional(string)
+    }), {})
+    network_vpn_sites = optional(object({
+      network_vpn_sites = optional(string)
+    }), {})
+  })
+  default     = {}
+  description = <<DESCRIPTION
+(Optional) The Azure resource type and API version used for each resource created by this module.
+
+Resources this module declares itself:
+
+- `network_p2s_vpn_gateways` - (Optional) The type and API version of the Point-to-Site VPN gateways. Default `Microsoft.Network/p2sVpnGateways@2025-07-01`.
+- `network_virtual_hubs_bgp_connections` - (Optional) The type and API version of the Virtual Hub BGP connections. Default `Microsoft.Network/virtualHubs/bgpConnections@2025-07-01`.
+- `network_virtual_hubs_hub_route_tables` - (Optional) The type and API version of the Virtual Hub route tables. Default `Microsoft.Network/virtualHubs/hubRouteTables@2025-07-01`.
+- `network_virtual_hubs_routing_intent` - (Optional) The type and API version of the Virtual Hub routing intents. Default `Microsoft.Network/virtualHubs/routingIntent@2025-07-01`.
+- `network_virtual_wans` - (Optional) The type and API version of the Virtual WAN. Default `Microsoft.Network/virtualWans@2025-07-01`.
+- `network_vpn_server_configurations` - (Optional) The type and API version of the Point-to-Site VPN server configurations. Default `Microsoft.Network/vpnServerConfigurations@2025-07-01`.
+- `resources_resource_groups` - (Optional) The type and API version of the resource group. Default `Microsoft.Resources/resourceGroups@2025-04-01`.
+
+Submodule slots. Each is cascaded to the named submodule unchanged. Leave a key unset to keep that submodule's own tested default:
+
+- `network_azure_firewalls` - (Optional) Slot for `./modules/firewall`, with `insights_diagnostic_settings`, `network_azure_firewalls` and the customer-IP read types `network_public_ip_addresses`, `network_virtual_hubs` and `network_virtual_wans`.
+- `network_express_route_gateways` - (Optional) Slot for `./modules/expressroute-gateway`, with `network_express_route_gateways`.
+- `network_express_route_gateways_express_route_connections` - (Optional) Slot for `./modules/expressroute-gateway-connection`, with `network_express_route_gateways_express_route_connections`.
+- `network_virtual_hubs` - (Optional) Slot for `./modules/virtual-hub`, with `network_virtual_hubs`.
+- `network_virtual_hubs_hub_virtual_network_connections` - (Optional) Slot for `./modules/virtual-network-connection`, with `network_virtual_hubs_hub_virtual_network_connections`.
+- `network_vpn_gateways` - (Optional) Slot for `./modules/site-to-site-gateway`, with `network_vpn_gateways`.
+- `network_vpn_gateways_vpn_connections` - (Optional) Slot for `./modules/site-to-site-gateway-connection`, with `network_vpn_gateways_vpn_connections`.
+- `network_vpn_sites` - (Optional) Slot for `./modules/site-to-site-vpn-site`, with `network_vpn_sites`.
+DESCRIPTION
+  nullable    = false
+}
+
+variable "retry" {
+  type = object({
+    error_message_regex  = optional(list(string))
+    interval_seconds     = optional(number)
+    max_interval_seconds = optional(number)
+  })
+  default     = {}
+  description = <<DESCRIPTION
+(Optional) Retry configuration applied to every AzAPI resource this module declares, and cascaded unchanged to every submodule it instantiates (TFFR7).
+
+- `error_message_regex`  - (Optional) Regex patterns matching error messages that should trigger a retry.
+- `interval_seconds`     - (Optional) Initial interval between retries, in seconds.
+- `max_interval_seconds` - (Optional) Maximum interval between retries, in seconds.
+
+Each attribute is `null` when unset, and what an unset attribute means depends on where it lands:
+
+- On this module's own resources it falls back to `local.retry` in `locals.retry.tf`, which holds the values this module used before the attribute defaults were moved out of the variable. Nothing about this module's behaviour changed.
+- On a submodule it falls back to THAT submodule's own declared default, because Terraform substitutes an optional attribute's default for a null it receives from a parent. Submodule defaults differ on purpose -- the two connection submodules retry on `AnotherOperationInProgress` and `(?s)OperationNotAllowed.*Updating` as well, because their parent gateway serialises child writes.
+
+🔴 The defaults deliberately do NOT live on the variable any more. Were they still there, `retry = var.retry` on a submodule call would push this module's one-regex default over each submodule's richer one, silently narrowing their retry behaviour whenever the consumer left `retry` unset. Setting any attribute here still wins everywhere, which is the override the spec asks for.
+DESCRIPTION
+}
+
 # Routing intent for virutal hubs
 variable "routing_intents" {
   type = map(object({
@@ -381,6 +570,22 @@ variable "tags" {
   (Optional) Tags to apply to the Resource Group, if created by module controlled by variable `create_resource_group`, and the Virtual WAN resource only.
 
   DESCRIPTION
+}
+
+variable "timeouts" {
+  type = object({
+    create = optional(string)
+    read   = optional(string)
+    update = optional(string)
+    delete = optional(string)
+  })
+  default     = {}
+  description = <<DESCRIPTION
+(Optional) Timeouts for the resource operations.
+
+Any attribute left unset falls back, per resource, to the timeout default of the `azurerm` resource that resource replaced, rather than to a single blanket value. Notably `azurerm_resource_group` defaulted create/update/delete to 90 minutes. The fallbacks and their source lines are in `local.timeouts` in `locals.timeouts.tf`. See "Design notes -> Per-resource timeout defaults" in `_header.md`.
+DESCRIPTION
+  nullable    = false
 }
 
 variable "type" {

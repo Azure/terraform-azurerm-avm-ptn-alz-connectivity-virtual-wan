@@ -1,13 +1,11 @@
-mock_provider "azurerm" {
-  mock_data "azurerm_client_config" {
+mock_provider "modtm" {}
+mock_provider "random" {}
+mock_provider "azapi" {
+  mock_data "azapi_client_config" {
     defaults = {
       subscription_id = "00000000-0000-0000-0000-000000000001"
     }
   }
-}
-mock_provider "modtm" {}
-mock_provider "random" {}
-mock_provider "azapi" {
   mock_data "azapi_resource_list" {
     defaults = {
       output = { firewalls = [] }
@@ -72,8 +70,8 @@ variables {
 run "customer_optional_null_count" {
   command = apply
   assert {
-    condition     = length(azurerm_firewall.fw) == 0 && length(module.customer_firewalls) == 1 && terraform_data.public_ip_mode["hub"].output == true
-    error_message = "A nonempty map with omitted count must choose the singleton customer leaf, not AzureRM managed allocation."
+    condition     = length(azapi_resource.fw) == 0 && length(module.customer_firewalls) == 1 && terraform_data.public_ip_mode["hub"].output == true
+    error_message = "A nonempty map with omitted count must choose the singleton customer leaf, not managed allocation."
   }
   assert {
     condition     = output.public_ip_addresses["hub"] == tolist(["203.0.113.10"]) && output.resource_object["hub"].virtual_hub[0].public_ip_count == 1
@@ -110,7 +108,7 @@ run "customer_explicit_zero_count" {
     }
   }
   assert {
-    condition     = length(azurerm_firewall.fw) == 0 && output.resource["hub"].sku_tier == "Premium"
+    condition     = length(azapi_resource.fw) == 0 && output.resource["hub"].sku_tier == "Premium"
     error_message = "Zero is allowed only in customer mode, including Premium."
   }
 }

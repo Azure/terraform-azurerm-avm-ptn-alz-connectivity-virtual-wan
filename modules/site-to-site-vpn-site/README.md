@@ -4,6 +4,25 @@
 
 This submodule deploys an Azure site-to-site Gateway site in the Virtual Hub
 
+## Design notes
+
+### Per-resource timeout defaults
+
+`var.timeouts` keeps its published shape -- same variable name, same four attributes, same
+types -- but its attributes no longer carry a blanket `"30m"`/`"5m"` default. Each is now
+`optional(string)` (null when unset) and falls back, per resource, to the timeout default of the
+`azurerm` resource this module replaced. A consumer that sets `var.timeouts` today keeps working
+unchanged; only the *unset* attributes changed meaning.
+
+The fallbacks live in `local.timeouts` in `main.tf` and are cited against
+`terraform-provider-azurerm@5782a75422c68a0d0804ac16d97dcaf3df5ee2fa` (v4.81.0):
+
+| `azapi_resource` | AzureRM resource | Source | Create | Read | Update | Delete |
+| --- | --- | --- | --- | --- | --- | --- |
+| `this` | `azurerm_vpn_site` | `vpn_site_resource.go` L39-L44 | 30m | 5m | 30m | 30m |
+
+Passing `var.timeouts = null` still omits the `timeouts` block entirely, exactly as before.
+
 <!-- markdownlint-disable MD033 -->
 ## Requirements
 
@@ -11,13 +30,13 @@ The following requirements are needed by this module:
 
 - <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (~> 1.7)
 
-- <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (~> 4.0)
+- <a name="requirement_azapi"></a> [azapi](#requirement\_azapi) (~> 2.12)
 
 ## Resources
 
 The following resources are used by this module:
 
-- [azurerm_vpn_site.vpn_site](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/vpn_site) (resource)
+- [azapi_resource.this](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource) (resource)
 
 <!-- markdownlint-disable MD013 -->
 ## Required Inputs
@@ -89,7 +108,76 @@ map(object({
 
 ## Optional Inputs
 
-No optional inputs.
+The following input variables are optional (have default values):
+
+### <a name="input_ignore_body_changes"></a> [ignore\_body\_changes](#input\_ignore\_body\_changes)
+
+Description: (Optional) Body property paths whose changes the `azapi` provider ignores after creation, letting an out-of-band controller own those properties without producing perpetual `terraform plan` drift.
+
+- `network_vpn_sites` - (Optional) Ignored body paths for the VPN Site, in dot notation relative to the request body, for example `["properties.vpnSiteLinks"]`. Default `[]`.
+
+While a path is ignored, configuration changes at that path are no longer sent to Azure. The value is write-only provider state, so a change only takes effect after an `apply`, and supplying a non-empty list requires Terraform 1.11 or later.
+
+Type:
+
+```hcl
+object({
+    network_vpn_sites = optional(list(string), [])
+  })
+```
+
+Default: `{}`
+
+### <a name="input_resource_types"></a> [resource\_types](#input\_resource\_types)
+
+Description: (Optional) The Azure resource type and API version used for each resource created by this module.
+
+- `network_vpn_sites` - (Optional) The type and API version of the VPN Site. Default `Microsoft.Network/vpnSites@2025-07-01`.
+
+Type:
+
+```hcl
+object({
+    network_vpn_sites = optional(string, "Microsoft.Network/vpnSites@2025-07-01")
+  })
+```
+
+Default: `{}`
+
+### <a name="input_retry"></a> [retry](#input\_retry)
+
+Description: (Optional) Retry configuration for the resource operations.
+
+Type:
+
+```hcl
+object({
+    error_message_regex  = optional(list(string), ["ReferencedResourceNotProvisioned"])
+    interval_seconds     = optional(number, 10)
+    max_interval_seconds = optional(number, 180)
+  })
+```
+
+Default: `{}`
+
+### <a name="input_timeouts"></a> [timeouts](#input\_timeouts)
+
+Description: (Optional) Timeouts for the resource operations.
+
+Any attribute left unset falls back, per resource, to the timeout default of the `azurerm` resource this module replaced, rather than to a single blanket value. The fallbacks and their source lines are in `local.timeouts` in `main.tf`. See "Design notes -> Per-resource timeout defaults" in `_header.md`.
+
+Type:
+
+```hcl
+object({
+    create = optional(string)
+    read   = optional(string)
+    update = optional(string)
+    delete = optional(string)
+  })
+```
+
+Default: `{}`
 
 ## Outputs
 

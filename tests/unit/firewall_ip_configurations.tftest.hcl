@@ -1,28 +1,9 @@
 mock_provider "modtm" {}
 mock_provider "random" {}
-mock_provider "azurerm" {
-  mock_data "azurerm_client_config" {
+mock_provider "azapi" {
+  mock_data "azapi_client_config" {
     defaults = { subscription_id = "00000000-0000-0000-0000-000000000001" }
   }
-  mock_resource "azurerm_virtual_hub" {
-    defaults = { id = "/subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/rg-test/providers/Microsoft.Network/virtualHubs/hub-test" }
-  }
-  mock_resource "azurerm_virtual_wan" {
-    defaults = { id = "/subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/rg-test/providers/Microsoft.Network/virtualWans/wan-test" }
-  }
-  mock_resource "azurerm_firewall_policy" {
-    defaults = { id = "/subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/rg-test/providers/Microsoft.Network/firewallPolicies/policy-test" }
-  }
-  mock_resource "azurerm_firewall" {
-    defaults = {
-      virtual_hub = {
-        private_ip_address  = "10.0.0.4"
-        public_ip_addresses = ["198.51.100.10"]
-      }
-    }
-  }
-}
-mock_provider "azapi" {
   mock_data "azapi_resource_list" {
     defaults = { output = { firewalls = [] } }
   }
@@ -46,6 +27,15 @@ mock_provider "azapi" {
       }
     }
   }
+}
+
+override_resource {
+  target = module.virtual_wan[0].module.virtual_hubs.azapi_resource.this["hub"]
+  values = { id = "/subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/rg-test/providers/Microsoft.Network/virtualHubs/hub-test" }
+}
+override_resource {
+  target = module.virtual_wan[0].azapi_resource.virtual_wan[0]
+  values = { id = "/subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/rg-test/providers/Microsoft.Network/virtualWans/wan-test" }
 }
 
 override_module {
@@ -129,6 +119,10 @@ run "disabled_firewall_keep_empty_contract" {
 
 run "base_policy_id_survives_customer_path" {
   command = apply
+  override_resource {
+    target = module.firewall_policy["hub"].azapi_resource.this
+    values = { id = "/subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/rg-test/providers/Microsoft.Network/firewallPolicies/policy-test" }
+  }
   variables {
     virtual_hubs = {
       hub = {
@@ -155,7 +149,7 @@ run "base_policy_id_survives_customer_path" {
     }
   }
   assert {
-    condition     = module.firewall_policy["hub"].resource.base_policy_id == var.virtual_hubs["hub"].firewall_policy.base_policy_id
+    condition     = module.firewall_policy["hub"].resource.body.properties.basePolicy.id == var.virtual_hubs["hub"].firewall_policy.base_policy_id
     error_message = "The real firewall-policy module must still receive base_policy_id unchanged."
   }
   assert {

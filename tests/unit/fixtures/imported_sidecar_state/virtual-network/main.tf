@@ -47,6 +47,13 @@ resource "azapi_resource" "vnet" {
       }]
     }
   }
+  # This fixture only SEEDS state for the root module to plan against; it is never itself adopted,
+  # so it deliberately carries no `lifecycle.ignore_changes`. It stands in for
+  # `Azure/avm-res-network-virtualnetwork/azurerm` v0.22.2, which this repository does not own, so
+  # TFFR4 compliance for that module is not ours to assert here -- the value is `[]` purely so the
+  # seeded state is a faithful stand-in. The rule this repository does hold itself to, and the
+  # `ignore_changes` pairing that makes it safe, are pinned in
+  # `tests/unit/tffr4_ignore_changes.tftest.hcl`.
   response_export_values = []
   tags                   = {}
 }

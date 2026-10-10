@@ -1,5 +1,10 @@
 locals {
   private_dns_resolver_enabled = { for key, value in var.virtual_hubs : key => value.enabled_resources.private_dns_resolver && local.sidecar_virtual_networks_enabled[key] }
+  private_dns_resolver_subnet_names = {
+    for key, network in module.virtual_network_side_car : key => {
+      for subnet in network.subnets : subnet.name => subnet.name
+    }
+  }
 }
 
 locals {

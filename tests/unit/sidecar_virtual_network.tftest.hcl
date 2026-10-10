@@ -7,16 +7,13 @@ mock_provider "azapi" {
       id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-test/providers/Microsoft.Network/virtualNetworks/vnet-sidecar-test"
     }
   }
-}
-
-mock_provider "azurerm" {
-  mock_data "azurerm_public_ip" {
+  mock_data "azapi_resource" {
     defaults = {
-      id    = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-test/providers/Microsoft.Network/publicIPAddresses/pip-bastion"
-      zones = ["1", "2", "3"]
+      output = { zones = ["1", "2", "3"] }
     }
   }
 }
+
 
 mock_provider "modtm" {}
 mock_provider "random" {}

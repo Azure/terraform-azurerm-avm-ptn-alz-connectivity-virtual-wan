@@ -4,21 +4,13 @@ terraform {
   required_providers {
     azapi = {
       source  = "Azure/azapi"
-      version = "~> 2.4"
-    }
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      version = "~> 4.0"
+      version = "~> 2.12"
     }
     random = {
       source  = "hashicorp/random"
       version = "~> 3.7"
     }
   }
-}
-
-provider "azurerm" {
-  features {}
 }
 
 resource "random_string" "suffix" {
@@ -51,7 +43,7 @@ locals {
 
 module "resource_groups" {
   source   = "Azure/avm-res-resources-resourcegroup/azurerm"
-  version  = "0.2.0"
+  version  = "0.4.0"
   for_each = local.resource_groups
 
   location         = each.value.location

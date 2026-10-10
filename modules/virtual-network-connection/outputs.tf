@@ -1,19 +1,19 @@
 output "resource" {
   description = "Virtual Hub"
-  value       = var.virtual_network_connections != null ? [for hub in azurerm_virtual_hub_connection.hub_connection : hub] : []
+  value       = [for connection in azapi_resource.this : connection]
 }
 
 output "resource_id" {
   description = "Virtual Hub ID"
-  value       = var.virtual_network_connections != null ? [for hub in azurerm_virtual_hub_connection.hub_connection : hub.id] : []
+  value       = var.virtual_network_connections != null ? [for connection in azapi_resource.this : connection.id] : []
 }
 
 output "resource_object" {
   description = "Virtual Hub Object"
   value = var.virtual_network_connections != null ? {
-    for key, hub in azurerm_virtual_hub_connection.hub_connection : key => {
-      id   = hub.id
-      name = hub.name
+    for key, connection in azapi_resource.this : key => {
+      id   = connection.id
+      name = connection.name
     }
   } : {}
 }

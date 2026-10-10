@@ -1,13 +1,11 @@
-mock_provider "azurerm" {
-  mock_data "azurerm_client_config" {
+mock_provider "modtm" {}
+mock_provider "random" {}
+mock_provider "azapi" {
+  mock_data "azapi_client_config" {
     defaults = {
       subscription_id = "00000000-0000-0000-0000-000000000001"
     }
   }
-}
-mock_provider "modtm" {}
-mock_provider "random" {}
-mock_provider "azapi" {
   mock_data "azapi_resource_list" {
     defaults = {
       output = { firewalls = [] }

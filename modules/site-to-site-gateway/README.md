@@ -11,13 +11,15 @@ The following requirements are needed by this module:
 
 - <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (~> 1.7)
 
-- <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (~> 4.0)
+- <a name="requirement_azapi"></a> [azapi](#requirement\_azapi) (~> 2.12)
 
 ## Resources
 
 The following resources are used by this module:
 
-- [azurerm_vpn_gateway.vpn_gateway](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/vpn_gateway) (resource)
+- [azapi_resource.this](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource) (resource)
+- [azapi_resource_action.tags](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource_action) (resource)
+- [azapi_update_resource.this](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/update_resource) (resource)
 
 <!-- markdownlint-disable MD013 -->
 ## Required Inputs
@@ -27,6 +29,77 @@ No required inputs.
 ## Optional Inputs
 
 The following input variables are optional (have default values):
+
+### <a name="input_ignore_body_changes"></a> [ignore\_body\_changes](#input\_ignore\_body\_changes)
+
+Description: (Optional) Body property paths whose changes the `azapi` provider ignores after creation, letting an out-of-band controller own those properties without producing perpetual `terraform plan` drift.
+
+- `network_vpn_gateways` - (Optional) Ignored body paths for the S2S VPN Gateway, in dot notation relative to the request body, for example `["properties.vpnGatewayScaleUnit"]`. Default `[]`.
+
+While a path is ignored, configuration changes at that path are no longer sent to Azure. The value is write-only provider state, so a change only takes effect after an `apply`, and supplying a non-empty list requires Terraform 1.11 or later.
+
+> Note: this module pins the whole request body with `lifecycle.ignore_changes` after creation, so this setting only affects the initial create request. Day-2 writes go through a separate merge writer that has no equivalent setting.
+
+Type:
+
+```hcl
+object({
+    network_vpn_gateways = optional(list(string), [])
+  })
+```
+
+Default: `{}`
+
+### <a name="input_resource_types"></a> [resource\_types](#input\_resource\_types)
+
+Description: (Optional) The Azure resource type and API version used for each resource created by this module.
+
+- `network_vpn_gateways` - (Optional) The type and API version of the S2S VPN Gateway. Default `Microsoft.Network/vpnGateways@2025-07-01`.
+
+Type:
+
+```hcl
+object({
+    network_vpn_gateways = optional(string, "Microsoft.Network/vpnGateways@2025-07-01")
+  })
+```
+
+Default: `{}`
+
+### <a name="input_retry"></a> [retry](#input\_retry)
+
+Description: (Optional) Retry configuration for the resource operations.
+
+Type:
+
+```hcl
+object({
+    error_message_regex  = optional(list(string), ["ReferencedResourceNotProvisioned"])
+    interval_seconds     = optional(number, 10)
+    max_interval_seconds = optional(number, 180)
+  })
+```
+
+Default: `{}`
+
+### <a name="input_timeouts"></a> [timeouts](#input\_timeouts)
+
+Description: (Optional) Timeouts for the resource operations.
+
+The defaults are AzureRM's own per-resource timeouts for `azurerm_vpn_gateway`, not a module-wide convention: `vpn_gateway_resource.go` L41-L46 sets Create 90m, Read 5m, Update 90m and Delete 90m. A vpnGateway commonly takes the better part of an hour to provision, so the shorter 30m default used by this repo's other submodules would be a behaviour regression on migration.
+
+Type:
+
+```hcl
+object({
+    create = optional(string, "90m")
+    read   = optional(string, "5m")
+    update = optional(string, "90m")
+    delete = optional(string, "90m")
+  })
+```
+
+Default: `{}`
 
 ### <a name="input_vpn_gateways"></a> [vpn\_gateways](#input\_vpn\_gateways)
 

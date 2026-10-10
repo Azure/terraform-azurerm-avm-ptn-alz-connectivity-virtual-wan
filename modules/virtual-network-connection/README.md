@@ -4,6 +4,41 @@
 
 This submodule deploys an Azure virtual network connection
 
+## Design notes
+
+### Existing routing
+
+When `routing` is omitted, the module lists connections under the hub and preserves routing
+returned for the same connection name and remote VNet. This includes custom route-table
+associations, propagation, route maps and static routes. Explicit `routing` replaces that
+inherited configuration. A new connection with omitted routing uses Azure defaults.
+The response-only `vnetRoutes.bgpConnections` back-reference is excluded from the request;
+Azure manages it through hub BGP connections. Other routing fields are retained, and
+embedded request schema validation remains enabled.
+Returned legacy transit flags are retained on an existing connection.
+The deployment identity needs permission to list hub/VNet connections.
+
+### Per-resource timeout defaults
+
+`var.timeouts` keeps its published shape -- same variable name, same four attributes, same
+types -- but its attributes no longer carry a blanket `"30m"`/`"5m"` default. Each is now
+`optional(string)` (null when unset) and falls back to the timeout default of the `azurerm`
+resource this module replaced. A consumer that sets `var.timeouts` today keeps working
+unchanged; only the *unset* attributes changed meaning.
+
+**This module's defaults actually change.** `azurerm_virtual_hub_connection` defaulted
+create/update/delete to **60 minutes**, not the 30 minutes the migrated module was using. A hub
+connection routinely takes longer than half an hour when the hub is busy, so the blanket 30m
+could time out an operation AzureRM would have waited out.
+
+Cited against `terraform-provider-azurerm@5782a75422c68a0d0804ac16d97dcaf3df5ee2fa` (v4.81.0):
+
+| `azapi_resource` | AzureRM resource | Source | Create | Read | Update | Delete |
+| --- | --- | --- | --- | --- | --- | --- |
+| `this` | `azurerm_virtual_hub_connection` | `virtual_hub_connection_resource.go` L37-L42 | 60m | 5m | 60m | 60m |
+
+Passing `var.timeouts = null` still omits the `timeouts` block entirely, exactly as before.
+
 <!-- markdownlint-disable MD033 -->
 ## Requirements
 
@@ -11,13 +46,14 @@ The following requirements are needed by this module:
 
 - <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (~> 1.7)
 
-- <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (~> 4.0)
+- <a name="requirement_azapi"></a> [azapi](#requirement\_azapi) (~> 2.12)
 
 ## Resources
 
 The following resources are used by this module:
 
-- [azurerm_virtual_hub_connection.hub_connection](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_hub_connection) (resource)
+- [azapi_resource.this](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource) (resource)
+- [azapi_resource_list.virtual_network_connections](https://registry.terraform.io/providers/Azure/azapi/latest/docs/data-sources/resource_list) (data source)
 
 <!-- markdownlint-disable MD013 -->
 ## Required Inputs
@@ -27,6 +63,75 @@ No required inputs.
 ## Optional Inputs
 
 The following input variables are optional (have default values):
+
+### <a name="input_ignore_body_changes"></a> [ignore\_body\_changes](#input\_ignore\_body\_changes)
+
+Description: (Optional) Body property paths whose changes the `azapi` provider ignores after creation, letting an out-of-band controller own those properties without producing perpetual `terraform plan` drift.
+
+- `network_virtual_hubs_hub_virtual_network_connections` - (Optional) Ignored body paths for the Virtual Network connection, in dot notation relative to the request body, for example `["properties.routingConfiguration"]`. Default `[]`.
+
+While a path is ignored, configuration changes at that path are no longer sent to Azure. The value is write-only provider state, so a change only takes effect after an `apply`, and supplying a non-empty list requires Terraform 1.11 or later.
+
+Type:
+
+```hcl
+object({
+    network_virtual_hubs_hub_virtual_network_connections = optional(list(string), [])
+  })
+```
+
+Default: `{}`
+
+### <a name="input_resource_types"></a> [resource\_types](#input\_resource\_types)
+
+Description: (Optional) The Azure resource type and API version used for each resource created by this module.
+
+- `network_virtual_hubs_hub_virtual_network_connections` - (Optional) The type and API version of the Virtual Network connection. Default `Microsoft.Network/virtualHubs/hubVirtualNetworkConnections@2025-07-01`.
+
+Type:
+
+```hcl
+object({
+    network_virtual_hubs_hub_virtual_network_connections = optional(string, "Microsoft.Network/virtualHubs/hubVirtualNetworkConnections@2025-07-01")
+  })
+```
+
+Default: `{}`
+
+### <a name="input_retry"></a> [retry](#input\_retry)
+
+Description: (Optional) Retry configuration for the resource operations.
+
+Type:
+
+```hcl
+object({
+    error_message_regex  = optional(list(string), ["ReferencedResourceNotProvisioned"])
+    interval_seconds     = optional(number, 10)
+    max_interval_seconds = optional(number, 180)
+  })
+```
+
+Default: `{}`
+
+### <a name="input_timeouts"></a> [timeouts](#input\_timeouts)
+
+Description: (Optional) Timeouts for the resource operations.
+
+Any attribute left unset falls back, per resource, to the timeout default of the `azurerm` resource this module replaced, rather than to a single blanket value. For this module that is `azurerm_virtual_hub_connection`, whose create/update/delete default was 60 minutes. The fallbacks and their source lines are in `local.timeouts` in `main.tf`. See "Design notes -> Per-resource timeout defaults" in `_header.md`.
+
+Type:
+
+```hcl
+object({
+    create = optional(string)
+    read   = optional(string)
+    update = optional(string)
+    delete = optional(string)
+  })
+```
+
+Default: `{}`
 
 ### <a name="input_virtual_network_connections"></a> [virtual\_network\_connections](#input\_virtual\_network\_connections)
 

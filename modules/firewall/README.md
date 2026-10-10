@@ -4,6 +4,156 @@
 
 This submodule deploys an Azure Firewall in the Virtual Hub to make it secured vHUB.
 
+## Provider migration notes (`hashicorp/azurerm` -> `Azure/azapi`)
+
+This submodule was migrated in place. Every public variable keeps its previous
+name, type and default, and the request bodies reproduce
+`hashicorp/azurerm` v4.81.0 (commit `5782a75422c68a0d0804ac16d97dcaf3df5ee2fa`)
+member for member, including the members that provider sent unconditionally.
+Three consequences are visible from outside the module:
+
+- **`private_ip_address` and `public_ip_addresses` return real values.** Both
+  are ARM-response-only data, and an earlier revision of this module published
+  them as `null`. That regression was closed on by a **read-only**
+  `data "azapi_resource" "fw_hub_ip_addresses"` carrying
+  `response_export_values = ["properties.hubIPAddresses"]`. A data source has no
+  writer, no `state.body` and no update path, so it has no adoption diff to
+  poison — the **non-empty export list** is for the data source only. Both
+  writers declare `response_export_values = []`, which is what TFFR4 requires;
+  see the note below. The output names and the
+  `resource_object[*].virtual_hub[0]` shape are unchanged. See the block at the
+  top of `outputs.tf`.
+- **The firewall is written by two resources.** `azapi_resource.fw` creates it
+  and then goes inert (`lifecycle.ignore_changes` over its whole configurable
+  surface); `azapi_update_resource.fw` owns every later write and does a
+  GET-then-merge, so body members this module does not declare are preserved
+  rather than dropped by a full PUT.
+- **Tags are written by a separate `Microsoft.Resources/tags` `PUT`.** In
+  0.17.x they rode on the merge writer, which can add or change a tag but
+  cannot delete one, so removing a key was a silent no-op (`REG-1`). As of
+  0.19.0 `azapi_resource_action.tags` `PUT`s at
+  `Microsoft.Resources/tags/default` and **replaces the whole tag set**,
+  matching AzureRM. A tag set out of band is therefore **removed** on the next
+  apply — and is **not reported as drift**, because that resource's read issues
+  no `GET`.
+- **Merge is still additive for everything else, so it cannot un-set.** Setting
+  `firewall_policy_id` back to `null` is a no-op against Azure even though the
+  plan looks like it applied. `sku_name` and `zones` are the two AzureRM
+  ForceNew properties that live inside `body`, so AzAPI cannot replace on them
+  either — but they no longer apply *silently*: `lifecycle` preconditions on the
+  merge writer fail the plan with an error naming the property and the exact
+  `-replace` command to run. Change either deliberately, never in place.
+
+`Microsoft.Network/azureFirewalls` has no row in the child-collection registry,
+so the survival of its undeclared body members is **unmeasured**. `main.tf`
+enumerates each path and says so explicitly.
+
+## Notes on `main.tf`
+
+> These decisions used to live as comment blocks inside `main.tf`. The AVM
+> toolchain's `transform` step (mapotf) reorders resource attributes and drops
+> free-standing comment blocks that are not attached to a surviving attribute
+> line, so they were silently stripped by `avm pre-commit`. They are recorded
+> here instead, where the toolchain does not rewrite them. **Sections 2 and 3
+> are deliberate choices, not omissions — do not "fix" either by adding the
+> attribute back.**
+
+### 1. `response_export_values = []` on every writer, paired with `ignore_changes`
+
+**This decision was reversed.** An earlier revision removed the
+attribute from `azapi_resource.fw` and `azapi_resource.diagnostic_setting`
+entirely — "not `["*"]`, not `[]`, not present at all". AVM spec **TFFR4** is
+`Severity-MUST` and tagged `Class-Pattern`, so it binds this module:
+
+> Authors **MUST** specify the `response_export_values` argument when using the
+> AzAPI provider — `response_export_values = []`, even if empty.
+
+Removing it breached a MUST. That earlier change is **retracted**; both
+writers now declare `response_export_values = []`.
+
+**The hazard the earlier change was reacting to is real, and `ignore_changes` is what
+defuses it.** The attribute carries no `skip_on` tag (`azapi_resource.go` L77),
+so `skip.CanSkipExternalRequest` (`skip.go` L14-56, called at `azapi_resource.go`
+L826) returns false the moment it differs between plan and state. At **adoption**
+the imported state holds `null` while the config holds `[]` — `[]` is not `null`,
+so that is a difference — and it alone would drag the resource into `["update"]`
+and PUT the stale `state.body`, which by the stale-body behaviour is whatever import wrote and
+is never refreshed. Testing showed exactly that. `response_export_values` is
+therefore in `local.full_writer_ignored_attributes` and in the `lifecycle`
+blocks of **both** `azapi_resource` addresses: `ignore_changes` keeps the prior
+value, so there is no adoption diff and no stale-body PUT.
+
+⛔ **Never declare this attribute on an `azapi_resource` without the matching
+`ignore_changes` entry.** The two changes are one change.
+
+The value is `[]` and not an export path because nothing downstream needs one.
+`outputs.tf` publishes `.id` and `.name` and constructs child IDs by string,
+both of which stay known at plan time (the computed-output rule rules a computed `.output` out
+of a module output entirely). The hub IP addresses come from the separate
+read-only data source described above.
+
+🔴 **A future change to either export list needs its own migration.** Because
+`ignore_changes` pins the prior value, editing the list is a no-op on an
+already-managed resource: the new value does not take effect without a state
+operation (`terraform state rm` + re-import, or `-replace`). Treat it as a
+breaking change with an upgrade-guide entry.
+
+`avm_azapi_response_export_values_required` fires on **absence** and is now
+satisfied. Note that the pinned AVM base tflint config sets it to
+`severity = "notice"`, as it does for **all eight** enabled `avm_*` rules — so a
+green `avm pr-check` is **not** evidence of MUST compliance, and never was. The
+spec text is the authority, not the linter's exit code.
+
+### 2. Neither replacement trigger is set
+
+`replace_triggers_refs` (`azapi_resource.go` L76) is a **deviation** from
+`modules/virtual-network-connection`, which does set it. That module is a single
+full writer, so a PUT at adoption is its ordinary behaviour. This one is
+create-only, and the attribute is non-skippable in exactly the same way
+`response_export_values` is — a null-to-list difference at adoption would reopen
+the update path this file exists to keep shut. The difference is that TFFR4
+forces `response_export_values` to be declared, so it is declared and then
+silenced in `ignore_changes`; `replace_triggers_refs` is not required by any
+spec, and silencing replacement machinery in `ignore_changes` would HIDE a
+replacement, so it is simply not set.
+
+`replace_triggers_external_values` (`azapi_resource.go` L75) is **ruled out**,
+not merely unused, and the reason is specific to adoption:
+
+- its plan modifier is `RequiresReplaceIfNotNull`
+  (`planmodifierdynamic/dynamic_requires_replace.go`, wired at L288), and that
+  modifier **does not replace when the state value is null**;
+- after `terraform import` the state value *is* null, so the first plan against
+  an adopted firewall is an UPDATE, not a replacement;
+- and the attribute carries no `skip_on:"update"` tag, so that null-to-value
+  difference alone defeats `skip.CanSkipExternalRequest` and forces a full PUT
+  of the stale `state.body` — the exact failure observed in testing.
+
+So it buys nothing at adoption and costs the one thing this file exists to
+prevent. Do not add it back.
+
+**What replaces both:** `lifecycle` preconditions on the merge writer. They
+cannot force a replacement — nothing in AzAPI can, for a property inside `body`
+that `ignore_changes` silences — but they turn the silent no-op into a hard
+plan-time **error** naming the property.
+
+The residual price, stated where it is paid: AzureRM marked `name`
+(`firewall_resource.go` L61), `sku_name` (L73), `zones` (L227) and `location`
+ForceNew. `name` and `location` are AzAPI **attributes** and still force
+replacement. `sku_name` and `zones` live inside `body`, which `ignore_changes`
+silences, so changing either still does not REPLACE — but the preconditions fail
+the plan and tell the consumer to use `-replace` deliberately.
+
+### 3. Scale-down deviation on `azapi_update_resource.fw`, recorded rather than fixed
+
+`firewall_resource.go` L764-771 truncated the live `addresses` array to the first
+`newCount` entries when the public IP count shrank, and sent the truncated array
+alongside the new count. This writer sends `count` only, so the merge preserves
+the **full** live `addresses` array next to a smaller `count`. What ARM does with
+that pairing is **UNMEASURED**.
+
+Scale-**up** is unaffected: AzureRM passed the live array through unchanged
+there, which is what a merge that omits the key also achieves.
 The existing keyed `azurerm_firewall.fw` and diagnostic-setting resources remain the managed-IP implementation. A nonempty `firewalls[key].ip_configurations` map selects a separate, single-firewall AzAPI child. Each entry requires an explicit `name` and `public_ip_address_id`; stable keys must be known at plan time, while IDs may be computed.
 
 Null `vhub_public_ip_count` remains one managed IP for an empty map, or customer-only mode for a nonempty map. Explicit zero is accepted only with customer IPs. Counts retain their string input type and are converted internally to numbers.
@@ -23,19 +173,20 @@ The following requirements are needed by this module:
 
 - <a name="requirement_azapi"></a> [azapi](#requirement\_azapi) (~> 2.12)
 
-- <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (~> 4.0)
-
 - <a name="requirement_modtm"></a> [modtm](#requirement\_modtm) (~> 0.3)
 
 ## Resources
 
 The following resources are used by this module:
 
-- [azurerm_firewall.fw](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/firewall) (resource)
-- [azurerm_monitor_diagnostic_setting.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/monitor_diagnostic_setting) (resource)
+- [azapi_resource.diagnostic_setting](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource) (resource)
+- [azapi_resource.fw](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource) (resource)
+- [azapi_resource_action.tags](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource_action) (resource)
+- [azapi_update_resource.fw](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/update_resource) (resource)
 - [terraform_data.public_ip_mode](https://registry.terraform.io/providers/hashicorp/terraform/latest/docs/resources/data) (resource)
+- [azapi_client_config.current](https://registry.terraform.io/providers/Azure/azapi/latest/docs/data-sources/client_config) (data source)
+- [azapi_resource.fw_hub_ip_addresses](https://registry.terraform.io/providers/Azure/azapi/latest/docs/data-sources/resource) (data source)
 - [azapi_resource_list.firewalls](https://registry.terraform.io/providers/Azure/azapi/latest/docs/data-sources/resource_list) (data source)
-- [azurerm_client_config.current](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/client_config) (data source)
 
 <!-- markdownlint-disable MD013 -->
 ## Required Inputs
@@ -134,17 +285,26 @@ Default: `{}`
 
 ### <a name="input_ignore_body_changes"></a> [ignore\_body\_changes](#input\_ignore\_body\_changes)
 
-Description: Body-relative dot paths ignored by each AzAPI resource. Changes take effect after apply; ignored configuration is not sent to Azure. Nonempty lists require Terraform 1.11 or later.
+Description: (Optional) Body property paths whose changes the `azapi` provider ignores after creation, letting an out-of-band controller own those properties without producing perpetual `terraform plan` drift.
 
-- `network_azure_firewalls` - Firewall body paths. IP ownership, IP configuration and hub association paths cannot be ignored.
-- `insights_diagnostic_settings` - Diagnostic setting body paths.
+- `insights_diagnostic_settings` - (Optional) Ignored body paths for the firewall diagnostic settings, in dot notation relative to the request body, for example `["properties.logs"]`. Default `[]`.
+- `network_azure_firewalls` - (Optional) Ignored body paths for the Azure Firewall, for example `["tags"]`. Default `[]`. **Read the caveat below before setting this.**
+
+While a path is ignored, configuration changes at that path are no longer sent to Azure. The value is write-only provider state, so a change only takes effect after an `apply`, and supplying a non-empty list requires Terraform 1.11 or later.
+
+> 🔴 CAVEAT ON `network_azure_firewalls`. The key exists because AVM spec TFFR8 (Severity-MUST, Class-Pattern) says the argument "**MUST NOT**" be omitted from any module-declared `azapi_resource`, and this module declares two. Its practical reach, however, is close to nil, and that is a property of this module's writer split rather than of the variable:
+>
+> - `azapi_resource.fw` is a CREATE-ONLY writer whose `lifecycle.ignore_changes` already contains `body`, so it never issues an update PUT for body drift at all. The provider only consults `ignore_body_changes` where prior state already exists: `overrideBodyWithPaths` is called at `azapi_resource.go` L630 (guarded by `if state != nil && len(ignoreBodyChanges) != 0` at L619, inside `ModifyPlan` at L542) and at L942 (guarded by `if !isNewResource {` at L930). A path list here therefore has nothing to suppress.
+> - `azapi_update_resource.fw`, the day-2 writer that does the real work, has NO `ignore_body_changes` argument in `Azure/azapi` v2.12.0. `AzapiUpdateResourceModel` (`internal/services/azapi_update_resource.go` L40-L63) declares no such field and the resource's schema declares no such attribute. Measured by reading the provider source at tag v2.12.0, not inferred from docs.
+>
+> Use `firewalls.<key>.tags` and the dedicated inputs to control the firewall body. This key is here for spec conformance and for the day the merge writer gains the argument.
 
 Type:
 
 ```hcl
 object({
-    network_azure_firewalls      = optional(list(string), [])
     insights_diagnostic_settings = optional(list(string), [])
+    network_azure_firewalls      = optional(list(string), [])
   })
 ```
 
@@ -152,23 +312,25 @@ Default: `{}`
 
 ### <a name="input_resource_types"></a> [resource\_types](#input\_resource\_types)
 
-Description: AzAPI resource types and API versions.
+Description: (Optional) The Azure resource type and API version used for each resource created by this module.
 
-- `network_azure_firewalls` - Firewall resource and inventory reads.
-- `network_public_ip_addresses` - Read-only inspection of caller-owned public IPs.
-- `network_virtual_hubs` - Read-only inspection of the secured hub.
-- `network_virtual_wans` - Read-only inspection of the hub's parent Virtual WAN, the authoritative source for the Standard/Basic SKU.
-- `insights_diagnostic_settings` - Diagnostic settings; the preview API supports log category groups.
+- `insights_diagnostic_settings` - (Optional) The type and API version of the firewall diagnostic settings. Default `Microsoft.Insights/diagnosticSettings@2021-05-01-preview`, which is the version `hashicorp/azurerm` v4.81.0 used (`monitor_diagnostic_setting_resource.go` L18).
+- `network_azure_firewalls` - (Optional) The type and API version of the Azure Firewall. Default `Microsoft.Network/azureFirewalls@2025-07-01`.
+- `network_public_ip_addresses` - (Optional) Read-only inspection of caller-owned public IPs (customer-IP mode only). Default `Microsoft.Network/publicIPAddresses@2024-10-01`.
+- `network_virtual_hubs` - (Optional) Read-only inspection of the secured hub (customer-IP mode only). Default `Microsoft.Network/virtualHubs@2024-10-01`.
+- `network_virtual_wans` - (Optional) Read-only inspection of the hub's parent Virtual WAN (customer-IP mode only). Default `Microsoft.Network/virtualWans@2024-10-01`.
+
+> 🔴 Changing `network_azure_firewalls` on an EXISTING deployment is a breaking change, not a routine bump. `type` is not a replacement trigger on `azapi_resource` (v2.12.0 `azapi_resource.go` L206-212 declares no `RequiresReplace`) and it carries no `skip_on:"update"` tag either, so a changed value drags the create-only full writer into a full PUT of its stale `state.body`. Plan it, read it, and do not apply it casually.
 
 Type:
 
 ```hcl
 object({
-    network_azure_firewalls      = optional(string, "Microsoft.Network/azureFirewalls@2024-10-01")
+    insights_diagnostic_settings = optional(string, "Microsoft.Insights/diagnosticSettings@2021-05-01-preview")
+    network_azure_firewalls      = optional(string, "Microsoft.Network/azureFirewalls@2025-07-01")
     network_public_ip_addresses  = optional(string, "Microsoft.Network/publicIPAddresses@2024-10-01")
     network_virtual_hubs         = optional(string, "Microsoft.Network/virtualHubs@2024-10-01")
     network_virtual_wans         = optional(string, "Microsoft.Network/virtualWans@2024-10-01")
-    insights_diagnostic_settings = optional(string, "Microsoft.Insights/diagnosticSettings@2021-05-01-preview")
   })
 ```
 
@@ -176,32 +338,44 @@ Default: `{}`
 
 ### <a name="input_retry"></a> [retry](#input\_retry)
 
-Description: AzAPI retries: error\_message\_regex selects retryable errors, interval\_seconds sets the initial delay, and max\_interval\_seconds limits it.
+Description: (Optional) Retry configuration for the resource operations.
 
 Type:
 
 ```hcl
 object({
-    error_message_regex  = optional(list(string))
-    interval_seconds     = optional(number)
-    max_interval_seconds = optional(number)
+    error_message_regex  = optional(list(string), ["ReferencedResourceNotProvisioned"])
+    interval_seconds     = optional(number, 10)
+    max_interval_seconds = optional(number, 180)
   })
 ```
 
-Default: `null`
+Default: `{}`
 
 ### <a name="input_timeouts"></a> [timeouts](#input\_timeouts)
 
-Description: AzAPI operation timeouts. Firewall create, update and delete default to 90m; read defaults to 5m.
+Description: (Optional) Timeouts for the resource operations. Each value is a Go duration string, for example `30m` or `1h`.
+
+- `create` - (Optional) Timeout for create operations.
+- `read`   - (Optional) Timeout for read operations.
+- `update` - (Optional) Timeout for update operations.
+- `delete` - (Optional) Timeout for delete operations.
+
+An attribute left unset does NOT fall back to a single blanket value. It falls back PER RESOURCE to the timeout default of the `hashicorp/azurerm` v4.81.0 resource that resource replaced, so a migrated deployment keeps the timeouts it had. The fallbacks and their source lines are in `local.timeouts` in `locals.tf`:
+
+- The Azure Firewall - create `90m`, read `5m`, update `90m`, delete `90m` (`firewall_resource.go` L46-51). Applied to BOTH the create-only full writer and the day-2 merge writer.
+- The firewall diagnostic settings - create `30m`, read `5m`, update `30m`, delete `60m` (`monitor_diagnostic_setting_resource.go` L43-48). Note the `60m` delete, which is NOT the firewall's `90m`.
+
+🔴 THE SHAPE IS THE FLAT TFFR7 ONE, not a per-resource-keyed object. It used to be keyed by resource type (`network_azure_firewalls` / `insights_diagnostic_settings`), which was untypeable as a cascade target: TFFR7 requires the parent to pass `timeouts = var.timeouts` through unchanged, and the parent's `timeouts` is the flat four-attribute object the spec shows. The per-resource fallbacks were not lost, only moved from the variable into `local.timeouts`, so behaviour at the defaults is unchanged. This variable was never published -- v0.17.2 declared no `timeouts` in this submodule -- so the reshape breaks no released consumer.
 
 Type:
 
 ```hcl
 object({
-    create = optional(string, "90m")
-    read   = optional(string, "5m")
-    update = optional(string, "90m")
-    delete = optional(string, "90m")
+    create = optional(string)
+    read   = optional(string)
+    update = optional(string)
+    delete = optional(string)
   })
 ```
 
@@ -219,6 +393,10 @@ Description: Azure Firewall resource name
 
 Description: Value of the diagnostic settings resource ID for Azure Firewall
 
+### <a name="output_full_writer_ignored_attributes"></a> [full\_writer\_ignored\_attributes](#output\_full\_writer\_ignored\_attributes)
+
+Description: Attributes the create-only full writer must never diff on after create. Audited against azapi v2.12.0 `AzapiResourceModel`; see the comment on `local.full_writer_ignored_attributes`. Published so `terraform test` can assert the list against the literal in `main.tf`'s `lifecycle` block, which HCL will not let a variable or local drive.
+
 ### <a name="output_private_ip_address"></a> [private\_ip\_address](#output\_private\_ip\_address)
 
 Description: Azure Firewall IP addresses
@@ -229,7 +407,7 @@ Description: Azure Firewall IP addresses
 
 ### <a name="output_resource"></a> [resource](#output\_resource)
 
-Description: Azure Firewall resource
+Description: Azure Firewall resource. 🔴 The map values are `azapi_resource` objects, so their members are AzAPI's, not AzureRM's: `.body`, `.id`, `.name`, `.location`, `.tags`, and a computed `.output` that is EMPTY because the writer declares `response_export_values = []` -- the empty list TFFR4 requires, not an export of anything. Do not read `.output` here -- the hub IP addresses come from `private_ip_address` / `public_ip_addresses`, which are fed by a separate read-only data source.
 
 ### <a name="output_resource_id"></a> [resource\_id](#output\_resource\_id)
 
@@ -245,7 +423,7 @@ Description: Azure Firewall resource names
 
 ### <a name="output_resource_object"></a> [resource\_object](#output\_resource\_object)
 
-Description: Azure Firewall resource object
+Description: Azure Firewall resource object. The `virtual_hub` list keeps AzureRM's one-element shape because `modules/virtual-wan/outputs.tf` indexes it positionally, and all four of its members carry real values again.
 
 ## Modules
 

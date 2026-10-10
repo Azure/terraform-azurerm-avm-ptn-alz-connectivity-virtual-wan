@@ -1,17 +1,26 @@
-mock_provider "azapi" {}
-mock_provider "modtm" {}
-mock_provider "random" {}
-mock_provider "azurerm" {
-  mock_resource "azurerm_firewall" {
+mock_provider "azapi" {
+  mock_resource "azapi_resource" {
+    defaults = {
+      # azapi_update_resource.resource_id rejects the mock provider's short token, so give it a real-looking ID.
+      id = "/subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/rg-test/providers/Microsoft.Network/azureFirewalls/fw-test"
+    }
+  }
+  mock_data "azapi_resource" {
     defaults = {
       id = "/subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/rg-test/providers/Microsoft.Network/azureFirewalls/fw-test"
-      virtual_hub = {
-        private_ip_address  = "10.0.0.4"
-        public_ip_addresses = ["198.51.100.10"]
+      output = {
+        properties = {
+          hubIPAddresses = {
+            privateIPAddress = "10.0.0.4"
+            publicIPs        = { count = 1, addresses = [{ address = "198.51.100.10" }] }
+          }
+        }
       }
     }
   }
 }
+mock_provider "modtm" {}
+mock_provider "random" {}
 
 variables {
   enable_telemetry = false
@@ -30,16 +39,16 @@ run "managed_defaults_need_no_inventory" {
   command = apply
 
   assert {
-    condition     = azurerm_firewall.fw["hub"].virtual_hub[0].public_ip_count == 1
-    error_message = "An omitted string count must still produce the provider's numeric managed default of one."
+    condition     = local.firewall_public_ip_counts["hub"] == 1 && local.firewall_update_bodies["hub"].properties.hubIPAddresses.publicIPs.count == 1
+    error_message = "An omitted string count must still produce the numeric managed default of one."
   }
   assert {
-    condition     = length(data.azapi_resource_list.firewalls) == 0 && length(data.azurerm_client_config.current) == 0 && length(module.customer_firewalls) == 0
+    condition     = length(data.azapi_resource_list.firewalls) == 0 && length(data.azapi_client_config.current) == 0 && length(module.customer_firewalls) == 0
     error_message = "Managed-only consumers must not need new inventory reads or customer resources."
   }
   assert {
-    condition     = output.resource == (var.firewalls != null ? azurerm_firewall.fw : {}) && output.resource_object["hub"].virtual_hub == azurerm_firewall.fw["hub"].virtual_hub
-    error_message = "The managed resource output must preserve the original AzureRM object and nested types."
+    condition     = output.resource == azapi_resource.fw && output.resource_object["hub"].virtual_hub[0].public_ip_count == 1 && output.resource_object["hub"].virtual_hub[0].private_ip_address == "10.0.0.4"
+    error_message = "Managed mode must keep the AzAPI resource output and the legacy resource_object virtual_hub shape."
   }
   assert {
     condition     = terraform_data.public_ip_mode["hub"].output == false && length(var.firewalls["hub"].ip_configurations) == 0 && var.firewalls["hub"].vhub_public_ip_count == null
@@ -62,12 +71,12 @@ run "managed_count_increase" {
     }
   }
   assert {
-    condition     = var.firewalls["hub"].vhub_public_ip_count == "3" && azurerm_firewall.fw["hub"].virtual_hub[0].public_ip_count == 3
-    error_message = "The published count stays a string, while the unchanged AzureRM path receives an integer."
+    condition     = var.firewalls["hub"].vhub_public_ip_count == "3" && local.firewall_public_ip_counts["hub"] == 3 && local.firewall_update_bodies["hub"].properties.hubIPAddresses.publicIPs.count == 3
+    error_message = "The published count stays a string, while the managed writers receive an integer."
   }
   assert {
-    condition     = length(data.azapi_resource_list.firewalls) == 0 && output.resource == (var.firewalls != null ? azurerm_firewall.fw : {})
-    error_message = "Managed count increases must remain on the original provider and output path."
+    condition     = length(data.azapi_resource_list.firewalls) == 0 && output.resource == azapi_resource.fw
+    error_message = "Managed count increases must stay on the managed writers and output path."
   }
 }
 
@@ -86,8 +95,8 @@ run "managed_count_decrease" {
     }
   }
   assert {
-    condition     = azurerm_firewall.fw["hub"].virtual_hub[0].public_ip_count == 2 && length(module.customer_firewalls) == 0
-    error_message = "Count decreases must still use AzureRM's existing retained-address update behavior, not a new count-only ARM PUT."
+    condition     = local.firewall_public_ip_counts["hub"] == 2 && length(module.customer_firewalls) == 0
+    error_message = "Count decreases must stay on the managed merge writer."
   }
 }
 
@@ -107,7 +116,7 @@ run "managed_harmless_update" {
     }
   }
   assert {
-    condition     = azurerm_firewall.fw["hub"].tags.maintenance == "metadata-only" && azurerm_firewall.fw["hub"].sku_tier == "Premium" && terraform_data.public_ip_mode["hub"].output == false
+    condition     = local.firewall_tags["hub"].maintenance == "metadata-only" && local.firewall_update_bodies["hub"].properties.sku.tier == "Premium" && terraform_data.public_ip_mode["hub"].output == false
     error_message = "Harmless updates and Premium must preserve the managed mode record."
   }
 }
@@ -118,7 +127,7 @@ run "ordinary_firewall_removal" {
     firewalls = {}
   }
   assert {
-    condition     = length(azurerm_firewall.fw) == 0 && length(terraform_data.public_ip_mode) == 0 && length(module.customer_firewalls) == 0
+    condition     = length(azapi_resource.fw) == 0 && length(terraform_data.public_ip_mode) == 0 && length(module.customer_firewalls) == 0
     error_message = "The mode guard must not prevent an explicitly removed firewall from being destroyed."
   }
   assert {

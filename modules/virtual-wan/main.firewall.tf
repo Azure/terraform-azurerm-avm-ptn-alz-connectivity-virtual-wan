@@ -18,13 +18,27 @@ module "firewalls" {
       zones                = value.zones
     }
   }
+  # TFFR6 / TFFR7 / TFFR8 interface cascade -- register and neutrality argument
+  # are in `main.express_route_gateway.tf` on `module "express_route_gateways"`.
   ignore_body_changes = var.ignore_body_changes.network_azure_firewalls
   resource_types      = var.resource_types.network_azure_firewalls
   retry               = var.retry
   timeouts            = var.timeouts
 }
 
-moved {
-  from = azurerm_firewall.fw
-  to   = module.firewalls.azurerm_firewall.fw
-}
+# The `moved` block that used to sit here was DELETED.
+#
+#   moved {
+#     from = azurerm_firewall.fw
+#     to   = module.firewalls.azurerm_firewall.fw
+#   }
+#
+# Its `to` address stopped existing when modules/firewall migrated to azapi.
+# A `moved` whose `to` is not in configuration does NOT error and does NOT
+# warn -- `terraform validate` stays clean. Terraform moves the state entry to
+# the new address, finds nothing declaring it, and plans to DESTROY the live
+# resource. Measured (dangling `moved` check).
+#
+# Safe to delete: the supported upgrade floor is v0.12.0 and docs/upgrade-guide.md
+# covers anything older. Anyone upgrading across this boundary needs a `removed`
+# + `import` pair, not a `moved`.

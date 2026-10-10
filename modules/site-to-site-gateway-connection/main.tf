@@ -1,79 +1,95 @@
 # Create a site to site vpn connection between a vpn gateway and a vpn site.
-resource "azurerm_vpn_gateway_connection" "vpn_site_connection" {
-  for_each = var.vpn_site_connection != null ? var.vpn_site_connection : {}
 
-  name                      = each.value.name
-  remote_vpn_site_id        = each.value.remote_vpn_site_id
-  vpn_gateway_id            = each.value.vpn_gateway_id
-  internet_security_enabled = try(each.value.internet_security_enabled, null)
-
-  dynamic "vpn_link" {
-    for_each = each.value.vpn_links != null && length(each.value.vpn_links) > 0 ? each.value.vpn_links : []
-
-    content {
-      name                                  = vpn_link.value.name
-      vpn_site_link_id                      = vpn_link.value.vpn_site_link_id
-      bandwidth_mbps                        = try(vpn_link.value.bandwidth_mbps, null)
-      bgp_enabled                           = try(vpn_link.value.bgp_enabled, null)
-      connection_mode                       = try(vpn_link.value.connection_mode, null)
-      dpd_timeout_seconds                   = try(vpn_link.value.dpd_timeout_seconds, null)
-      egress_nat_rule_ids                   = try(vpn_link.value.egress_nat_rule_ids, null)
-      ingress_nat_rule_ids                  = try(vpn_link.value.ingress_nat_rule_ids, null)
-      local_azure_ip_address_enabled        = try(vpn_link.value.local_azure_ip_address_enabled, null)
-      policy_based_traffic_selector_enabled = try(vpn_link.value.policy_based_traffic_selector_enabled, null)
-      protocol                              = try(vpn_link.value.protocol, null)
-      ratelimit_enabled                     = try(vpn_link.value.ratelimit_enabled, null)
-      route_weight                          = try(vpn_link.value.route_weight, null)
-      shared_key                            = try(vpn_link.value.shared_key, null)
-
-      dynamic "custom_bgp_address" {
-        for_each = vpn_link.value.custom_bgp_addresses != null ? vpn_link.value.custom_bgp_addresses : []
-
-        content {
-          ip_address          = custom_bgp_address.value.ip_address
-          ip_configuration_id = custom_bgp_address.value.ip_configuration_id
-        }
-      }
-      dynamic "ipsec_policy" {
-        for_each = vpn_link.value.ipsec_policy != null ? [vpn_link.value.ipsec_policy] : []
-
-        content {
-          dh_group                 = ipsec_policy.value.dh_group
-          encryption_algorithm     = ipsec_policy.value.encryption_algorithm
-          ike_encryption_algorithm = ipsec_policy.value.ike_encryption_algorithm
-          ike_integrity_algorithm  = ipsec_policy.value.ike_integrity_algorithm
-          integrity_algorithm      = ipsec_policy.value.integrity_algorithm
-          pfs_group                = ipsec_policy.value.pfs_group
-          sa_data_size_kb          = ipsec_policy.value.sa_data_size_kb
-          sa_lifetime_sec          = ipsec_policy.value.sa_lifetime_sec
-        }
-      }
-    }
+data "azapi_resource" "existing_vpn_connection" {
+  for_each = {
+    for key, value in local.vpn_site_connections : key => value
+    if try(value.routing, null) == null
   }
 
-  dynamic "routing" {
-    for_each = each.value.routing != null ? [each.value.routing] : []
+  resource_id      = "${each.value.vpn_gateway_id}/vpnConnections/${each.value.name}"
+  type             = var.resource_types.network_vpn_gateways_vpn_connections
+  ignore_not_found = true
+  response_export_values = [
+    "properties.routingConfiguration",
+  ]
+}
+
+resource "azapi_resource" "this" {
+  for_each = local.vpn_site_connections
+
+  name      = each.value.name
+  parent_id = each.value.vpn_gateway_id
+  type      = var.resource_types.network_vpn_gateways_vpn_connections
+  body      = local.vpn_site_connection_bodies[each.key]
+  # Matches AzureRM's nil-pointer/omitempty serialisation: an optional the consumer left
+  # unset is absent from the request rather than sent as an explicit JSON null. Null VALUES
+  # only -- whole sub-objects are still built conditionally in `vpn_site_connection_bodies`.
+  ignore_body_changes  = length(var.ignore_body_changes.network_vpn_gateways_vpn_connections) > 0 ? var.ignore_body_changes.network_vpn_gateways_vpn_connections : null
+  ignore_null_property = true
+  # `remote_vpn_site_id` is ForceNew on azurerm_vpn_gateway_connection, so it stays a
+  # replacement trigger. `name` and `vpn_gateway_id` are the resource name and the parent
+  # scope, both of which AzAPI already treats as replacement triggers natively.
+  #
+  # ⚠️ Not reproduced: AzureRM also marked the per-link `vpn_site_link_id` and `bgp_enabled`
+  # ForceNew. Those live inside `properties.vpnLinkConnections[*]`, and the only path AzAPI
+  # can address is the whole list -- which would destroy and rebuild every tunnel on the
+  # gateway for an unrelated bandwidth change. Listing the list is worse than not listing it,
+  # so it is omitted: ARM itself accepts both changes on a PUT.
+  replace_triggers_refs = [
+    "properties.remoteVpnSite.id",
+  ]
+  # ✅ `response_export_values` IS SET. AVM spec TFFR4 is Severity-MUST and tagged
+  # Class-Pattern, so it binds this module: an AzAPI resource MUST declare the attribute,
+  # "even if empty".
+  #
+  # `[]` is the right value: nothing downstream reads a response-only property. Consumers take
+  # `.id` and `.name`, both of which AzAPI exposes natively, plus the link shape, which is
+  # projected from configuration in `outputs.tf`.
+  #
+  # ⛔ NO `lifecycle { ignore_changes = [response_export_values] }` -- WITHDRAWN, AND IT MUST
+  # NOT COME BACK. This site is "armed": `ignore_body_changes`/`ignore_null_property` leave
+  # `body` free, so `skip.CanSkipExternalRequest` is false and a PUT does occur. Pinning
+  # `response_export_values` here reproduces BUG 3: the pin freezes `plan.Output` to the stale
+  # null-derived default projection while the writer still PUTs at adoption, so the applied
+  # output disagrees with the planned one -> "Error: Provider produced inconsistent result
+  # after apply" on first apply after upgrade. Do not copy this withdrawal onto a Class A
+  # (fully silent) writer -- there, pinning costs nothing extra since no PUT happens, and BUG 3
+  # cannot fire either way.
+  #
+  # `avm_azapi_response_export_values_required` fires on ABSENCE and is now satisfied. It runs
+  # at `severity = "notice"` under the pinned AVM base tflint config, as do all eight enabled
+  # `avm_*` rules, so a green `avm pr-check` is NOT evidence of MUST compliance.
+  response_export_values = []
+  retry                  = var.retry
+  # Write-only. See `vpn_site_connection_shared_keys` above. Supplying a `shared_key` on any
+  # link therefore requires Terraform 1.11 or later; leaving them unset does not.
+  #
+  # ⭐ `sensitive_body_version` is DELIBERATELY NOT SET HERE and NOT EXPOSED AS AN INPUT -- see
+  # "Design notes -> `sensitive_body_version` is deliberately unset" in `_header.md`.
+  sensitive_body = length(local.vpn_site_connection_shared_keys[each.key]) > 0 ? { properties = { vpnLinkConnections = local.vpn_site_connection_shared_keys[each.key] } } : null
+
+  dynamic "timeouts" {
+    for_each = var.timeouts == null ? [] : [local.timeouts]
 
     content {
-      associated_route_table = routing.value.associated_route_table
-
-      dynamic "propagated_route_table" {
-        for_each = routing.value.propagated_route_table != null ? [routing.value.propagated_route_table] : []
-
-        content {
-          route_table_ids = propagated_route_table.value.route_table_ids
-          labels          = propagated_route_table.value.labels
-        }
-      }
+      create = timeouts.value.create
+      delete = timeouts.value.delete
+      read   = timeouts.value.read
+      update = timeouts.value.update
     }
   }
+}
 
-  dynamic "traffic_selector_policy" {
-    for_each = each.value.traffic_selector_policy != null ? [each.value.traffic_selector_policy] : []
+# =============================================================================
+# AzureRM -> AzAPI state moves (`avm-tf-migration` SKILL.md L66-78)
+#
+# The provider migration is IN PLACE: same module, same `for_each`/`count`
+# boundary, same keys, so every move is a whole-resource move and the consumer
+# only bumps the module version. Plan with a normal refresh -- see
+# `docs/upgrade-guide.md`; `-refresh=false` hits azapi#1227 and plans a replace.
+# =============================================================================
 
-    content {
-      local_address_ranges  = traffic_selector_policy.value.local_address_ranges
-      remote_address_ranges = traffic_selector_policy.value.remote_address_ranges
-    }
-  }
+moved {
+  from = azurerm_vpn_gateway_connection.vpn_site_connection
+  to   = azapi_resource.this
 }

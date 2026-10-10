@@ -1,17 +1,9 @@
 mock_provider "modtm" {}
 mock_provider "random" {}
-mock_provider "azurerm" {
-  mock_data "azurerm_client_config" {
+mock_provider "azapi" {
+  mock_data "azapi_client_config" {
     defaults = { subscription_id = "00000000-0000-0000-0000-000000000001" }
   }
-  mock_resource "azurerm_virtual_hub" {
-    defaults = { id = "/subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/rg-fresh/providers/Microsoft.Network/virtualHubs/hub-fresh" }
-  }
-  mock_resource "azurerm_virtual_wan" {
-    defaults = { id = "/subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/rg-fresh/providers/Microsoft.Network/virtualWans/wan-fresh" }
-  }
-}
-mock_provider "azapi" {
   mock_data "azapi_resource_list" {
     defaults = { output = { firewalls = [] } }
   }
@@ -40,6 +32,14 @@ mock_provider "azapi" {
 override_module {
   target  = module.virtual_wan.module.regions
   outputs = { regions_by_name = { eastus = { zones = ["1", "2", "3"] } } }
+}
+override_resource {
+  target = module.virtual_wan.module.virtual_wan[0].module.virtual_hubs.azapi_resource.this["hub"]
+  values = { id = "/subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/rg-fresh/providers/Microsoft.Network/virtualHubs/hub-fresh" }
+}
+override_resource {
+  target = module.virtual_wan.module.virtual_wan[0].azapi_resource.virtual_wan[0]
+  values = { id = "/subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/rg-fresh/providers/Microsoft.Network/virtualWans/wan-fresh" }
 }
 override_resource {
   target = module.resource_groups.azapi_resource.this

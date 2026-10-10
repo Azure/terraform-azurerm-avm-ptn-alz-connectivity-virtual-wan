@@ -34,7 +34,12 @@ resource "azapi_resource" "subnet" {
       sharingScope                      = null
     }
   }
-  locks                     = [var.parent_id]
+  locks = [var.parent_id]
+  # Seed-only fixture: it stands in for the subnet submodule of
+  # `Azure/avm-res-network-virtualnetwork/azurerm` v0.22.2, a module this repository does not own.
+  # The non-empty list and the absent `lifecycle.ignore_changes` both mirror that upstream module
+  # so the seeded state is faithful; neither is a pattern to copy into `modules/*`. This
+  # repository's own TFFR4 contract is pinned in `tests/unit/tffr4_ignore_changes.tftest.hcl`.
   response_export_values    = ["properties.addressPrefixes", "properties.addressPrefix"]
   schema_validation_enabled = true
 }

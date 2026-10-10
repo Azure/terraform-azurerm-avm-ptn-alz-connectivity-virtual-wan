@@ -100,3 +100,45 @@ locals {
     }
   } : null
 }
+
+locals {
+  create_virtual_wan         = var.virtual_wan_id == null
+  effective_virtual_wan_id   = local.create_virtual_wan ? azapi_resource.virtual_wan[0].id : var.virtual_wan_id
+  effective_virtual_wan_name = local.create_virtual_wan ? azapi_resource.virtual_wan[0].name : provider::azapi::parse_resource_id("Microsoft.Network/virtualWans", var.virtual_wan_id).name
+  resource_group_name        = var.create_resource_group ? azapi_resource.rg[0].name : var.resource_group_name
+  # AzureRM took the resource group by name; AzAPI needs its ID. When the module creates the
+  # group the ID comes off the resource itself, which also preserves the implicit dependency
+  # AzureRM got from `resource_group_name = azurerm_resource_group.rg[0].name`.
+  resource_group_resource_id = var.create_resource_group ? azapi_resource.rg[0].id : "/subscriptions/${data.azapi_client_config.current.subscription_id}/resourceGroups/${var.resource_group_name}"
+}
+
+locals {
+  # AzureRM's Create builds `HubRouteTableProperties` from `utils.ExpandStringSlice` and
+  # `expandVirtualHubRouteTableHubRoutes`, both of which return a pointer to a slice that is
+  # EMPTY rather than nil when nothing is configured. `labels: []` and `routes: []` were
+  # therefore part of every request AzureRM sent, and they stay part of this one. Verified
+  # against virtual_hub_route_table_resource.go at v4.81.0.
+  virtual_hub_route_table_bodies = {
+    for key, value in var.virtual_hub_route_tables : key => {
+      properties = {
+        labels = value.labels != null ? value.labels : []
+        # `routes` is `optional(map(...))` with no default, so it can be null. The original
+        # `dynamic "route" { for_each = each.value.routes }` failed outright on that null;
+        # the guard is new.
+        routes = [
+          for route in values(value.routes != null ? value.routes : {}) : {
+            destinations = route.destinations
+            # Schema key `destinations_type` maps to the SINGULAR ARM property
+            # `destinationType`. Easy to get wrong.
+            destinationType = route.destinations_type
+            name            = route.name
+            # `vnet_connection_key` is optional; indexing the map with a null key raises,
+            # which is what `try` is catching here, exactly as before.
+            nextHop     = try(module.virtual_network_connections.resource_object[route.vnet_connection_key].id, route.next_hop)
+            nextHopType = route.next_hop_type
+          }
+        ]
+      }
+    }
+  }
+}

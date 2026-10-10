@@ -2,6 +2,11 @@
 # Verifies an imported sidecar VNet keeps its Azure-returned subnets and vWAN-managed peerings.
 
 mock_provider "azapi" {
+  mock_data "azapi_resource_list" {
+    defaults = {
+      output = { value = [] }
+    }
+  }
   mock_resource "azapi_resource" {
     defaults = {
       id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-test/providers/Microsoft.Network/virtualNetworks/vnet-sidecar-test"
@@ -9,25 +14,6 @@ mock_provider "azapi" {
   }
 }
 
-mock_provider "azurerm" {
-  mock_resource "azurerm_virtual_wan" {
-    defaults = {
-      id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-test/providers/Microsoft.Network/virtualWans/vwan-test"
-    }
-  }
-
-  mock_resource "azurerm_virtual_hub" {
-    defaults = {
-      id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-test/providers/Microsoft.Network/virtualHubs/vhub-test"
-    }
-  }
-
-  mock_resource "azurerm_virtual_hub_connection" {
-    defaults = {
-      id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-test/providers/Microsoft.Network/virtualHubs/vhub-test/hubVirtualNetworkConnections/vnet-side-car-hub1"
-    }
-  }
-}
 
 mock_provider "modtm" {}
 mock_provider "random" {}

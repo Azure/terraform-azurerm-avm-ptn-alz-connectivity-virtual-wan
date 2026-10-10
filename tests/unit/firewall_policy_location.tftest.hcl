@@ -2,7 +2,6 @@
 # Verifies that a generated firewall policy can use a location different from its hub.
 
 mock_provider "azapi" {}
-mock_provider "azurerm" {}
 mock_provider "modtm" {}
 mock_provider "random" {}
 

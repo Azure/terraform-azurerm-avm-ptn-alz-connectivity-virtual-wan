@@ -5,6 +5,7 @@ locals {
     location            = coalesce(value.firewall_policy.location, value.location)
     dns                 = value.firewall_policy.dns != null ? value.firewall_policy.dns : local.firewall_policy_dns_defaults[key]
     resource_group_name = coalesce(value.firewall_policy.resource_group_name, local.hub_virtual_networks_resource_group_names[key])
+    parent_id           = "/subscriptions/${local.hub_virtual_networks_subscription_ids[key]}/resourceGroups/${coalesce(value.firewall_policy.resource_group_name, local.hub_virtual_networks_resource_group_names[key])}"
     tags                = coalesce(value.firewall_policy.tags, var.tags, {})
   }) if local.firewall_policy_enabled[key] }
   firewall_policy_dns_defaults = { for key, value in var.virtual_hubs : key => local.private_dns_resolver_enabled[key] && local.private_dns_zones_enabled[key] && local.firewall_enabled[key] && !local.firewall_sku_is_basic[key] && value.private_dns_resolver.default_inbound_endpoint_enabled ? {

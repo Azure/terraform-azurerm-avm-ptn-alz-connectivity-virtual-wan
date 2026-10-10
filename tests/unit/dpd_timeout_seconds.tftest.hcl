@@ -2,7 +2,6 @@
 # Verifies the root input type and flattening logic retain dpd_timeout_seconds.
 
 mock_provider "azapi" {}
-mock_provider "azurerm" {}
 mock_provider "modtm" {}
 mock_provider "random" {}
 

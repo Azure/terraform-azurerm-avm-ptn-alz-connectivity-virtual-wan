@@ -9,19 +9,19 @@ terraform {
   required_version = "~> 1.9"
 
   required_providers {
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      version = "~> 4.21"
+    # This example declares no azapi_* address of its own; azapi arrives through the
+    # module under test. The pin is kept so the example resolves the same provider
+    # version the module does. The annotation must be the line IMMEDIATELY above.
+    # tflint-ignore: terraform_unused_required_providers
+    azapi = {
+      source  = "Azure/azapi"
+      version = "~> 2.12"
     }
     random = {
       source  = "hashicorp/random"
       version = "~> 3.7"
     }
   }
-}
-
-provider "azurerm" {
-  features {}
 }
 
 resource "random_string" "suffix" {
@@ -142,7 +142,7 @@ locals {
 
 module "resource_group" {
   source  = "Azure/avm-res-resources-resourcegroup/azurerm"
-  version = "0.2.0"
+  version = "0.4.0"
 
   location         = local.resource_group.location
   name             = local.resource_group.name
@@ -212,7 +212,7 @@ The following requirements are needed by this module:
 
 - <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (~> 1.9)
 
-- <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (~> 4.21)
+- <a name="requirement_azapi"></a> [azapi](#requirement\_azapi) (~> 2.12)
 
 - <a name="requirement_random"></a> [random](#requirement\_random) (~> 3.7)
 
@@ -265,7 +265,7 @@ The following Modules are called:
 
 Source: Azure/avm-res-resources-resourcegroup/azurerm
 
-Version: 0.2.0
+Version: 0.4.0
 
 ### <a name="module_vwan"></a> [vwan](#module\_vwan)
 
