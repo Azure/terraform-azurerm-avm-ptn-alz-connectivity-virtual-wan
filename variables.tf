@@ -59,6 +59,8 @@ DESCRIPTION
 
 variable "ignore_body_changes" {
   type = object({
+    virtual_hubs_firewalls                     = optional(list(string), [])
+    virtual_hubs_firewalls_diagnostic_settings = optional(list(string), [])
     virtual_hubs_route_maps = optional(object({
       virtual_hubs_route_maps = optional(list(string), [])
     }), {})
@@ -71,6 +73,8 @@ variable "ignore_body_changes" {
   description = <<DESCRIPTION
 (Optional) Body property paths on the resources this module creates through the `azapi` provider that the provider stops reconciling after creation, so an out-of-band controller such as Azure Virtual Network Manager or an Azure Policy `DeployIfNotExists` assignment can own them without producing perpetual drift. Paths use dot notation.
 
+- `virtual_hubs_firewalls` - (Optional) Ignored body paths for the firewall of every secured hub. The paths that carry the firewall's IP configuration and its hub association cannot be ignored, because the module reconciles them. Default `[]`.
+- `virtual_hubs_firewalls_diagnostic_settings` - (Optional) Ignored body paths for the diagnostic settings of every secured hub firewall. Default `[]`.
 - `virtual_hubs_route_maps` - (Optional) An object with the following field:
   - `virtual_hubs_route_maps` - (Optional) Ignored body paths applied to every route map in `route_maps`. Default `[]`.
 - `virtual_networks` - (Optional) Ignored body paths for the sidecar virtual network of every hub, for example `["tags"]` when Azure Policy applies tags out-of-band. Default `[]`.
@@ -86,6 +90,8 @@ DESCRIPTION
   validation {
     condition = alltrue([
       for path in concat(
+        var.ignore_body_changes.virtual_hubs_firewalls,
+        var.ignore_body_changes.virtual_hubs_firewalls_diagnostic_settings,
         var.ignore_body_changes.virtual_hubs_route_maps.virtual_hubs_route_maps,
         var.ignore_body_changes.virtual_networks,
         var.ignore_body_changes.virtual_networks_subnets.virtual_networks_subnets
@@ -448,12 +454,17 @@ variable "virtual_hubs" {
       zones                = optional(list(number))
       firewall_policy_id   = optional(string)
       vhub_public_ip_count = optional(string)
-      tags                 = optional(map(string))
+      ip_configurations = optional(map(object({
+        name                 = string
+        public_ip_address_id = string
+      })), {})
+      tags = optional(map(string))
     }), {})
 
     firewall_policy = optional(object({
       name                              = optional(string)
       resource_group_name               = optional(string)
+      location                          = optional(string)
       sku                               = optional(string, "Standard")
       auto_learn_private_ranges_enabled = optional(bool)
       base_policy_id                    = optional(string)
@@ -937,7 +948,8 @@ The following top level attributes are supported:
   - `sku_tier` - (Optional) The SKU tier for the Azure Firewall. Possible values are `Basic`, `Standard`, `Premium`. Default `Standard`.
   - `zones` - (Optional) A list of availability zones for the Azure Firewall.
   - `firewall_policy_id` - (Optional) The resource ID of the Azure Firewall Policy to associate with the firewall.
-  - `vhub_public_ip_count` - (Optional) The number of public IP addresses to assign to the Virtual Hub firewall.
+  - `vhub_public_ip_count` - (Optional) Managed public IP count, expressed as a string. Null defaults to one managed IP with an empty `ip_configurations` map. With customer IPs, only null or zero is valid; a positive managed count cannot be combined with customer IPs.
+  - `ip_configurations` - (Optional) Map of caller-owned public IP configurations, default `{}`. Stable keys must be known at plan time. Each entry requires `name` and `public_ip_address_id`; resource IDs can be unknown until apply. Names and IDs must be unique ignoring case. A nonempty map selects customer-only mode. IPs must be Standard/Regional, static IPv4, in the hub's subscription and region, and unassociated or already attached to the same firewall. Add/remove/replace operations within customer mode are maintenance changes. Existing mode conversion is blocked.
   - `tags` - (Optional) A map of tags to apply to the Azure Firewall.
 
 ## Azure Firewall Policy
@@ -945,9 +957,10 @@ The following top level attributes are supported:
 - `firewall_policy` - (Optional) An object with the following fields:
   - `name` - (Optional) The name of the firewall policy. If not specified will use `afw-policy-{vnetname}`.
   - `resource_group_name` - (Optional) The name of the resource group where the firewall policy should be created. If not specified will use the parent resource group of the virtual network.
+  - `location` - (Optional) The Azure region for the firewall policy. Defaults to the hub's location when omitted, `null`, or an empty string, including when `base_policy_id` is set. The module does not infer the region from `base_policy_id`. If the base policy is in a different region from the hub, explicitly set this field to the base policy's region. The associated firewall remains in its hub region. Changing the location of an existing firewall policy replaces it.
   - `sku` - (Optional) The SKU to use for the firewall policy. Possible values include `Standard`, `Premium`. Default `Standard`.
   - `auto_learn_private_ranges_enabled` - (Optional) Should the firewall policy automatically learn private ranges? Default `false`.
-  - `base_policy_id` - (Optional) The resource id of the base policy to use for the firewall policy.
+  - `base_policy_id` - (Optional) The resource ID of the base policy to use for the firewall policy. Azure requires both policies to reside in the same region; see `location` above.
   - `dns` - (Optional) An object with the following fields:
     - `proxy_enabled` - (Optional) Should the DNS proxy be enabled for the firewall policy? Default `false`.
     - `servers` - (Optional) A list of DNS server IP addresses for the firewall policy.

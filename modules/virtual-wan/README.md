@@ -363,7 +363,8 @@ The key is deliberately arbitrary to avoid issues with known after apply values.
 - `name`: The name for the Azure Firewall resource.
 - `zones`: Optional list of zones to deploy the Azure Firewall into. Defaults to `[1, 2, 3]`.
 - `firewall_policy_id`: Optional Azure Firewall Policy Resource ID to associate with the Azure Firewall.
-- `vhub_public_ip_count`: Optional number of public IP addresses to associate with the Azure Firewall.
+- `vhub_public_ip_count`: Optional managed public IP count, retaining its string type. Null defaults to one managed IP when `ip_configurations` is empty; with customer IPs only null or zero is valid.
+- `ip_configurations`: Optional map, default `{}`, keyed by stable caller keys known at plan time. Each entry requires `name` and `public_ip_address_id`; IDs may be unknown until apply. Names and IDs must be unique ignoring case. A nonempty map selects customer-only mode using caller-owned Standard/Regional static IPv4 addresses in the same subscription and region. Same-mode changes are maintenance operations; mode conversion is blocked.
 - `tags`: Optional tags to apply to the Azure Firewall resource.
 
 > Note: There can be multiple objects in this map, one for each Azure Firewall you wish to deploy into the Virtual WAN Virtual Hubs that have been defined in the variable `virtual_hubs`.
@@ -379,8 +380,33 @@ map(object({
     zones                = optional(list(number), [1, 2, 3])
     firewall_policy_id   = optional(string)
     vhub_public_ip_count = optional(string)
-    tags                 = optional(map(string))
+    ip_configurations = optional(map(object({
+      name                 = string
+      public_ip_address_id = string
+    })), {})
+    tags = optional(map(string))
   }))
+```
+
+Default: `{}`
+
+### <a name="input_ignore_body_changes"></a> [ignore\_body\_changes](#input\_ignore\_body\_changes)
+
+Description: AzAPI body-relative dot paths. Changes take effect after apply; ignored configuration is not sent to Azure.
+
+- `network_azure_firewalls` - Firewall submodule overrides.
+- `network_azure_firewalls.network_azure_firewalls` - Firewall body paths, excluding IP and hub association paths.
+- `network_azure_firewalls.insights_diagnostic_settings` - Firewall diagnostic setting paths.
+
+Type:
+
+```hcl
+object({
+    network_azure_firewalls = optional(object({
+      network_azure_firewalls      = optional(list(string), [])
+      insights_diagnostic_settings = optional(list(string), [])
+    }), {})
+  })
 ```
 
 Default: `{}`
@@ -494,6 +520,49 @@ Type: `map(string)`
 
 Default: `{}`
 
+### <a name="input_resource_types"></a> [resource\_types](#input\_resource\_types)
+
+Description: AzAPI resource types passed to the firewall submodule. Omitted API versions use the owning submodule's defaults.
+
+- `network_azure_firewalls` - Firewall submodule resource types.
+- `network_azure_firewalls.network_azure_firewalls` - Firewall and inventory API.
+- `network_azure_firewalls.network_public_ip_addresses` - Caller-owned public IP read API.
+- `network_azure_firewalls.network_virtual_hubs` - Secured hub read API.
+- `network_azure_firewalls.network_virtual_wans` - Secured hub's parent Virtual WAN read API.
+- `network_azure_firewalls.insights_diagnostic_settings` - Firewall diagnostic settings API.
+
+Type:
+
+```hcl
+object({
+    network_azure_firewalls = optional(object({
+      network_azure_firewalls      = optional(string)
+      network_public_ip_addresses  = optional(string)
+      network_virtual_hubs         = optional(string)
+      network_virtual_wans         = optional(string)
+      insights_diagnostic_settings = optional(string)
+    }), {})
+  })
+```
+
+Default: `{}`
+
+### <a name="input_retry"></a> [retry](#input\_retry)
+
+Description: AzAPI retry settings passed unchanged to firewalls: error\_message\_regex, interval\_seconds and max\_interval\_seconds.
+
+Type:
+
+```hcl
+object({
+    error_message_regex  = optional(list(string))
+    interval_seconds     = optional(number)
+    max_interval_seconds = optional(number)
+  })
+```
+
+Default: `null`
+
 ### <a name="input_routing_intents"></a> [routing\_intents](#input\_routing\_intents)
 
 Description:   Map of objects for routing intents to deploy into the Virtual WAN Virtual Hubs that have been defined in the variable `virtual_hubs`.
@@ -530,6 +599,23 @@ Description:   (Optional) Tags to apply to the Resource Group, if created by mod
 Type: `map(string)`
 
 Default: `null`
+
+### <a name="input_timeouts"></a> [timeouts](#input\_timeouts)
+
+Description: AzAPI create, read, update and delete timeouts passed unchanged to firewalls.
+
+Type:
+
+```hcl
+object({
+    create = optional(string, "90m")
+    read   = optional(string, "5m")
+    update = optional(string, "90m")
+    delete = optional(string, "90m")
+  })
+```
+
+Default: `{}`
 
 ### <a name="input_type"></a> [type](#input\_type)
 
