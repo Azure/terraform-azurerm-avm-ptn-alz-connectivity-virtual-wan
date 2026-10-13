@@ -1,5 +1,11 @@
 mock_provider "azapi" {}
-mock_provider "azurerm" {}
+mock_provider "azurerm" {
+  mock_resource "azurerm_virtual_wan" {
+    defaults = {
+      id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-vwan/providers/Microsoft.Network/virtualWans/vwan-test"
+    }
+  }
+}
 mock_provider "modtm" {}
 mock_provider "random" {}
 
