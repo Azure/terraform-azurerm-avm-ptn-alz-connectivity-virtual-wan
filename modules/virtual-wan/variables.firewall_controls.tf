@@ -40,16 +40,6 @@ DESCRIPTION
   nullable    = false
 }
 
-variable "retry" {
-  type = object({
-    error_message_regex  = optional(list(string))
-    interval_seconds     = optional(number)
-    max_interval_seconds = optional(number)
-  })
-  default     = null
-  description = "AzAPI retry settings passed unchanged to firewalls: error_message_regex, interval_seconds and max_interval_seconds."
-}
-
 variable "timeouts" {
   type = object({
     create = optional(string, "90m")
