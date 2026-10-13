@@ -9,15 +9,15 @@ This submodule deploys an Azure ExpressRoute Connection between ExpressRoute Gat
 
 The following requirements are needed by this module:
 
-- <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (~> 1.7)
+- <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (~> 1.8)
 
-- <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (~> 4.0)
+- <a name="requirement_azapi"></a> [azapi](#requirement\_azapi) (~> 2.12)
 
 ## Resources
 
 The following resources are used by this module:
 
-- [azurerm_express_route_connection.er_connection](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/express_route_connection) (resource)
+- [azapi_resource.er_connection](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource) (resource)
 
 <!-- markdownlint-disable MD013 -->
 ## Required Inputs
@@ -75,6 +75,35 @@ map(object({
 ```
 
 Default: `{}`
+
+### <a name="input_retry"></a> [retry](#input\_retry)
+
+Description: Retry configuration for the resource operations
+
+Type:
+
+```hcl
+object({
+    error_message_regex  = list(string)
+    interval_seconds     = number
+    max_interval_seconds = number
+  })
+```
+
+Default:
+
+```json
+{
+  "error_message_regex": [
+    "AnotherOperationInProgress",
+    "Conflict",
+    "ReferencedResourceNotProvisioned",
+    "UpdateGatewayInProgress"
+  ],
+  "interval_seconds": 10,
+  "max_interval_seconds": 180
+}
+```
 
 ## Outputs
 

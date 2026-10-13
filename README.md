@@ -258,6 +258,8 @@ Type:
 ```hcl
 object({
     error_message_regex = optional(list(string), [
+      "AnotherOperationInProgress",
+      "Conflict",
       "ReferencedResourceNotProvisioned",
       "UpdateGatewayInProgress",
       "CannotDeleteVirtualHubWhenItIsInUse",

@@ -35,27 +35,6 @@ variable "virtual_wan_name" {
   }
 }
 
-variable "retry" {
-  type = object({
-    error_message_regex  = optional(list(string))
-    interval_seconds     = optional(number)
-    max_interval_seconds = optional(number)
-  })
-
-  default = {
-    error_message_regex = [
-      "AnotherOperationInProgress",
-      "Conflict",
-      "ReferencedResourceNotProvisioned",
-      "UpdateGatewayInProgress"
-    ]
-    interval_seconds     = 10
-    max_interval_seconds = 180
-  }
-
-  description = "Retry configuration for the resource operations"
-}
-
 variable "allow_branch_to_branch_traffic" {
   type        = bool
   default     = true
@@ -364,6 +343,25 @@ variable "resource_group_tags" {
   (Optional) Resource group tags to assign, if created by module controlled by variable `create_resource_group`.
 
   DESCRIPTION
+}
+
+variable "retry" {
+  type = object({
+    error_message_regex  = optional(list(string))
+    interval_seconds     = optional(number)
+    max_interval_seconds = optional(number)
+  })
+  default = {
+    error_message_regex = [
+      "AnotherOperationInProgress",
+      "Conflict",
+      "ReferencedResourceNotProvisioned",
+      "UpdateGatewayInProgress"
+    ]
+    interval_seconds     = 10
+    max_interval_seconds = 180
+  }
+  description = "Retry configuration for the resource operations"
 }
 
 # Routing intent for virutal hubs

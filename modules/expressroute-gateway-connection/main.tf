@@ -2,10 +2,9 @@
 resource "azapi_resource" "er_connection" {
   for_each = var.er_circuit_connections != null && length(var.er_circuit_connections) > 0 ? var.er_circuit_connections : {}
 
-  type      = "Microsoft.Network/expressRouteGateways/expressRouteConnections@2024-05-01"
   name      = each.value.name
   parent_id = each.value.express_route_gateway_id
-
+  type      = "Microsoft.Network/expressRouteGateways/expressRouteConnections@2024-05-01"
   body = {
     properties = {
       expressRouteCircuitPeering = {
@@ -41,14 +40,12 @@ resource "azapi_resource" "er_connection" {
       } : null
     }
   }
-
+  response_export_values = ["*"]
   retry = {
     error_message_regex  = var.retry.error_message_regex
     interval_seconds     = var.retry.interval_seconds
     max_interval_seconds = var.retry.max_interval_seconds
   }
-
-  response_export_values = ["*"]
 }
 
 moved {

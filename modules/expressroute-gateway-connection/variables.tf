@@ -49,7 +49,6 @@ variable "retry" {
     interval_seconds     = number
     max_interval_seconds = number
   })
-
   default = {
     error_message_regex = [
       "AnotherOperationInProgress",
@@ -60,6 +59,5 @@ variable "retry" {
     interval_seconds     = 10
     max_interval_seconds = 180
   }
-
   description = "Retry configuration for the resource operations"
 }
