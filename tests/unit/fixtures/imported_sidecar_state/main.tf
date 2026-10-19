@@ -10,10 +10,6 @@ terraform {
       source  = "hashicorp/azurerm"
       version = "~> 4.0"
     }
-    modtm = {
-      source  = "Azure/modtm"
-      version = "~> 0.3"
-    }
     random = {
       source  = "hashicorp/random"
       version = "~> 3.5"
@@ -51,6 +47,9 @@ module "virtual_wan" {
       virtual_hub_key           = "hub1"
       remote_virtual_network_id = module.virtual_network_side_car["hub1"].resource_id
     }
+  }
+  providers = {
+    azapi = azapi
   }
 }
 

@@ -1,6 +1,6 @@
 module "firewall_policy" {
   source   = "Azure/avm-res-network-firewallpolicy/azurerm"
-  version  = "0.3.3"
+  version  = "0.3.4"
   for_each = local.firewall_policies
 
   location                                          = each.value.location
@@ -26,7 +26,10 @@ module "firewall_policy" {
 
 module "virtual_wan" {
   source = "./modules/virtual-wan"
-  count  = local.has_regions ? 1 : 0
+  providers = {
+    azapi = azapi
+  }
+  count = local.has_regions ? 1 : 0
 
   location                       = local.virtual_wan.location
   resource_group_name            = local.virtual_wan.resource_group_name
@@ -70,7 +73,7 @@ moved {
 
 module "virtual_network_side_car" {
   source   = "Azure/avm-res-network-virtualnetwork/azurerm"
-  version  = "0.22.2"
+  version  = "0.22.3"
   for_each = local.sidecar_virtual_networks
 
   location             = each.value.location
@@ -88,7 +91,7 @@ module "virtual_network_side_car" {
 
 module "dns_resolver" {
   source   = "Azure/avm-res-network-dnsresolver/azurerm"
-  version  = "0.7.3"
+  version  = "0.8.0"
   for_each = local.private_dns_resolver
 
   location                    = each.value.location
@@ -128,7 +131,7 @@ module "private_dns_zones" {
 
 module "private_dns_zone_auto_registration" {
   source   = "Azure/avm-res-network-privatednszone/azurerm"
-  version  = "0.4.3"
+  version  = "0.5.0"
   for_each = local.private_dns_zones_auto_registration
 
   domain_name           = each.value.domain_name
@@ -152,7 +155,7 @@ module "ddos_protection_plan" {
 
 module "bastion_public_ip" {
   source   = "Azure/avm-res-network-publicipaddress/azurerm"
-  version  = "0.2.0"
+  version  = "0.2.1"
   for_each = local.bastion_host_public_ips
 
   location                = each.value.location
@@ -177,12 +180,11 @@ module "bastion_public_ip" {
 
 module "bastion_host" {
   source   = "Azure/avm-res-network-bastionhost/azurerm"
-  version  = "0.6.0"
+  version  = "0.9.0"
   for_each = local.bastion_hosts
 
   location               = each.value.location
   name                   = each.value.name
-  resource_group_name    = each.value.resource_group_name
   copy_paste_enabled     = each.value.bastion_settings.copy_paste_enabled
   enable_telemetry       = var.enable_telemetry
   file_copy_enabled      = each.value.bastion_settings.file_copy_enabled
@@ -195,16 +197,19 @@ module "bastion_host" {
   tags                   = each.value.tags
   tunneling_enabled      = each.value.bastion_settings.tunneling_enabled
   zones                  = each.value.zones
+  resource_group_name    = each.value.resource_group_name
 }
 
 module "route_map" {
   source   = "./modules/route-map"
   for_each = var.route_maps
 
+  location                        = var.location
   name                            = each.value.name
   virtual_hub_id                  = module.virtual_wan[0].virtual_hub_resource_ids[each.value.virtual_hub_key]
   associated_inbound_connections  = each.value.associated_inbound_connections
   associated_outbound_connections = each.value.associated_outbound_connections
+  enable_telemetry                = var.enable_telemetry
   ignore_body_changes             = var.ignore_body_changes.virtual_hubs_route_maps
   retry                           = var.retry
   rules                           = each.value.rules

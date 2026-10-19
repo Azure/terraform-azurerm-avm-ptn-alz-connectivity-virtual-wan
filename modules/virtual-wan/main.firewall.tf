@@ -1,6 +1,10 @@
 module "firewalls" {
   source = "../firewall"
+  providers = {
+    azapi = azapi
+  }
 
+  location            = var.location
   diagnostic_settings = var.diagnostic_settings_azure_firewall
   enable_telemetry    = var.enable_telemetry
   firewalls = {

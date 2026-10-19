@@ -8,20 +8,11 @@ terraform {
       source  = "hashicorp/azurerm"
       version = "~> 4.0"
     }
-    modtm = {
-      source  = "Azure/modtm"
-      version = "~> 0.3"
-    }
     random = {
       source  = "hashicorp/random"
       version = "~> 3.5"
     }
   }
-}
-
-variable "firewall_enabled" {
-  type    = bool
-  default = true
 }
 
 module "resource_groups" {
@@ -81,6 +72,10 @@ module "virtual_wan" {
   enable_telemetry     = false
   virtual_hubs         = local.virtual_hubs
   virtual_wan_settings = local.virtual_wan_settings
+  providers = {
+    azapi = azapi
+  }
+  location = var.location
 }
 
 output "firewall_public_ip_addresses" {

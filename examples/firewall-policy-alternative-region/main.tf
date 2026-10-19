@@ -81,7 +81,11 @@ resource "azapi_resource" "base_policy" {
 # This is the module call.
 module "test" {
   source = "../../"
+  providers = {
+    azapi = azapi
+  }
 
+  location         = var.location
   enable_telemetry = var.enable_telemetry
   tags             = local.common_tags
   virtual_hubs = {

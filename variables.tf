@@ -1,3 +1,9 @@
+variable "location" {
+  type        = string
+  description = "The Azure region for this module's resources or telemetry deployment."
+  nullable    = false
+}
+
 variable "default_naming_convention" {
   type = object({
     virtual_wan_name                           = optional(string, "vwan-hub-$${location}-$${sequence}")

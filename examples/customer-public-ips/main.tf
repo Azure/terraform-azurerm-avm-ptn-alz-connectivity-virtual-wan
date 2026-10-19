@@ -87,7 +87,11 @@ resource "azapi_resource" "firewall_policy" {
 
 module "virtual_wan" {
   source = "../.."
+  providers = {
+    azapi = azapi
+  }
 
+  location         = var.location
   enable_telemetry = var.enable_telemetry
   tags             = var.tags
   virtual_hubs = {

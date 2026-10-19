@@ -1,12 +1,13 @@
 module "regions" {
   source  = "Azure/avm-utl-regions/azurerm"
-  version = "0.5.2"
+  version = "0.13.0"
   count   = local.has_regions ? 1 : 0
 
-  availability_zones_filter = false
+  location                  = var.location
   enable_telemetry          = var.enable_telemetry
-  recommended_filter        = false
   use_cached_data           = false
+  availability_zones_filter = false
+  recommended_filter        = false
 }
 
 locals {

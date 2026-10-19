@@ -7,10 +7,6 @@ terraform {
   }
 }
 
-variable "name" {
-  type = string
-}
-
 resource "azapi_resource" "this" {
   type                   = "Microsoft.Resources/resourceGroups@2022-09-01"
   name                   = var.name

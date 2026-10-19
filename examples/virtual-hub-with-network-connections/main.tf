@@ -2,6 +2,10 @@ terraform {
   required_version = "~> 1.5"
 
   required_providers {
+    azapi = {
+      source  = "Azure/azapi"
+      version = "~> 2.12"
+    }
     azurerm = {
       source  = "hashicorp/azurerm"
       version = "~> 4.21"
@@ -45,7 +49,7 @@ locals {
 
 module "resource_groups" {
   source   = "Azure/avm-res-resources-resourcegroup/azurerm"
-  version  = "0.2.0"
+  version  = "0.4.0"
   for_each = local.resource_groups
 
   location         = each.value.location
@@ -56,7 +60,7 @@ module "resource_groups" {
 
 module "resource_group_vnet_demo_01" {
   source  = "Azure/avm-res-resources-resourcegroup/azurerm"
-  version = "0.2.0"
+  version = "0.4.0"
 
   location         = local.resource_groups["hub_primary"].location
   name             = "rg-vnet-demo-01-${random_string.suffix.result}"
@@ -66,7 +70,7 @@ module "resource_group_vnet_demo_01" {
 
 module "virtual_network" {
   source  = "Azure/avm-res-network-virtualnetwork/azurerm"
-  version = "0.22.2"
+  version = "0.22.3"
 
   location         = local.resource_groups["hub_primary"].location
   parent_id        = module.resource_group_vnet_demo_01.resource_id
@@ -79,7 +83,11 @@ module "virtual_network" {
 # This is the module call
 module "test" {
   source = "../../"
+  providers = {
+    azapi = azapi
+  }
 
+  location         = var.location
   enable_telemetry = var.enable_telemetry
   tags             = local.common_tags
   virtual_hubs = {
