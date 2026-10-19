@@ -55,7 +55,10 @@ resource "azurerm_firewall" "fw" {
 }
 
 module "customer_firewalls" {
-  source   = "../firewall-customer-ip"
+  source = "../firewall-customer-ip"
+  providers = {
+    azapi = azapi
+  }
   for_each = local.customer_firewalls
 
   ip_configurations = each.value.ip_configurations

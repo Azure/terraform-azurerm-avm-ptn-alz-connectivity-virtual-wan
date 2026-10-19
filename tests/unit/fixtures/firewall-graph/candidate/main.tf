@@ -15,4 +15,7 @@ module "virtual_wan" {
   enable_telemetry                   = false
   firewalls                          = module.inputs.firewalls
   virtual_hubs                       = module.inputs.virtual_hubs
+  providers = {
+    azapi = azapi
+  }
 }

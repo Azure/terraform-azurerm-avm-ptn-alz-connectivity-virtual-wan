@@ -18,4 +18,7 @@ module "virtual_wan" {
 
   # Deliberately not the Accelerator's ordinary resource-group wiring.
   depends_on = [module.inputs]
+  providers = {
+    azapi = azapi
+  }
 }

@@ -2,6 +2,10 @@ terraform {
   required_version = "~> 1.9"
 
   required_providers {
+    azapi = {
+      source  = "Azure/azapi"
+      version = "~> 2.12"
+    }
     azurerm = {
       source  = "hashicorp/azurerm"
       version = "~> 4.21"
@@ -147,7 +151,11 @@ module "resource_group" {
 # All optional spoke resources are disabled to keep the example focused on route maps.
 module "vwan" {
   source = "../../"
+  providers = {
+    azapi = azapi
+  }
 
+  location         = var.location
   enable_telemetry = var.enable_telemetry
   route_maps       = local.route_maps
   tags             = local.common_tags

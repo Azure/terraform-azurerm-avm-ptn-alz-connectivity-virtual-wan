@@ -26,7 +26,10 @@ module "firewall_policy" {
 
 module "virtual_wan" {
   source = "./modules/virtual-wan"
-  count  = local.has_regions ? 1 : 0
+  providers = {
+    azapi = azapi
+  }
+  count = local.has_regions ? 1 : 0
 
   location                       = local.virtual_wan.location
   resource_group_name            = local.virtual_wan.resource_group_name
@@ -182,7 +185,6 @@ module "bastion_host" {
 
   location               = each.value.location
   name                   = each.value.name
-  resource_group_name    = each.value.resource_group_name
   copy_paste_enabled     = each.value.bastion_settings.copy_paste_enabled
   enable_telemetry       = var.enable_telemetry
   file_copy_enabled      = each.value.bastion_settings.file_copy_enabled
@@ -195,16 +197,19 @@ module "bastion_host" {
   tags                   = each.value.tags
   tunneling_enabled      = each.value.bastion_settings.tunneling_enabled
   zones                  = each.value.zones
+  resource_group_name    = each.value.resource_group_name
 }
 
 module "route_map" {
   source   = "./modules/route-map"
   for_each = var.route_maps
 
+  location                        = var.location
   name                            = each.value.name
   virtual_hub_id                  = module.virtual_wan[0].virtual_hub_resource_ids[each.value.virtual_hub_key]
   associated_inbound_connections  = each.value.associated_inbound_connections
   associated_outbound_connections = each.value.associated_outbound_connections
+  enable_telemetry                = var.enable_telemetry
   ignore_body_changes             = var.ignore_body_changes.virtual_hubs_route_maps
   retry                           = var.retry
   rules                           = each.value.rules
