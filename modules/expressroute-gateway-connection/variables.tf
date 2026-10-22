@@ -45,19 +45,18 @@ The key is deliberately arbitrary to avoid issues with known after apply values.
 
 variable "retry" {
   type = object({
-    error_message_regex  = list(string)
-    interval_seconds     = number
-    max_interval_seconds = number
-  })
-  default = {
-    error_message_regex = [
+    error_message_regex = optional(list(string), [
       "AnotherOperationInProgress",
       "Conflict",
       "ReferencedResourceNotProvisioned",
       "UpdateGatewayInProgress"
-    ]
-    interval_seconds     = 10
-    max_interval_seconds = 180
-  }
+    ])
+    interval_seconds     = optional(number, 10)
+    max_interval_seconds = optional(number, 180)
+  })
+
+  default  = {}
+  nullable = false
+
   description = "Retry configuration for the resource operations"
 }
