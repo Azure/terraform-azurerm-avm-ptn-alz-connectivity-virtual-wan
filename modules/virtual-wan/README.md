@@ -549,7 +549,7 @@ Default: `{}`
 
 ### <a name="input_retry"></a> [retry](#input\_retry)
 
-Description: AzAPI retry settings passed unchanged to firewalls: error\_message\_regex, interval\_seconds and max\_interval\_seconds.
+Description: Retry configuration for the resource operations
 
 Type:
 
@@ -561,7 +561,20 @@ object({
   })
 ```
 
-Default: `null`
+Default:
+
+```json
+{
+  "error_message_regex": [
+    "AnotherOperationInProgress",
+    "Conflict",
+    "ReferencedResourceNotProvisioned",
+    "UpdateGatewayInProgress"
+  ],
+  "interval_seconds": 10,
+  "max_interval_seconds": 180
+}
+```
 
 ### <a name="input_routing_intents"></a> [routing\_intents](#input\_routing\_intents)
 

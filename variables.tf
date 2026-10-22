@@ -104,6 +104,8 @@ DESCRIPTION
 variable "retry" {
   type = object({
     error_message_regex = optional(list(string), [
+      "AnotherOperationInProgress",
+      "Conflict",
       "ReferencedResourceNotProvisioned",
       "UpdateGatewayInProgress",
       "CannotDeleteVirtualHubWhenItIsInUse",
@@ -112,7 +114,10 @@ variable "retry" {
     interval_seconds     = optional(number, 10)
     max_interval_seconds = optional(number, 180)
   })
-  default     = {}
+
+  default  = {}
+  nullable = false
+
   description = "Retry configuration for the resource operations"
 }
 
