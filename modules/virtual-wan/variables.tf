@@ -373,6 +373,19 @@ variable "routing_intents" {
   nullable    = false
 }
 
+# Additional private traffic routes for virtual hubs
+variable "private_traffic_routes" {
+  type = map(object({
+    name                  = string
+    destinations          = list(string)
+    next_hop_firewall_key = string
+    virtual_hub_key       = string
+  }))
+  default     = {}
+  description = "Additional private-traffic CIDR routes to add to the default route table of the specified Virtual Hub, using the specified Azure Firewall as the next hop."
+  nullable    = false
+}
+
 # General tags for all resources in pattern
 variable "tags" {
   type        = map(string)
