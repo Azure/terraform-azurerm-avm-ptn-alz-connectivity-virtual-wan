@@ -15,7 +15,7 @@ override_module {
         zones = ["1", "2", "3"]
       }
       swedencentral = {
-        zones = ["1", "2", "3"]
+        zones = null
       }
     }
   }
@@ -74,6 +74,11 @@ run "defaults_to_alphabetically_first_hub" {
   assert {
     condition     = local.primary_region_key == "southeastasia"
     error_message = "With no is_primary hub, primary_region_key should fall back to the first hub key in alphabetical order (southeastasia)."
+  }
+
+  assert {
+    condition     = join(",", local.availability_zones["southeastasia"]) == "1,2,3" && length(local.availability_zones["swedencentral"]) == 0
+    error_message = "Region lookup must preserve each hub's zones and return an empty list for regions without zones."
   }
 }
 
@@ -161,4 +166,17 @@ run "rejects_multiple_primary_hubs" {
   expect_failures = [
     var.virtual_hubs,
   ]
+}
+
+run "no_hubs_skips_region_lookup" {
+  command = apply
+
+  variables {
+    virtual_hubs = {}
+  }
+
+  assert {
+    condition     = length(module.regions) == 0 && local.availability_zones == null
+    error_message = "An empty hub configuration must not instantiate the regions module or require a primary location."
+  }
 }

@@ -129,6 +129,7 @@ The following resources are used by this module:
 - [azurerm_resource_group.rg](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) (resource)
 - [azurerm_virtual_hub_bgp_connection.bgp_connection](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_hub_bgp_connection) (resource)
 - [azurerm_virtual_hub_route_table.virtual_hub_route_table](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_hub_route_table) (resource)
+- [azurerm_virtual_hub_route_table_route.private_traffic_route](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_hub_route_table_route) (resource)
 - [azurerm_virtual_hub_routing_intent.routing_intent](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_hub_routing_intent) (resource)
 - [azurerm_virtual_wan.virtual_wan](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_wan) (resource)
 - [azurerm_vpn_server_configuration.p2s_gateway_vpn_server_configuration](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/vpn_server_configuration) (resource)
@@ -507,6 +508,23 @@ map(object({
       })
     })
     scale_unit = number
+  }))
+```
+
+Default: `{}`
+
+### <a name="input_private_traffic_routes"></a> [private\_traffic\_routes](#input\_private\_traffic\_routes)
+
+Description: Additional private-traffic CIDR routes to add to the default route table of the specified Virtual Hub, using the specified Azure Firewall as the next hop.
+
+Type:
+
+```hcl
+map(object({
+    name                  = string
+    destinations          = list(string)
+    next_hop_firewall_key = string
+    virtual_hub_key       = string
   }))
 ```
 
