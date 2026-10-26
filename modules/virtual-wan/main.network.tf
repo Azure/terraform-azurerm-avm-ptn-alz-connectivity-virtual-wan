@@ -42,3 +42,15 @@ resource "azurerm_virtual_hub_routing_intent" "routing_intent" {
     }
   }
 }
+
+# Additional private traffic routes
+resource "azurerm_virtual_hub_route_table_route" "private_traffic_route" {
+  for_each = var.private_traffic_routes
+
+  destinations      = each.value.destinations
+  destinations_type = "CIDR"
+  name              = each.value.name
+  next_hop          = module.firewalls.resource_object[each.value.next_hop_firewall_key].id
+  next_hop_type     = "ResourceId"
+  route_table_id    = module.virtual_hubs.resource[each.value.virtual_hub_key].default_route_table_id
+}
