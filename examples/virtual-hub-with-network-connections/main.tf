@@ -80,6 +80,7 @@ module "virtual_network" {
 module "test" {
   source = "../../"
 
+  location         = var.location
   enable_telemetry = var.enable_telemetry
   tags             = local.common_tags
   virtual_hubs = {

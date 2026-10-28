@@ -227,8 +227,9 @@ resource "azapi_resource" "this" {
 
 module "avm_interfaces" {
   source  = "Azure/avm-utl-interfaces/azure"
-  version = "0.6.0"
+  version = "0.9.0"
 
+  location = var.location
   diagnostic_settings_v2 = {
     for key, setting in var.diagnostic_settings : key => merge(setting, {
       name = coalesce(setting.name, "diag-${var.name}")

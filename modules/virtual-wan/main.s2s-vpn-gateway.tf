@@ -2,6 +2,7 @@
 module "vpn_site" {
   source = "../site-to-site-vpn-site"
 
+  location = var.location
   vpn_sites = {
     for key, value in local.vpn_sites : key => {
       name                = value.name
@@ -16,6 +17,7 @@ module "vpn_site" {
       tags                = value.tags
     }
   }
+  enable_telemetry = var.enable_telemetry
 }
 
 moved {
@@ -27,6 +29,7 @@ moved {
 module "vpn_site_connection" {
   source = "../site-to-site-gateway-connection"
 
+  location = var.location
   vpn_site_connection = {
     for key, conn in local.vpn_site_connections : key => {
       name                      = conn.name
@@ -63,6 +66,7 @@ module "vpn_site_connection" {
     }
 
   }
+  enable_telemetry = var.enable_telemetry
 }
 
 moved {

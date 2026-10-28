@@ -1,6 +1,8 @@
 module "express_route_gateways" {
   source = "../expressroute-gateway"
 
+  location         = var.location
+  enable_telemetry = var.enable_telemetry
   expressroute_gateways = {
     for key, gw in local.expressroute_gateways : key => {
       name                          = gw.name
@@ -23,6 +25,8 @@ moved {
 module "er_connections" {
   source = "../expressroute-gateway-connection"
 
+  location         = var.location
+  enable_telemetry = var.enable_telemetry
   er_circuit_connections = {
     for key, conn in local.er_circuit_connections : key => {
       name                                 = conn.name

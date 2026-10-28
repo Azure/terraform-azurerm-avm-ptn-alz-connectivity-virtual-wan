@@ -148,6 +148,7 @@ module "resource_group" {
 module "vwan" {
   source = "../../"
 
+  location         = var.location
   enable_telemetry = var.enable_telemetry
   route_maps       = local.route_maps
   tags             = local.common_tags
