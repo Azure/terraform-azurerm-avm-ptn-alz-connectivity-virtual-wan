@@ -10,6 +10,10 @@ terraform {
       source  = "hashicorp/azurerm"
       version = "~> 4.0"
     }
+    modtm = {
+      source  = "registry.terraform.io/azure/modtm"
+      version = "~> 0.3"
+    }
     random = {
       source  = "hashicorp/random"
       version = "~> 3.7"
@@ -82,6 +86,7 @@ resource "azapi_resource" "base_policy" {
 module "test" {
   source = "../../"
 
+  location         = var.location
   enable_telemetry = var.enable_telemetry
   tags             = local.common_tags
   virtual_hubs = {

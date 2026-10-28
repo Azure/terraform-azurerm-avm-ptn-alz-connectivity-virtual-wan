@@ -19,11 +19,6 @@ terraform {
   }
 }
 
-variable "firewall_enabled" {
-  type    = bool
-  default = true
-}
-
 module "resource_groups" {
   source = "./resource-group"
 
@@ -33,10 +28,10 @@ module "resource_groups" {
 resource "azapi_resource" "public_ips" {
   for_each = toset(["primary", "secondary"])
 
-  type      = "Microsoft.Network/publicIPAddresses@2024-10-01"
+  location  = "eastus"
   name      = "pip-${each.key}"
   parent_id = module.resource_groups.resource_id
-  location  = "eastus"
+  type      = "Microsoft.Network/publicIPAddresses@2024-10-01"
   body = {
     sku = { name = "Standard", tier = "Regional" }
     properties = {
@@ -78,6 +73,7 @@ locals {
 module "virtual_wan" {
   source = "../../../.."
 
+  location             = var.location
   enable_telemetry     = false
   virtual_hubs         = local.virtual_hubs
   virtual_wan_settings = local.virtual_wan_settings

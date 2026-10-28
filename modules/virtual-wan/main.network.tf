@@ -1,7 +1,9 @@
 # Virtual network connection from virtual hub
 # Create a hub connection
 module "virtual_network_connections" {
-  source = "../virtual-network-connection"
+  source           = "../virtual-network-connection"
+  location         = var.location
+  enable_telemetry = var.enable_telemetry
 
   virtual_network_connections = {
     for key, vnet_conn in var.virtual_network_connections : key => {
