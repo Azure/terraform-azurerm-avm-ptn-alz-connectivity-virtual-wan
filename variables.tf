@@ -224,6 +224,11 @@ variable "virtual_hubs" {
           route_table_keys = optional(list(string))
           labels           = optional(list(string))
         }))
+        static_vnet_route = optional(object({
+          name                = optional(string)
+          address_prefixes    = optional(list(string), [])
+          next_hop_ip_address = optional(string)
+        }))
         inbound_route_map_id  = optional(string)
         outbound_route_map_id = optional(string)
       }))
@@ -763,6 +768,10 @@ The following top level attributes are supported:
       - `route_table_ids` - (Optional) A list of route table IDs to propagate routes to.
       - `route_table_keys` - (Optional) A list of route table keys to propagate routes to.
       - `labels` - (Optional) A list of labels for route propagation.
+    - `static_vnet_route` - (Optional) A static route for this Virtual Network connection. Omitted by default. The object has the following fields:
+      - `name` - (Optional) The name of the static route.
+      - `address_prefixes` - (Optional) A list of destination address prefixes in CIDR format. Default `[]`.
+      - `next_hop_ip_address` - (Optional) The next hop IP address for the static route.
     - `inbound_route_map_id` - (Optional) The ID of the inbound route map.
     - `outbound_route_map_id` - (Optional) The ID of the outbound route map.
 
