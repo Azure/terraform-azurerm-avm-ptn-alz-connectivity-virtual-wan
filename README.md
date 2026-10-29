@@ -70,6 +70,34 @@ Adding, removing or replacing customer IP entries while keeping at least one ent
 
 Customer-mode firewall requests use API version `2024-10-01` by default.
 
+## Azure Bastion in a separate virtual network
+
+By default, Azure Bastion is deployed into a generated `AzureBastionSubnet` in the hub's sidecar virtual network. To place Bastion in a dedicated service virtual network instead, create that virtual network and its `AzureBastionSubnet` (at least /26, in the same region as the hub) outside this module, then set `bastion.subnet_id` and connect the virtual network to the hub:
+
+```hcl
+virtual_hubs = {
+  primary = {
+    location = "eastus"
+    bastion = {
+      subnet_id = azurerm_subnet.bastion.id
+    }
+    virtual_network_connections = {
+      bastion = {
+        name                      = "conn-vnet-bastion"
+        remote_virtual_network_id = azurerm_virtual_network.bastion.id
+      }
+    }
+  }
+}
+```
+
+- The module creates the Bastion host and its public IP. It does not create, own or delete the supplied virtual network or subnet.
+- The module does not connect the supplied virtual network to the hub. Add it to `virtual_network_connections` if Bastion must reach workloads through the hub.
+- When `bastion.subnet_id` is set, Bastion no longer requires `enabled_resources.sidecar_virtual_network`. The private DNS resolver continues to use the sidecar virtual network.
+- `bastion.subnet_id` cannot be combined with `bastion.subnet_address_prefix`.
+- Setting or changing `bastion.subnet_id` on an existing deployment replaces the Bastion host and removes the generated sidecar `AzureBastionSubnet`. Plan it as a maintenance change.
+- Alternatively, set `enabled_resources.bastion = false` and manage Bastion entirely outside this module, connecting its virtual network through `virtual_network_connections`.
+
 <!-- markdownlint-disable MD033 -->
 ## Requirements
 
@@ -655,6 +683,7 @@ The following top level attributes are supported:
 
 - `bastion` - (Optional) An object defining Azure Bastion settings for the sidecar virtual network. The object has the following fields:
   - `subnet_address_prefix` - (Optional) The IPv4 address prefix to use for the Azure Bastion subnet in CIDR format. Must be named `AzureBastionSubnet`.
+  - `subnet_id` - (Optional) The resource ID of an existing subnet named `AzureBastionSubnet` in which to deploy Azure Bastion, for example in a dedicated service virtual network. When set, the module does not create a Bastion subnet in the sidecar virtual network, and Bastion no longer requires the sidecar virtual network to be enabled. The subnet must be at least /26 and in the same region as the hub. The module does not connect that virtual network to the hub; add it to `virtual_network_connections` if hub connectivity is required. Changing this on an existing deployment replaces the Bastion host. Cannot be combined with `subnet_address_prefix`. Default `null`.
   - `subnet_default_outbound_access_enabled` - (Optional) Should the default outbound access be enabled for the Azure Bastion subnet? Default `false`.
   - `name` - (Optional) The name of the Azure Bastion resource.
   - `copy_paste_enabled` - (Optional) Should copy-paste be enabled for Azure Bastion? Default `false`.
@@ -1148,6 +1177,7 @@ map(object({
     }), {})
 
     bastion = optional(object({
+      subnet_id                              = optional(string)
       subnet_address_prefix                  = optional(string)
       subnet_default_outbound_access_enabled = optional(bool, false)
       name                                   = optional(string)

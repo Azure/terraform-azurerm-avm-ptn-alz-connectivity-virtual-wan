@@ -524,6 +524,7 @@ variable "virtual_hubs" {
     }), {})
 
     bastion = optional(object({
+      subnet_id                              = optional(string)
       subnet_address_prefix                  = optional(string)
       subnet_default_outbound_access_enabled = optional(bool, false)
       name                                   = optional(string)
@@ -1008,6 +1009,7 @@ The following top level attributes are supported:
 
 - `bastion` - (Optional) An object defining Azure Bastion settings for the sidecar virtual network. The object has the following fields:
   - `subnet_address_prefix` - (Optional) The IPv4 address prefix to use for the Azure Bastion subnet in CIDR format. Must be named `AzureBastionSubnet`.
+  - `subnet_id` - (Optional) The resource ID of an existing subnet named `AzureBastionSubnet` in which to deploy Azure Bastion, for example in a dedicated service virtual network. When set, the module does not create a Bastion subnet in the sidecar virtual network, and Bastion no longer requires the sidecar virtual network to be enabled. The subnet must be at least /26 and in the same region as the hub. The module does not connect that virtual network to the hub; add it to `virtual_network_connections` if hub connectivity is required. Changing this on an existing deployment replaces the Bastion host. Cannot be combined with `subnet_address_prefix`. Default `null`.
   - `subnet_default_outbound_access_enabled` - (Optional) Should the default outbound access be enabled for the Azure Bastion subnet? Default `false`.
   - `name` - (Optional) The name of the Azure Bastion resource.
   - `copy_paste_enabled` - (Optional) Should copy-paste be enabled for Azure Bastion? Default `false`.
@@ -1162,6 +1164,20 @@ The following top level attributes are supported:
 
 DESCRIPTION
 
+  validation {
+    condition = alltrue([
+      for k, v in var.virtual_hubs :
+      v.bastion.subnet_id == null || can(regex("(?i)/subnets/AzureBastionSubnet$", v.bastion.subnet_id))
+    ])
+    error_message = "virtual_hubs[*].bastion.subnet_id must be the resource ID of a subnet named AzureBastionSubnet."
+  }
+  validation {
+    condition = alltrue([
+      for k, v in var.virtual_hubs :
+      !(v.bastion.subnet_id != null && v.bastion.subnet_address_prefix != null)
+    ])
+    error_message = "virtual_hubs[*].bastion.subnet_id and subnet_address_prefix are mutually exclusive: subnet_address_prefix only applies to the generated sidecar subnet."
+  }
   validation {
     condition     = length([for k, v in var.virtual_hubs : k if v.is_primary]) <= 1
     error_message = "Only one virtual hub can be marked as `is_primary = true`."
