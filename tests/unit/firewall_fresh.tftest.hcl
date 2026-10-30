@@ -65,6 +65,10 @@ override_resource {
   values = { id = "/subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/rg-fresh/providers/Microsoft.Network/publicIPAddresses/pip-secondary" }
 }
 
+variables {
+  location = "eastus"
+}
+
 run "fresh_rg_and_unknown_ids_plan" {
   command = plan
   module {
