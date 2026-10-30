@@ -1552,7 +1552,7 @@ Version: 0.23.2
 
 Source: Azure/avm-utl-regions/azurerm
 
-Version: 0.5.2
+Version: 0.13.2
 
 ### <a name="module_route_map"></a> [route\_map](#module\_route\_map)
 
