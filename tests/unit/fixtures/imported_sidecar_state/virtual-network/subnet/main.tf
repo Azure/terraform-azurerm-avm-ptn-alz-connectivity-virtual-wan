@@ -7,11 +7,6 @@ terraform {
   }
 }
 
-variable "parent_id" {
-  type        = string
-  description = "The synthetic parent VNet resource ID."
-}
-
 resource "azapi_resource" "subnet" {
   count = 1
 

@@ -7,6 +7,11 @@ mock_provider "azapi" {
       id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-test/providers/Microsoft.Network/virtualNetworks/vnet-sidecar-test"
     }
   }
+  mock_data "azapi_client_config" {
+    defaults = {
+      subscription_resource_id = "/subscriptions/00000000-0000-0000-0000-000000000000"
+    }
+  }
 }
 
 mock_provider "azurerm" {
@@ -19,6 +24,7 @@ mock_provider "azurerm" {
 }
 
 mock_provider "modtm" {}
+
 mock_provider "random" {}
 
 override_module {
@@ -85,6 +91,12 @@ run "default_sidecar" {
   assert {
     condition     = length(local.subnets["hub1"]) == 0
     error_message = "A sidecar without custom, DNS resolver or Bastion subnets must not create subnets."
+  }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    modtm   = modtm
+    random  = random
   }
 }
 
@@ -153,6 +165,12 @@ run "custom_subnet_contract" {
     )
     error_message = "Subnet outbound access, private network policies and delegation must retain their configured values."
   }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    modtm   = modtm
+    random  = random
+  }
 }
 
 # ignore_body_changes is write-only provider state, so its value cannot be read back here.
@@ -186,6 +204,12 @@ run "subnet_ignore_body_changes_passthrough" {
   assert {
     condition     = try(module.virtual_network_side_car["hub1"].subnets["workload"].resource.body.properties.routeTable, null) == null
     error_message = "An ignored path must be left unmanaged, so no route table may be sent for this subnet."
+  }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    modtm   = modtm
+    random  = random
   }
 }
 
@@ -222,6 +246,12 @@ run "module_level_ignore_body_changes" {
     )
     error_message = "The shared ignore_body_changes slots must not disturb the virtual network or its subnets."
   }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    modtm   = modtm
+    random  = random
+  }
 }
 
 run "ignore_body_changes_rejects_empty_path" {
@@ -236,6 +266,12 @@ run "ignore_body_changes_rejects_empty_path" {
   }
 
   expect_failures = [var.ignore_body_changes]
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    modtm   = modtm
+    random  = random
+  }
 }
 
 run "generated_dns_and_bastion_subnets" {
@@ -306,6 +342,12 @@ run "generated_dns_and_bastion_subnets" {
     )
     error_message = "Subnet resource ID and name outputs consumed by Bastion and DNS resolver must remain compatible."
   }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    modtm   = modtm
+    random  = random
+  }
 }
 
 run "multiple_sidecars" {
@@ -343,6 +385,12 @@ run "multiple_sidecars" {
     )
     error_message = "Each sidecar must retain its own module key and connect to the corresponding virtual hub."
   }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    modtm   = modtm
+    random  = random
+  }
 }
 
 run "sidecar_disabled" {
@@ -362,5 +410,11 @@ run "sidecar_disabled" {
   assert {
     condition     = length(module.virtual_network_side_car) == 0 && length(local.virtual_network_connections_side_car) == 0
     error_message = "Disabling the sidecar must not create a VNet or a sidecar connection."
+  }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    modtm   = modtm
+    random  = random
   }
 }

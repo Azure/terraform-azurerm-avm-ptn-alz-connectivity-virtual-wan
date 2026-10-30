@@ -1,5 +1,7 @@
 mock_provider "modtm" {}
+
 mock_provider "random" {}
+
 mock_provider "azurerm" {
   mock_data "azurerm_client_config" {
     defaults = { subscription_id = "00000000-0000-0000-0000-000000000001" }
@@ -22,6 +24,7 @@ mock_provider "azurerm" {
     }
   }
 }
+
 mock_provider "azapi" {
   mock_data "azapi_resource_list" {
     defaults = { output = { firewalls = [] } }
@@ -44,6 +47,11 @@ mock_provider "azapi" {
           hubIPAddresses = { privateIPAddress = "10.0.0.4" }, threatIntelMode = null, additionalProperties = {}
         }
       }
+    }
+  }
+  mock_data "azapi_client_config" {
+    defaults = {
+      subscription_resource_id = "/subscriptions/00000000-0000-0000-0000-000000000000"
     }
   }
 }
@@ -93,6 +101,12 @@ run "root_to_real_customer_leaf" {
     condition     = output.firewall_resource_ids["hub"] == "/subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/rg-test/providers/Microsoft.Network/azureFirewalls/fw-test"
     error_message = "The firewall identity must pass through the actual children unchanged."
   }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    modtm   = modtm
+    random  = random
+  }
 }
 
 run "zero_hubs_keep_null_contract" {
@@ -103,6 +117,12 @@ run "zero_hubs_keep_null_contract" {
   assert {
     condition     = output.firewall_public_ip_addresses == null && output.firewall_private_ip_address == null && output.firewall_resource_ids == null && output.firewall_resource_names == null && output.resource_id == null
     error_message = "No hubs must retain the old null outputs without invalid child indexing."
+  }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    modtm   = modtm
+    random  = random
   }
 }
 
@@ -124,6 +144,12 @@ run "disabled_firewall_keep_empty_contract" {
   assert {
     condition     = output.firewall_public_ip_addresses == {} && output.firewall_resource_ids == {} && length(var.virtual_hubs["hub"].firewall.ip_configurations) == 0
     error_message = "Disabled firewalls and default empty IP maps must retain the existing empty outputs."
+  }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    modtm   = modtm
+    random  = random
   }
 }
 
@@ -161,5 +187,11 @@ run "base_policy_id_survives_customer_path" {
   assert {
     condition     = output.firewall_public_ip_addresses["hub"] == tolist(["203.0.113.10"])
     error_message = "A generated child policy with a base policy must still support the real customer-IP leaf."
+  }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    modtm   = modtm
+    random  = random
   }
 }

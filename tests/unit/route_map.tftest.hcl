@@ -6,10 +6,17 @@ mock_provider "azapi" {
       id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-test/providers/Microsoft.Network/virtualHubs/vhub-test/routeMaps/rm-test"
     }
   }
+  mock_data "azapi_client_config" {
+    defaults = {
+      subscription_resource_id = "/subscriptions/00000000-0000-0000-0000-000000000000"
+    }
+  }
 }
 
 mock_provider "azurerm" {}
+
 mock_provider "modtm" {}
+
 mock_provider "random" {}
 
 override_module {
@@ -95,6 +102,12 @@ run "route_map_defaults" {
     )
     error_message = "Route map identity must resolve from the supplied name and virtual hub key."
   }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    modtm   = modtm
+    random  = random
+  }
 }
 
 run "route_map_accepts_operational_inputs" {
@@ -118,6 +131,12 @@ run "route_map_accepts_operational_inputs" {
     condition     = module.route_map["main"].resource.type == "Microsoft.Network/virtualHubs/routeMaps@2025-05-01"
     error_message = "Supplying the AzAPI operational inputs must not disturb the route map resource."
   }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    modtm   = modtm
+    random  = random
+  }
 }
 
 run "route_map_ignore_body_changes_rejects_empty_path" {
@@ -132,4 +151,10 @@ run "route_map_ignore_body_changes_rejects_empty_path" {
   }
 
   expect_failures = [var.ignore_body_changes]
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    modtm   = modtm
+    random  = random
+  }
 }

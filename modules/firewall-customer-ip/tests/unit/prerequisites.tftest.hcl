@@ -1,5 +1,5 @@
-mock_provider "modtm" {}
 mock_provider "random" {}
+
 mock_provider "azapi" {
   mock_data "azapi_resource_list" {
     defaults = { output = { firewalls = [] } }
@@ -12,6 +12,11 @@ mock_provider "azapi" {
         virtual_wan_id = "/subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/rg-test/providers/Microsoft.Network/virtualWans/wan-test"
         zones          = ["1", "2", "3"]
       }
+    }
+  }
+  mock_data "azapi_client_config" {
+    defaults = {
+      subscription_resource_id = "/subscriptions/00000000-0000-0000-0000-000000000000"
     }
   }
 }
@@ -39,6 +44,10 @@ run "reject_existing_managed_firewall" {
     }
   }
   expect_failures = [azapi_resource.this]
+  providers = {
+    azapi  = azapi
+    random = random
+  }
 }
 
 run "reject_another_firewall_association" {
@@ -54,6 +63,10 @@ run "reject_another_firewall_association" {
     }
   }
   expect_failures = [azapi_resource.this]
+  providers = {
+    azapi  = azapi
+    random = random
+  }
 }
 
 run "reject_non_firewall_association" {
@@ -69,6 +82,10 @@ run "reject_non_firewall_association" {
     }
   }
   expect_failures = [azapi_resource.this]
+  providers = {
+    azapi  = azapi
+    random = random
+  }
 }
 
 run "reject_basic_public_ip" {
@@ -83,6 +100,10 @@ run "reject_basic_public_ip" {
     }
   }
   expect_failures = [azapi_resource.this]
+  providers = {
+    azapi  = azapi
+    random = random
+  }
 }
 
 run "reject_dynamic_public_ip" {
@@ -97,6 +118,10 @@ run "reject_dynamic_public_ip" {
     }
   }
   expect_failures = [azapi_resource.this]
+  providers = {
+    azapi  = azapi
+    random = random
+  }
 }
 
 run "reject_ipv6" {
@@ -111,6 +136,10 @@ run "reject_ipv6" {
     }
   }
   expect_failures = [azapi_resource.this]
+  providers = {
+    azapi  = azapi
+    random = random
+  }
 }
 
 run "reject_zonal_firewall_with_non_zonal_public_ip" {
@@ -126,6 +155,10 @@ run "reject_zonal_firewall_with_non_zonal_public_ip" {
     }
   }
   expect_failures = [azapi_resource.this]
+  providers = {
+    azapi  = azapi
+    random = random
+  }
 }
 
 run "reject_global_tier" {
@@ -140,6 +173,10 @@ run "reject_global_tier" {
     }
   }
   expect_failures = [azapi_resource.this]
+  providers = {
+    azapi  = azapi
+    random = random
+  }
 }
 
 run "reject_public_ip_region_mismatch" {
@@ -154,6 +191,10 @@ run "reject_public_ip_region_mismatch" {
     }
   }
   expect_failures = [azapi_resource.this]
+  providers = {
+    azapi  = azapi
+    random = random
+  }
 }
 
 run "reject_basic_hub" {
@@ -163,6 +204,10 @@ run "reject_basic_hub" {
     values = { output = { type = "Basic" } }
   }
   expect_failures = [azapi_resource.this]
+  providers = {
+    azapi  = azapi
+    random = random
+  }
 }
 
 run "reject_hub_region_mismatch" {
@@ -177,6 +222,10 @@ run "reject_hub_region_mismatch" {
     }
   }
   expect_failures = [azapi_resource.this]
+  providers = {
+    azapi  = azapi
+    random = random
+  }
 }
 
 run "reject_hub_subscription_mismatch" {
@@ -185,6 +234,10 @@ run "reject_hub_subscription_mismatch" {
     virtual_hub_id = "/subscriptions/00000000-0000-0000-0000-000000000002/resourceGroups/rg-test/providers/Microsoft.Network/virtualHubs/hub-test"
   }
   expect_failures = [azapi_resource.this]
+  providers = {
+    azapi  = azapi
+    random = random
+  }
 }
 
 run "reject_public_ip_subscription_mismatch" {
@@ -198,30 +251,58 @@ run "reject_public_ip_subscription_mismatch" {
     }
   }
   expect_failures = [azapi_resource.this]
+  providers = {
+    azapi  = azapi
+    random = random
+  }
 }
 
 run "reject_empty_customer_map" {
   command = plan
-  variables { ip_configurations = {} }
+  variables {
+    ip_configurations = {}
+  }
   expect_failures = [var.ip_configurations]
+  providers = {
+    azapi  = azapi
+    random = random
+  }
 }
 
 run "reject_null_customer_entry" {
   command = plan
-  variables { ip_configurations = { primary = null } }
+  variables {
+    ip_configurations = { primary = null }
+  }
   expect_failures = [var.ip_configurations]
+  providers = {
+    azapi  = azapi
+    random = random
+  }
 }
 
 run "reject_null_public_ip_id" {
   command = plan
-  variables { ip_configurations = { primary = { name = "internet-primary", public_ip_address_id = null } } }
+  variables {
+    ip_configurations = { primary = { name = "internet-primary", public_ip_address_id = null } }
+  }
   expect_failures = [var.ip_configurations]
+  providers = {
+    azapi  = azapi
+    random = random
+  }
 }
 
 run "reject_malformed_public_ip_id" {
   command = plan
-  variables { ip_configurations = { primary = { name = "internet-primary", public_ip_address_id = "not-an-arm-id" } } }
+  variables {
+    ip_configurations = { primary = { name = "internet-primary", public_ip_address_id = "not-an-arm-id" } }
+  }
   expect_failures = [var.ip_configurations]
+  providers = {
+    azapi  = azapi
+    random = random
+  }
 }
 
 run "reject_invalid_configuration_name" {
@@ -235,6 +316,10 @@ run "reject_invalid_configuration_name" {
     }
   }
   expect_failures = [var.ip_configurations]
+  providers = {
+    azapi  = azapi
+    random = random
+  }
 }
 
 run "reject_duplicate_names_ignoring_case" {
@@ -252,6 +337,10 @@ run "reject_duplicate_names_ignoring_case" {
     }
   }
   expect_failures = [var.ip_configurations]
+  providers = {
+    azapi  = azapi
+    random = random
+  }
 }
 
 run "reject_duplicate_ids_ignoring_case" {
@@ -269,16 +358,32 @@ run "reject_duplicate_ids_ignoring_case" {
     }
   }
   expect_failures = [var.ip_configurations]
+  providers = {
+    azapi  = azapi
+    random = random
+  }
 }
 
 run "reject_basic_firewall" {
   command = plan
-  variables { sku_tier = "Basic" }
+  variables {
+    sku_tier = "Basic"
+  }
   expect_failures = [var.sku_tier]
+  providers = {
+    azapi  = azapi
+    random = random
+  }
 }
 
 run "reject_ip_drift_suppression" {
   command = plan
-  variables { ignore_body_changes = { network_azure_firewalls = ["properties.ipConfigurations"] } }
+  variables {
+    ignore_body_changes = { network_azure_firewalls = ["properties.ipConfigurations"] }
+  }
   expect_failures = [var.ignore_body_changes]
+  providers = {
+    azapi  = azapi
+    random = random
+  }
 }

@@ -1,5 +1,5 @@
-mock_provider "modtm" {}
 mock_provider "random" {}
+
 mock_provider "azapi" {
   mock_data "azapi_resource_list" {
     defaults = { output = { firewalls = [] } }
@@ -12,6 +12,11 @@ mock_provider "azapi" {
         virtual_wan_id = "/subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/rg-test/providers/Microsoft.Network/virtualWans/wan-test"
         zones          = ["1", "2", "3"]
       }
+    }
+  }
+  mock_data "azapi_client_config" {
+    defaults = {
+      subscription_resource_id = "/subscriptions/00000000-0000-0000-0000-000000000000"
     }
   }
 }
@@ -83,6 +88,10 @@ run "grow_third_customer_ip_on_existing_two_ip_firewall_with_heterogeneous_ipcon
     condition     = local.existing_firewall != null
     error_message = "This run's own fixture must genuinely resolve the pre-existing firewall by name; otherwise the assertion below would be vacuously true."
   }
+  providers = {
+    azapi  = azapi
+    random = random
+  }
 }
 
 # Negative control (must stay green): a genuinely managed pre-existing firewall - ipConfigurations
@@ -106,6 +115,10 @@ run "explicit_null_ipconfigurations_still_read_as_managed_without_erroring" {
     }
   }
   expect_failures = [azapi_resource.this]
+  providers = {
+    azapi  = azapi
+    random = random
+  }
 }
 
 # Negative control (must stay green): a genuinely managed pre-existing firewall where the
@@ -129,4 +142,8 @@ run "absent_ipconfigurations_key_still_read_as_managed_without_erroring" {
     }
   }
   expect_failures = [azapi_resource.this]
+  providers = {
+    azapi  = azapi
+    random = random
+  }
 }

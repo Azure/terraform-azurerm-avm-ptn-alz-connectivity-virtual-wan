@@ -17,8 +17,8 @@
 # at plan/apply time offline (this module cannot make the live Azure call that would reject it), so a
 # future change to this precondition is a visible, deliberate decision rather than a silent regression in
 # either direction.
-mock_provider "modtm" {}
 mock_provider "random" {}
+
 mock_provider "azapi" {
   mock_data "azapi_resource_list" {
     defaults = { output = { firewalls = [], results = [] } }
@@ -41,6 +41,11 @@ mock_provider "azapi" {
           hubIPAddresses = { privateIPAddress = "10.0.0.4" }, threatIntelMode = null, additionalProperties = {}
         }
       }
+    }
+  }
+  mock_data "azapi_client_config" {
+    defaults = {
+      subscription_resource_id = "/subscriptions/00000000-0000-0000-0000-000000000000"
     }
   }
 }
@@ -80,6 +85,10 @@ run "current_behavior_accepts_a_fully_detached_looking_public_ip_client_side" {
     condition     = length(azapi_resource.this.body.properties.ipConfigurations) == 1
     error_message = "Deliberate behavior: this module does not check NAT Gateway ownership client-side; a public IP that presents ipConfiguration = null is accepted regardless of any other, non-ipConfiguration association it may genuinely have. Azure's own synchronous PublicIPAddressInUse rejection on the firewall-attach path is the enforced backstop for this prerequisite - see the comment at the top of this file."
   }
+  providers = {
+    azapi  = azapi
+    random = random
+  }
 }
 
 # Regression control (must not regress): a public IP already associated with THIS SAME firewall's own IP
@@ -102,6 +111,10 @@ run "accept_reconciliation_of_ip_already_owned_by_this_firewall" {
     condition     = length(azapi_resource.this.body.properties.ipConfigurations) == 1
     error_message = "Idempotent reconciliation of a public IP already attached to this same firewall must not regress."
   }
+  providers = {
+    azapi  = azapi
+    random = random
+  }
 }
 
 # Regression control (must not regress): a public IP genuinely attached elsewhere via `ipConfiguration`
@@ -121,4 +134,8 @@ run "reject_ipconfiguration_associated_elsewhere_unchanged" {
     }
   }
   expect_failures = [azapi_resource.this]
+  providers = {
+    azapi  = azapi
+    random = random
+  }
 }

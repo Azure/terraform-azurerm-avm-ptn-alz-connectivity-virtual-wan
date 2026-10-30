@@ -19,6 +19,7 @@ module "firewalls" {
     }
   }
   ignore_body_changes = var.ignore_body_changes.network_azure_firewalls
+  location            = var.location
   resource_types      = var.resource_types.network_azure_firewalls
   retry               = var.retry
   timeouts            = var.timeouts

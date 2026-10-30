@@ -1,6 +1,13 @@
-mock_provider "azapi" {}
-mock_provider "modtm" {}
+mock_provider "azapi" {
+  mock_data "azapi_client_config" {
+    defaults = {
+      subscription_resource_id = "/subscriptions/00000000-0000-0000-0000-000000000000"
+    }
+  }
+}
+
 mock_provider "random" {}
+
 mock_provider "azurerm" {
   mock_resource "azurerm_firewall" {
     defaults = {
@@ -45,6 +52,11 @@ run "managed_defaults_need_no_inventory" {
     condition     = terraform_data.public_ip_mode["hub"].output == false && length(var.firewalls["hub"].ip_configurations) == 0 && var.firewalls["hub"].vhub_public_ip_count == null
     error_message = "Default inputs must remain managed with an empty map and a null string count."
   }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    random  = random
+  }
 }
 
 run "managed_count_increase" {
@@ -69,6 +81,11 @@ run "managed_count_increase" {
     condition     = length(data.azapi_resource_list.firewalls) == 0 && output.resource == (var.firewalls != null ? azurerm_firewall.fw : {})
     error_message = "Managed count increases must remain on the original provider and output path."
   }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    random  = random
+  }
 }
 
 run "managed_count_decrease" {
@@ -88,6 +105,11 @@ run "managed_count_decrease" {
   assert {
     condition     = azurerm_firewall.fw["hub"].virtual_hub[0].public_ip_count == 2 && length(module.customer_firewalls) == 0
     error_message = "Count decreases must still use AzureRM's existing retained-address update behavior, not a new count-only ARM PUT."
+  }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    random  = random
   }
 }
 
@@ -110,6 +132,11 @@ run "managed_harmless_update" {
     condition     = azurerm_firewall.fw["hub"].tags.maintenance == "metadata-only" && azurerm_firewall.fw["hub"].sku_tier == "Premium" && terraform_data.public_ip_mode["hub"].output == false
     error_message = "Harmless updates and Premium must preserve the managed mode record."
   }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    random  = random
+  }
 }
 
 run "ordinary_firewall_removal" {
@@ -125,6 +152,11 @@ run "ordinary_firewall_removal" {
     condition     = output.resource_ids == {} && output.public_ip_addresses == {} && output.diagnostic_settings_resource_ids == {}
     error_message = "An empty map must preserve the old empty-map outputs."
   }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    random  = random
+  }
 }
 
 run "null_firewalls_preserves_output_contract" {
@@ -139,5 +171,10 @@ run "null_firewalls_preserves_output_contract" {
   assert {
     condition     = output.resource == {} && output.resource_object == {} && length(output.resource_id) == 0 && length(output.azure_firewall_resource_names) == 0
     error_message = "Null firewall input must preserve empty resource objects and ID/name lists."
+  }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    random  = random
   }
 }

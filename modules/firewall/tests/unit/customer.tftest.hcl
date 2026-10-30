@@ -5,8 +5,9 @@ mock_provider "azurerm" {
     }
   }
 }
-mock_provider "modtm" {}
+
 mock_provider "random" {}
+
 mock_provider "azapi" {
   mock_data "azapi_resource_list" {
     defaults = {
@@ -39,6 +40,11 @@ mock_provider "azapi" {
           additionalProperties = {}
         }
       }
+    }
+  }
+  mock_data "azapi_client_config" {
+    defaults = {
+      subscription_resource_id = "/subscriptions/00000000-0000-0000-0000-000000000000"
     }
   }
 }
@@ -87,6 +93,11 @@ run "customer_optional_null_count" {
     condition     = output.diagnostic_settings_resource_ids["hub-logs"] == "${output.resource_ids["hub"]}|diag-fw-test"
     error_message = "Diagnostic output keys, default names and composite legacy IDs must remain compatible."
   }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    random  = random
+  }
 }
 
 run "customer_explicit_zero_count" {
@@ -113,6 +124,11 @@ run "customer_explicit_zero_count" {
     condition     = length(azurerm_firewall.fw) == 0 && output.resource["hub"].sku_tier == "Premium"
     error_message = "Zero is allowed only in customer mode, including Premium."
   }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    random  = random
+  }
 }
 
 run "last_ip_cannot_change_mode" {
@@ -129,6 +145,11 @@ run "last_ip_cannot_change_mode" {
     }
   }
   expect_failures = [terraform_data.public_ip_mode]
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    random  = random
+  }
 }
 
 run "customer_reapply_after_rejected_conversion" {
@@ -136,6 +157,11 @@ run "customer_reapply_after_rejected_conversion" {
   assert {
     condition     = output.resource_ids["hub"] == run.customer_optional_null_count.resource_ids["hub"] && terraform_data.public_ip_mode["hub"].output == true
     error_message = "A rejected mode change must leave the original customer instance and its recorded mode intact."
+  }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    random  = random
   }
 }
 
@@ -148,6 +174,11 @@ run "ordinary_customer_removal" {
   assert {
     condition     = length(module.customer_firewalls) == 0 && length(terraform_data.public_ip_mode) == 0 && length(data.azapi_resource_list.firewalls) == 0
     error_message = "Removing a customer firewall must remove its marker and diagnostics without acquiring or deleting the supplied IPs."
+  }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    random  = random
   }
 }
 
@@ -169,6 +200,11 @@ run "first_adoption_managed_conversion_rejected" {
     }
   }
   expect_failures = [terraform_data.public_ip_mode]
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    random  = random
+  }
 }
 
 run "same_name_different_group_is_not_same_identity" {
@@ -188,5 +224,10 @@ run "same_name_different_group_is_not_same_identity" {
   assert {
     condition     = local.existing_firewalls["hub"] == null && length(module.customer_firewalls) == 1
     error_message = "Inventory must match exact normalized RG identity, not just a reused firewall name."
+  }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    random  = random
   }
 }

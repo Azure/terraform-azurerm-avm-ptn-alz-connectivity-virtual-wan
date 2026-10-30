@@ -89,6 +89,7 @@ module "virtual_wan" {
   source = "../.."
 
   enable_telemetry = var.enable_telemetry
+  location         = var.location
   tags             = var.tags
   virtual_hubs = {
     primary = {
