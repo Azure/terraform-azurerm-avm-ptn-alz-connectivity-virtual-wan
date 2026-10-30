@@ -37,8 +37,8 @@
 # Both exist on this same schema but represent a PIP-to-PIP relationship, not "in use by a consuming network
 # resource" - checking them speculatively risks rejecting legitimate configurations (e.g. a customer
 # deliberately supplying both halves of a dual-stack pair).
-mock_provider "modtm" {}
 mock_provider "random" {}
+
 mock_provider "azapi" {
   mock_data "azapi_resource_list" {
     defaults = { output = { firewalls = [], results = [] } }
@@ -61,6 +61,11 @@ mock_provider "azapi" {
           hubIPAddresses = { privateIPAddress = "10.0.0.4" }, threatIntelMode = null, additionalProperties = {}
         }
       }
+    }
+  }
+  mock_data "azapi_client_config" {
+    defaults = {
+      subscription_resource_id = "/subscriptions/00000000-0000-0000-0000-000000000000"
     }
   }
 }
@@ -96,6 +101,10 @@ run "reject_load_balancer_frontend_associated_public_ip" {
     }
   }
   expect_failures = [azapi_resource.this]
+  providers = {
+    azapi  = azapi
+    random = random
+  }
 }
 
 # Same generic path, substituting an Application Gateway frontend IP configuration.
@@ -113,4 +122,8 @@ run "reject_application_gateway_frontend_associated_public_ip" {
     }
   }
   expect_failures = [azapi_resource.this]
+  providers = {
+    azapi  = azapi
+    random = random
+  }
 }

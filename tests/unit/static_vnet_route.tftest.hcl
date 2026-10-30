@@ -1,6 +1,15 @@
-mock_provider "azapi" {}
+mock_provider "azapi" {
+  mock_data "azapi_client_config" {
+    defaults = {
+      subscription_resource_id = "/subscriptions/00000000-0000-0000-0000-000000000000"
+    }
+  }
+}
+
 mock_provider "azurerm" {}
+
 mock_provider "modtm" {}
+
 mock_provider "random" {}
 
 override_module {
@@ -72,6 +81,12 @@ run "root_input_retains_static_vnet_route" {
     )
     error_message = "The root input must retain every static VNet route field when forwarding the connection to the Virtual WAN module."
   }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    modtm   = modtm
+    random  = random
+  }
 }
 
 run "static_vnet_route_can_be_omitted" {
@@ -94,6 +109,12 @@ run "static_vnet_route_can_be_omitted" {
   assert {
     condition     = local.virtual_network_connections["hub1-connection1"].routing.static_vnet_route == null
     error_message = "Connections that omit static_vnet_route must retain their existing routing behavior."
+  }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    modtm   = modtm
+    random  = random
   }
 }
 
@@ -122,5 +143,11 @@ run "static_vnet_route_optional_field_defaults" {
       local.virtual_network_connections["hub1-connection1"].routing.static_vnet_route.next_hop_ip_address == null
     )
     error_message = "Omitted static VNet route fields must default to null for name and next hop, and an empty list for address prefixes."
+  }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    modtm   = modtm
+    random  = random
   }
 }

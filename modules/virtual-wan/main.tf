@@ -34,6 +34,8 @@ moved {
 module "virtual_hubs" {
   source = "../virtual-hub"
 
+  enable_telemetry = var.enable_telemetry
+  location         = var.location
   virtual_hubs = {
     for key, value in local.virtual_hubs : key => {
       name                                   = value.name

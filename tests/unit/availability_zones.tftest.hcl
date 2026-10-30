@@ -74,7 +74,9 @@ mock_provider "azapi" {
 }
 
 mock_provider "azurerm" {}
+
 mock_provider "modtm" {}
+
 mock_provider "random" {}
 
 override_module {
@@ -125,6 +127,12 @@ run "unfiltered_regions_with_telemetry_disabled" {
     })
     error_message = "The real regions utility must retain recommended and non-recommended regions, preserve zones, and normalize missing zones to an empty list."
   }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    modtm   = modtm
+    random  = random
+  }
 }
 
 run "unfiltered_regions_with_telemetry_enabled" {
@@ -132,6 +140,7 @@ run "unfiltered_regions_with_telemetry_enabled" {
 
   variables {
     enable_telemetry = true
+    location         = "eastus"
   }
 
   assert {
@@ -142,5 +151,11 @@ run "unfiltered_regions_with_telemetry_enabled" {
       non_recommended_without_zones = []
     })
     error_message = "Enabling telemetry must keep the regions lookup valid with its required location input and preserve the same unfiltered zone results."
+  }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    modtm   = modtm
+    random  = random
   }
 }

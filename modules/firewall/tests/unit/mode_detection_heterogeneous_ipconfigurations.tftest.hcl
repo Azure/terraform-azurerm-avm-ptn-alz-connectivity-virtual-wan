@@ -5,8 +5,9 @@ mock_provider "azurerm" {
     }
   }
 }
-mock_provider "modtm" {}
+
 mock_provider "random" {}
+
 mock_provider "azapi" {
   mock_data "azapi_resource_list" {
     defaults = {
@@ -39,6 +40,11 @@ mock_provider "azapi" {
           additionalProperties = {}
         }
       }
+    }
+  }
+  mock_data "azapi_client_config" {
+    defaults = {
+      subscription_resource_id = "/subscriptions/00000000-0000-0000-0000-000000000000"
     }
   }
 }
@@ -131,6 +137,11 @@ run "grow_third_customer_ip_on_existing_two_ip_firewall_with_heterogeneous_ipcon
     condition     = local.existing_customer_mode["hub"] == true
     error_message = "An existing firewall with real (heterogeneous) customer ipConfigurations must be detected as customer mode, not misclassified as managed via a silently-swallowed coalesce() error."
   }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    random  = random
+  }
 }
 
 # Explicit control, in the SAME file as the heterogeneous case above: the ipConfigurations body Azure
@@ -173,5 +184,10 @@ run "single_uniform_customer_ip_control_is_detected_without_needing_the_fix" {
   assert {
     condition     = local.existing_customer_mode["hub"] == true
     error_message = "A real single-IP customer-mode firewall body (internally uniform, no unification conflict) must be detected as customer mode - this control proves the bug is specific to unification-impossible heterogeneity, not to customer mode itself."
+  }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    random  = random
   }
 }

@@ -66,6 +66,7 @@ module "test" {
   source = "../../"
 
   enable_telemetry     = var.enable_telemetry
+  location             = var.location
   tags                 = module.config.outputs.tags
   virtual_hubs         = local.virtual_wan_virtual_hubs
   virtual_wan_settings = local.virtual_wan_settings
