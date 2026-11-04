@@ -1,6 +1,8 @@
 module "vpn_gateway" {
   source = "../site-to-site-gateway"
 
+  enable_telemetry = var.enable_telemetry
+  location         = var.location
   vpn_gateways = {
     for key, value in local.vpn_gateways : key => {
       name                                  = value.name

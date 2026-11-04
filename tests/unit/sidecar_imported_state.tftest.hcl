@@ -7,6 +7,11 @@ mock_provider "azapi" {
       id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-test/providers/Microsoft.Network/virtualNetworks/vnet-sidecar-test"
     }
   }
+  mock_data "azapi_client_config" {
+    defaults = {
+      subscription_resource_id = "/subscriptions/00000000-0000-0000-0000-000000000000"
+    }
+  }
 }
 
 mock_provider "azurerm" {
@@ -30,6 +35,7 @@ mock_provider "azurerm" {
 }
 
 mock_provider "modtm" {}
+
 mock_provider "random" {}
 
 override_module {
@@ -132,11 +138,23 @@ run "first_post_import_plan" {
     )
     error_message = "Adopting the imported state must preserve both VNet and independent subnet identities."
   }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    modtm   = modtm
+    random  = random
+  }
 }
 
 run "apply_candidate" {
   command   = apply
   state_key = "imported_sidecar"
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    modtm   = modtm
+    random  = random
+  }
 }
 
 run "unrelated_tag_plan" {
@@ -161,6 +179,12 @@ run "unrelated_tag_plan" {
     )
     error_message = "A later tag plan must retain both imported child collections."
   }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    modtm   = modtm
+    random  = random
+  }
 }
 
 run "apply_tag_update" {
@@ -175,6 +199,12 @@ run "apply_tag_update" {
         })
       })
     }
+  }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    modtm   = modtm
+    random  = random
   }
 }
 
@@ -199,5 +229,11 @@ run "second_plan_is_idempotent" {
       module.virtual_network_side_car["hub1"].subnets["workload"].resource_id == run.seed_imported_sidecar_state.subnet_resource_id
     )
     error_message = "Subsequent plans must preserve imported collections and the separately managed subnet."
+  }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    modtm   = modtm
+    random  = random
   }
 }

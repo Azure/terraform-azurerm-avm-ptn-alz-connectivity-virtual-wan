@@ -1,9 +1,18 @@
 # Regression test for Azure/Azure-Landing-Zones#358.
 # Verifies that a generated firewall policy can use a location different from its hub.
 
-mock_provider "azapi" {}
+mock_provider "azapi" {
+  mock_data "azapi_client_config" {
+    defaults = {
+      subscription_resource_id = "/subscriptions/00000000-0000-0000-0000-000000000000"
+    }
+  }
+}
+
 mock_provider "azurerm" {}
+
 mock_provider "modtm" {}
+
 mock_provider "random" {}
 
 override_module {
@@ -119,5 +128,11 @@ run "firewall_policy_location_contract" {
   assert {
     condition     = local.firewall_policies["tertiary"].location == "westeurope"
     error_message = "An empty-string firewall policy location must fall back to the hub location."
+  }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    modtm   = modtm
+    random  = random
   }
 }

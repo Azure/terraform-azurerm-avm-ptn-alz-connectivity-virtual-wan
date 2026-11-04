@@ -10,6 +10,11 @@ terraform {
       source  = "hashicorp/azurerm"
       version = "~> 4.0"
     }
+    # tflint-ignore: terraform_unused_required_providers
+    modtm = {
+      source  = "registry.terraform.io/azure/modtm"
+      version = "~> 0.3"
+    }
     random = {
       source  = "hashicorp/random"
       version = "~> 3.7"
@@ -83,6 +88,7 @@ module "test" {
   source = "../../"
 
   enable_telemetry = var.enable_telemetry
+  location         = var.location
   tags             = local.common_tags
   virtual_hubs = {
     primary = {
