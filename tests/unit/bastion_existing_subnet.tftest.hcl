@@ -1,9 +1,18 @@
 # Regression tests for Azure/Azure-Landing-Zones#4289 item 4.
 # Verifies Azure Bastion can use an existing AzureBastionSubnet outside the sidecar virtual network,
 # and that the default (subnet_id unset) behaviour is unchanged.
-mock_provider "azapi" {}
+mock_provider "azapi" {
+  mock_data "azapi_client_config" {
+    defaults = {
+      subscription_resource_id = "/subscriptions/00000000-0000-0000-0000-000000000000"
+    }
+  }
+}
+
 mock_provider "azurerm" {}
+
 mock_provider "modtm" {}
+
 mock_provider "random" {}
 
 override_module {
@@ -83,6 +92,12 @@ run "default_uses_generated_sidecar_subnet" {
     condition     = local.bastion_hosts["hub1"].ip_configuration.subnet_id == "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-test/providers/Microsoft.Network/virtualNetworks/vnet-sidecar/subnets/AzureBastionSubnet"
     error_message = "Default behaviour must place Bastion in the sidecar subnet."
   }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    modtm   = modtm
+    random  = random
+  }
 }
 
 run "existing_subnet_with_sidecar_enabled" {
@@ -115,6 +130,12 @@ run "existing_subnet_with_sidecar_enabled" {
   assert {
     condition     = local.bastion_hosts["hub1"].ip_configuration.subnet_id == "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-svc/providers/Microsoft.Network/virtualNetworks/vnet-bastion/subnets/AzureBastionSubnet"
     error_message = "Bastion must use the supplied subnet."
+  }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    modtm   = modtm
+    random  = random
   }
 }
 
@@ -157,6 +178,12 @@ run "existing_subnet_with_sidecar_disabled" {
     condition     = local.bastion_hosts["hub1"].resource_group_name == "rg-test"
     error_message = "Bastion resource group must still default from default_parent_id when the sidecar is disabled."
   }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    modtm   = modtm
+    random  = random
+  }
 }
 
 run "sidecar_disabled_without_subnet_keeps_bastion_off" {
@@ -183,6 +210,12 @@ run "sidecar_disabled_without_subnet_keeps_bastion_off" {
     condition     = !local.bastions_enabled["hub1"] && length(local.bastion_hosts) == 0
     error_message = "Without bastion.subnet_id, disabling the sidecar must still disable Bastion (unchanged behaviour)."
   }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    modtm   = modtm
+    random  = random
+  }
 }
 
 run "rejects_subnet_not_named_azurebastionsubnet" {
@@ -199,6 +232,12 @@ run "rejects_subnet_not_named_azurebastionsubnet" {
     }
   }
   expect_failures = [var.virtual_hubs]
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    modtm   = modtm
+    random  = random
+  }
 }
 
 run "rejects_subnet_id_with_subnet_address_prefix" {
@@ -216,4 +255,10 @@ run "rejects_subnet_id_with_subnet_address_prefix" {
     }
   }
   expect_failures = [var.virtual_hubs]
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    modtm   = modtm
+    random  = random
+  }
 }
