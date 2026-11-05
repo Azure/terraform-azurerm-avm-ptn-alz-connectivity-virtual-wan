@@ -1,5 +1,11 @@
 locals {
-  has_regions                               = length(var.virtual_hubs) > 0
+  has_regions = length(var.virtual_hubs) > 0
+  standalone_virtual_wan_configured = !local.has_regions && alltrue([
+    try(var.virtual_wan_settings.virtual_wan.name != null, false),
+    try(var.virtual_wan_settings.virtual_wan.location != null, false),
+    try(var.virtual_wan_settings.virtual_wan.resource_group_name != null, false)
+  ])
+  deploy_virtual_wan                        = local.has_regions || local.standalone_virtual_wan_configured
   hub_virtual_networks_resource_group_names = { for key, value in var.virtual_hubs : key => provider::azapi::parse_resource_id("Microsoft.Resources/resourceGroups", coalesce(value.default_parent_id, value.hub.parent_id)).resource_group_name }
   primary_location                          = local.has_regions ? var.virtual_hubs[local.primary_region_key].location : null
   primary_region_key                        = local.has_regions ? coalesce(one([for k, v in var.virtual_hubs : k if v.is_primary]), keys(var.virtual_hubs)[0]) : null
@@ -10,11 +16,11 @@ locals {
     address_prefix      = coalesce(virtual_hub_value.hub.address_prefix, local.virtual_network_default_ip_prefixes[virtual_hub_key]["virtual_hub"])
     tags                = coalesce(virtual_hub_value.hub.tags, var.tags, {})
   }) }
-  virtual_wan = local.has_regions ? {
+  virtual_wan = local.deploy_virtual_wan ? {
     id                                = var.virtual_wan_settings.virtual_wan.id
-    name                              = coalesce(var.virtual_wan_settings.virtual_wan.name, local.default_names[local.primary_region_key].virtual_wan_name)
-    location                          = coalesce(var.virtual_wan_settings.virtual_wan.location, local.primary_location)
-    resource_group_name               = coalesce(var.virtual_wan_settings.virtual_wan.resource_group_name, local.hub_virtual_networks_resource_group_names[local.primary_region_key])
+    name                              = local.has_regions ? coalesce(var.virtual_wan_settings.virtual_wan.name, local.default_names[local.primary_region_key].virtual_wan_name) : var.virtual_wan_settings.virtual_wan.name
+    location                          = local.has_regions ? coalesce(var.virtual_wan_settings.virtual_wan.location, local.primary_location) : var.virtual_wan_settings.virtual_wan.location
+    resource_group_name               = local.has_regions ? coalesce(var.virtual_wan_settings.virtual_wan.resource_group_name, local.hub_virtual_networks_resource_group_names[local.primary_region_key]) : var.virtual_wan_settings.virtual_wan.resource_group_name
     type                              = var.virtual_wan_settings.virtual_wan.type
     allow_branch_to_branch_traffic    = var.virtual_wan_settings.virtual_wan.allow_branch_to_branch_traffic
     disable_vpn_encryption            = var.virtual_wan_settings.virtual_wan.disable_vpn_encryption
