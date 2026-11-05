@@ -13,8 +13,6 @@ mock_provider "azapi" {
   }
 }
 
-mock_provider "modtm" {}
-
 mock_provider "azurerm" {
   mock_resource "azurerm_virtual_hub" {
     defaults = {
@@ -30,6 +28,7 @@ mock_provider "azurerm" {
 }
 
 mock_provider "random" {}
+
 run "additional_private_traffic_route" {
   command = apply
 
@@ -105,5 +104,10 @@ run "additional_private_traffic_route" {
       "/subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/rg-test/providers/Microsoft.Network/azureFirewalls/fw-test"
     )
     error_message = "The additional private-traffic route must use the configured Azure Firewall as the next hop."
+  }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    random  = random
   }
 }
