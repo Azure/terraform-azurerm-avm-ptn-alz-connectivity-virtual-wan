@@ -9,6 +9,11 @@ mock_provider "azapi" {
       id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-test/providers/Microsoft.Network/virtualNetworks/vnet-sidecar-test"
     }
   }
+  mock_data "azapi_client_config" {
+    defaults = {
+      subscription_resource_id = "/subscriptions/00000000-0000-0000-0000-000000000000"
+    }
+  }
 }
 
 mock_provider "azurerm" {
@@ -18,7 +23,9 @@ mock_provider "azurerm" {
     }
   }
 }
+
 mock_provider "modtm" {}
+
 mock_provider "random" {}
 
 override_module {
@@ -115,6 +122,12 @@ run "same_key_override_replaces_generated" {
     )
     error_message = "The overridden subnet must carry the user's NSG association and the restated DNS resolver delegation."
   }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    modtm   = modtm
+    random  = random
+  }
 }
 
 run "override_is_shallow" {
@@ -138,6 +151,12 @@ run "override_is_shallow" {
   assert {
     condition     = length(try(module.virtual_network_side_car["hub1"].subnets["dns_resolver"].resource.body.properties.delegations, [])) == 0
     error_message = "The override is a whole-object replacement: generated fields such as the delegation must not be deep-merged into it."
+  }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    modtm   = modtm
+    random  = random
   }
 }
 
@@ -169,6 +188,12 @@ run "subnet_generated_when_default_inbound_disabled" {
     )
     error_message = "Current behaviour: the resolver subnet is generated whenever the resolver is enabled, even with no inbound endpoint."
   }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    modtm   = modtm
+    random  = random
+  }
 }
 
 run "custom_endpoint_uses_overridden_subnet" {
@@ -195,6 +220,12 @@ run "custom_endpoint_uses_overridden_subnet" {
       local.private_dns_resolver["hub1"].inbound_endpoints["custom"].subnet_name == module.virtual_network_side_car["hub1"].subnets["dns_resolver"].name
     )
     error_message = "With the default endpoint disabled, a custom inbound endpoint must be the only endpoint and must land in the overridden subnet by name."
+  }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    modtm   = modtm
+    random  = random
   }
 }
 
@@ -228,6 +259,12 @@ run "default_inbound_endpoint_follows_override" {
     condition     = local.private_dns_resolver["hub1"].inbound_endpoints["dns"].subnet_name == "snet-dns-custom"
     error_message = "The default inbound endpoint is resolved by the dns_resolver key, so it must follow a same-key override."
   }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    modtm   = modtm
+    random  = random
+  }
 }
 
 run "override_key_without_resolver" {
@@ -249,5 +286,11 @@ run "override_key_without_resolver" {
       module.virtual_network_side_car["hub1"].subnets["dns_resolver"].name == "snet-dns-custom"
     )
     error_message = "With the resolver disabled, a dns_resolver key is an ordinary user subnet and no resolver is created."
+  }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    modtm   = modtm
+    random  = random
   }
 }
