@@ -1,21 +1,3 @@
-variable "location" {
-  type        = string
-  default     = "swedencentral"
-  description = "Region supporting Standard/Premium secured hubs and the selected availability zones."
-}
-
-variable "name_prefix" {
-  type        = string
-  default     = "cip"
-  description = "Prefix for the names of the resources this example creates. The e2e `pre.ps1` hook sets a unique value for each test run."
-}
-
-variable "resource_group_name" {
-  type        = string
-  default     = null
-  description = "Resource group created by this example. Defaults to `rg-<name_prefix>`."
-}
-
 variable "enable_telemetry" {
   type        = bool
   default     = true
@@ -39,6 +21,18 @@ DESCRIPTION
   nullable    = false
 }
 
+variable "location" {
+  type        = string
+  default     = "swedencentral"
+  description = "Region supporting Standard/Premium secured hubs and the selected availability zones."
+}
+
+variable "name_prefix" {
+  type        = string
+  default     = "cip"
+  description = "Prefix for the names of the resources this example creates. The e2e `pre.ps1` hook sets a unique value for each test run."
+}
+
 variable "public_ip_names" {
   type = map(string)
   default = {
@@ -51,6 +45,12 @@ variable "public_ip_names" {
     condition     = length(var.public_ip_names) > 0
     error_message = "Keep at least one public IP to remain in customer mode."
   }
+}
+
+variable "resource_group_name" {
+  type        = string
+  default     = null
+  description = "Resource group created by this example. Defaults to `rg-<name_prefix>`."
 }
 
 variable "resource_types" {

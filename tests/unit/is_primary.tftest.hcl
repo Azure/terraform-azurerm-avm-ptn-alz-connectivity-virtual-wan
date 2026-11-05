@@ -2,9 +2,18 @@
 # Verifies primary_region_key honors an explicit is_primary hub, otherwise falls back
 # to the first hub key in alphabetical order, and rejects more than one primary hub.
 
-mock_provider "azapi" {}
+mock_provider "azapi" {
+  mock_data "azapi_client_config" {
+    defaults = {
+      subscription_resource_id = "/subscriptions/00000000-0000-0000-0000-000000000000"
+    }
+  }
+}
+
 mock_provider "azurerm" {}
+
 mock_provider "modtm" {}
+
 mock_provider "random" {}
 
 override_module {
@@ -75,6 +84,12 @@ run "defaults_to_alphabetically_first_hub" {
     condition     = local.primary_region_key == "southeastasia"
     error_message = "With no is_primary hub, primary_region_key should fall back to the first hub key in alphabetical order (southeastasia)."
   }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    modtm   = modtm
+    random  = random
+  }
 }
 
 run "is_primary_overrides_alphabetical_order" {
@@ -117,6 +132,12 @@ run "is_primary_overrides_alphabetical_order" {
   assert {
     condition     = local.primary_region_key == "swedencentral"
     error_message = "primary_region_key should be the hub explicitly marked is_primary (swedencentral), not the alphabetically-first key."
+  }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    modtm   = modtm
+    random  = random
   }
 }
 
@@ -161,4 +182,10 @@ run "rejects_multiple_primary_hubs" {
   expect_failures = [
     var.virtual_hubs,
   ]
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    modtm   = modtm
+    random  = random
+  }
 }

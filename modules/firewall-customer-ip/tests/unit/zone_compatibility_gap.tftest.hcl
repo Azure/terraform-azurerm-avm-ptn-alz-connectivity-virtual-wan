@@ -34,8 +34,8 @@
 # the real rule is firewall-zones subset-of IP-zones, equality would falsely reject a configuration Azure
 # accepts - a worse defect than the late failure it would fix, since a false plan-time rejection has no
 # override. Settling it needs the reverse-direction test: a firewall zoned ["1"] with a ["1","2","3"] IP.
-mock_provider "modtm" {}
 mock_provider "random" {}
+
 mock_provider "azapi" {
   mock_data "azapi_resource_list" {
     defaults = { output = { firewalls = [], results = [] } }
@@ -58,6 +58,11 @@ mock_provider "azapi" {
           hubIPAddresses = { privateIPAddress = "10.0.0.4" }, threatIntelMode = null, additionalProperties = {}
         }
       }
+    }
+  }
+  mock_data "azapi_client_config" {
+    defaults = {
+      subscription_resource_id = "/subscriptions/00000000-0000-0000-0000-000000000000"
     }
   }
 }
@@ -100,6 +105,10 @@ run "current_behavior_accepts_single_zone_subset_on_zone_redundant_firewall" {
     condition     = length(azapi_resource.this.body.properties.ipConfigurations) == 1
     error_message = "Current behavior (documented gap, not a fix): the module accepts a customer public IP whose zones ([\"1\"]) are a strict, non-matching subset of the firewall's zones ([\"1\",\"2\",\"3\"]) instead of rejecting the mismatch. Only zone-list emptiness is validated, not zone-SET compatibility. See the KNOWN GAP comment at the top of this file."
   }
+  providers = {
+    azapi  = azapi
+    random = random
+  }
 }
 
 # Same documented gap, with a fully DISJOINT zone set (no overlap at all with the firewall's zones).
@@ -118,5 +127,9 @@ run "current_behavior_accepts_disjoint_zone_set_on_zone_redundant_firewall" {
   assert {
     condition     = length(azapi_resource.this.body.properties.ipConfigurations) == 1
     error_message = "Current behavior (documented gap, not a fix): the module accepts a customer public IP whose zones ([\"2\"]) are non-empty but never validated for overlap/equality against the firewall's zones ([\"1\",\"2\",\"3\"]). See the KNOWN GAP comment at the top of this file."
+  }
+  providers = {
+    azapi  = azapi
+    random = random
   }
 }

@@ -1,5 +1,5 @@
-mock_provider "modtm" {}
 mock_provider "random" {}
+
 mock_provider "azapi" {
   mock_data "azapi_resource_list" {
     defaults = { output = { firewalls = [], results = [] } }
@@ -12,6 +12,11 @@ mock_provider "azapi" {
         virtual_wan_id = "/subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/rg-test/providers/Microsoft.Network/virtualWans/wan-test"
         zones          = ["1", "2", "3"]
       }
+    }
+  }
+  mock_data "azapi_client_config" {
+    defaults = {
+      subscription_resource_id = "/subscriptions/00000000-0000-0000-0000-000000000000"
     }
   }
 }
@@ -62,5 +67,9 @@ run "hubipaddresses_private_ip_preferred_over_ipconfigurations_when_both_present
   assert {
     condition     = output.private_ip_address == "10.0.0.4"
     error_message = "properties.hubIPAddresses.privateIPAddress must be preferred over properties.ipConfigurations[*].properties.privateIPAddress when both are present - this branch order is for managed-mode/legacy compatibility and must not regress."
+  }
+  providers = {
+    azapi  = azapi
+    random = random
   }
 }

@@ -73,6 +73,7 @@ module "test" {
   source = "../../"
 
   enable_telemetry     = var.enable_telemetry
+  location             = var.location
   tags                 = module.config.outputs.tags
   virtual_hubs         = local.virtual_wan_virtual_hubs
   virtual_wan_settings = local.virtual_wan_settings
@@ -170,6 +171,14 @@ Description: Flag to enable/disable telemetry
 Type: `bool`
 
 Default: `true`
+
+### <a name="input_location"></a> [location](#input\_location)
+
+Description: The Azure region for this module's resources or telemetry deployment.
+
+Type: `string`
+
+Default: `"eastus"`
 
 ### <a name="input_management_group_settings"></a> [management\_group\_settings](#input\_management\_group\_settings)
 

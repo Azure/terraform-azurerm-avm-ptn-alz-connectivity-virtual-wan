@@ -47,6 +47,13 @@ variable "enable_telemetry" {
   description = "Flag to enable/disable telemetry"
 }
 
+variable "location" {
+  type        = string
+  default     = "eastus"
+  description = "The Azure region for this module's resources or telemetry deployment."
+  nullable    = false
+}
+
 variable "management_group_settings" {
   type        = any
   default     = {}
