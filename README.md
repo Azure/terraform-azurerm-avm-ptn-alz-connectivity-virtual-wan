@@ -490,6 +490,13 @@ The following top level attributes are supported:
     - `destinations` - (Required) A list of destinations for the routing policy.
     - `next_hop_firewall_key` - (Required) The key of the firewall to use as the next hop.
 
+## Additional Private Traffic Routes
+
+- `private_traffic_routes` - (Optional) A map of additional private-traffic routes to add to the Virtual Hub default route table. Default `{}`. Each route is an object with the following fields:
+  - `name` - (Required) The name of the route.
+  - `destinations` - (Required) A list of CIDR prefixes to route through the Azure Firewall.
+  - `next_hop_firewall_key` - (Required) The key of the Azure Firewall in this hub to use as the next hop.
+
 ## VPN Site Connections
 
 - `vpn_site_connections` - (Optional) A map of VPN site connections. Each connection is an object with the following fields:
@@ -944,6 +951,12 @@ map(object({
         destinations          = list(string)
         next_hop_firewall_key = string
       }))
+    })), {})
+
+    private_traffic_routes = optional(map(object({
+      name                  = string
+      destinations          = list(string)
+      next_hop_firewall_key = string
     })), {})
 
     vpn_site_connections = optional(map(object({
