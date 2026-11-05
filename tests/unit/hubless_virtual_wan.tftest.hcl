@@ -2,9 +2,18 @@
 # A Virtual WAN should be creatable without Virtual Hubs when all standalone
 # Virtual WAN settings are explicitly provided.
 
-mock_provider "azapi" {}
+mock_provider "azapi" {
+  mock_data "azapi_client_config" {
+    defaults = {
+      subscription_resource_id = "/subscriptions/00000000-0000-0000-0000-000000000000"
+    }
+  }
+}
+
 mock_provider "azurerm" {}
+
 mock_provider "modtm" {}
+
 mock_provider "random" {}
 
 override_module {
@@ -55,8 +64,13 @@ run "explicit_virtual_wan_without_hubs" {
     condition     = output.resource_id == "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-hubless-test/providers/Microsoft.Network/virtualWans/vwan-hubless-test"
     error_message = "A standalone Virtual WAN must expose its resource ID even when virtual_hubs is empty."
   }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    modtm   = modtm
+    random  = random
+  }
 }
-
 
 run "empty_hubs_without_standalone_wan_preserves_existing_behavior" {
   command = apply
@@ -85,6 +99,10 @@ run "empty_hubs_without_standalone_wan_preserves_existing_behavior" {
     condition     = output.resource_id == null
     error_message = "Virtual WAN resource ID must remain null when no hubs or standalone Virtual WAN are configured."
   }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    modtm   = modtm
+    random  = random
+  }
 }
-
-
