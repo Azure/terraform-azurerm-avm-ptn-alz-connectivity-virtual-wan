@@ -86,7 +86,7 @@ resource "azapi_resource" "this" {
   ignore_body_changes = length(var.ignore_body_changes.network_azure_firewalls) > 0 ? var.ignore_body_changes.network_azure_firewalls : null
   replace_triggers_refs = [
     "properties.sku.name",
-    "zones",
+    "sort(zones || `[]`)",
   ]
   response_export_values = [
     "properties.additionalProperties",
