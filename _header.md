@@ -67,3 +67,31 @@ Normal input-value dependencies on newly created resource groups are retained. D
 Adding, removing or replacing customer IP entries while keeping at least one entry is a maintenance operation. It is not a zero-downtime guarantee. Keep map keys stable, plan the address/rule changes explicitly, and measure control-plane duration and traffic impact separately. Removing the final customer IP or adding customer IPs to an existing managed firewall is a mode conversion and is blocked. Cross-mode conversion is not supported by this module; disabling/removing the whole firewall remains a destructive operation.
 
 Customer-mode firewall requests use API version `2024-10-01` by default.
+
+## Azure Bastion in a separate virtual network
+
+By default, Azure Bastion is deployed into a generated `AzureBastionSubnet` in the hub's sidecar virtual network. To place Bastion in a dedicated service virtual network instead, create that virtual network and its `AzureBastionSubnet` (at least /26, in the same region as the hub) outside this module, then set `bastion.subnet_id` and connect the virtual network to the hub:
+
+```hcl
+virtual_hubs = {
+  primary = {
+    location = "eastus"
+    bastion = {
+      subnet_id = azurerm_subnet.bastion.id
+    }
+    virtual_network_connections = {
+      bastion = {
+        name                      = "conn-vnet-bastion"
+        remote_virtual_network_id = azurerm_virtual_network.bastion.id
+      }
+    }
+  }
+}
+```
+
+- The module creates the Bastion host and its public IP. It does not create, own or delete the supplied virtual network or subnet.
+- The module does not connect the supplied virtual network to the hub. Add it to `virtual_network_connections` if Bastion must reach workloads through the hub.
+- When `bastion.subnet_id` is set, Bastion no longer requires `enabled_resources.sidecar_virtual_network`. The private DNS resolver continues to use the sidecar virtual network.
+- `bastion.subnet_id` cannot be combined with `bastion.subnet_address_prefix`.
+- Setting or changing `bastion.subnet_id` on an existing deployment replaces the Bastion host and removes the generated sidecar `AzureBastionSubnet`. Plan it as a maintenance change.
+- Alternatively, set `enabled_resources.bastion = false` and manage Bastion entirely outside this module, connecting its virtual network through `virtual_network_connections`.
