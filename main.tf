@@ -26,7 +26,7 @@ module "firewall_policy" {
 
 module "virtual_wan" {
   source = "./modules/virtual-wan"
-  count  = local.has_regions ? 1 : 0
+  count  = local.deploy_virtual_wan ? 1 : 0
 
   location                       = local.virtual_wan.location
   resource_group_name            = local.virtual_wan.resource_group_name

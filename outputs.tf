@@ -55,7 +55,7 @@ output "firewall_resource_names" {
 
 output "name" {
   description = "The name of the virtual WAN."
-  value       = local.has_regions ? module.virtual_wan[0].name : null
+  value       = local.deploy_virtual_wan ? module.virtual_wan[0].name : null
 }
 
 output "private_dns_resolver_resource_ids" {
@@ -80,7 +80,7 @@ output "private_link_private_dns_zones_maps" {
 
 output "resource_id" {
   description = "The resource ID of the virtual WAN."
-  value       = local.has_regions ? module.virtual_wan[0].resource_id : null
+  value       = local.deploy_virtual_wan ? module.virtual_wan[0].resource_id : null
 }
 
 output "route_map_resource_ids_by_name" {
