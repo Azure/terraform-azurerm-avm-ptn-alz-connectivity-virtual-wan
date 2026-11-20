@@ -95,7 +95,7 @@ output "route_map_resources" {
 
 output "sidecar_virtual_network_resource_ids" {
   description = "The resource IDs of the side car virtual networks associated with the virtual WAN, grouped by hub key."
-  value       = { for key, value in module.virtual_network_side_car : key => value.resource_id }
+  value       = local.sidecar_virtual_network_resource_ids
 }
 
 output "sidecar_virtual_network_resources" {
