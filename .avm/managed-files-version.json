@@ -1,7 +1,7 @@
 {
-  "version": "1.1.0",
+  "version": "1.5.5",
   "repo": "Azure/azure-verified-modules-managed-files",
-  "commit": "5d623774de922b512f2584afc36f1cfaeac5d416",
-  "commitDate": "2026-09-15T13:19:25Z",
-  "updatedAt": "2026-09-15T13:29:04Z"
+  "commit": "b8e527ef570443e85d00702d184eebb0aceacf52",
+  "commitDate": "2026-11-20T00:13:57Z",
+  "updatedAt": "2026-11-20T01:02:03Z"
 }
