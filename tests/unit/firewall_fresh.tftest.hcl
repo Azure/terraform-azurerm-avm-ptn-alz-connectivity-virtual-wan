@@ -1,5 +1,7 @@
 mock_provider "modtm" {}
+
 mock_provider "random" {}
+
 mock_provider "azurerm" {
   mock_data "azurerm_client_config" {
     defaults = { subscription_id = "00000000-0000-0000-0000-000000000001" }
@@ -11,6 +13,7 @@ mock_provider "azurerm" {
     defaults = { id = "/subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/rg-fresh/providers/Microsoft.Network/virtualWans/wan-fresh" }
   }
 }
+
 mock_provider "azapi" {
   mock_data "azapi_resource_list" {
     defaults = { output = { firewalls = [] } }
@@ -35,23 +38,35 @@ mock_provider "azapi" {
       }
     }
   }
+  mock_data "azapi_client_config" {
+    defaults = {
+      subscription_resource_id = "/subscriptions/00000000-0000-0000-0000-000000000000"
+    }
+  }
 }
 
 override_module {
   target  = module.virtual_wan.module.regions
   outputs = { regions_by_name = { eastus = { zones = ["1", "2", "3"] } } }
 }
+
 override_resource {
   target = module.resource_groups.azapi_resource.this
   values = { id = "/subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/rg-fresh" }
 }
+
 override_resource {
   target = azapi_resource.public_ips["primary"]
   values = { id = "/subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/rg-fresh/providers/Microsoft.Network/publicIPAddresses/pip-primary" }
 }
+
 override_resource {
   target = azapi_resource.public_ips["secondary"]
   values = { id = "/subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/rg-fresh/providers/Microsoft.Network/publicIPAddresses/pip-secondary" }
+}
+
+variables {
+  location = "eastus"
 }
 
 run "fresh_rg_and_unknown_ids_plan" {

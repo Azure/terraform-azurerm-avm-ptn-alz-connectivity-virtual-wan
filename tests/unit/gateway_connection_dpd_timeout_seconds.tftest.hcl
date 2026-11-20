@@ -2,7 +2,14 @@
 # Verifies dpd_timeout_seconds reaches the AzureRM VPN link and remains null
 # when callers omit it.
 
-mock_provider "azapi" {}
+mock_provider "azapi" {
+  mock_data "azapi_client_config" {
+    defaults = {
+      subscription_resource_id = "/subscriptions/00000000-0000-0000-0000-000000000000"
+    }
+  }
+}
+
 mock_provider "azurerm" {}
 
 variables {
@@ -33,6 +40,9 @@ run "dpd_timeout_seconds_reaches_vpn_link" {
     condition     = azurerm_vpn_gateway_connection.vpn_site_connection["connection1"].vpn_link[0].dpd_timeout_seconds == 30
     error_message = "dpd_timeout_seconds was not passed to the azurerm_vpn_gateway_connection VPN link."
   }
+  variables {
+    location = "eastus"
+  }
 }
 
 run "omitted_dpd_timeout_seconds_remains_null" {
@@ -56,6 +66,7 @@ run "omitted_dpd_timeout_seconds_remains_null" {
         ]
       }
     }
+    location = "eastus"
   }
 
   assert {

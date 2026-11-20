@@ -16,6 +16,8 @@ module "vpn_site" {
       tags                = value.tags
     }
   }
+  enable_telemetry = var.enable_telemetry
+  location         = var.location
 }
 
 moved {
@@ -63,6 +65,8 @@ module "vpn_site_connection" {
     }
 
   }
+  enable_telemetry = var.enable_telemetry
+  location         = var.location
 }
 
 moved {

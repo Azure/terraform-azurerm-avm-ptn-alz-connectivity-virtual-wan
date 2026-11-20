@@ -24,6 +24,17 @@ variable "associated_outbound_connections" {
   nullable    = false
 }
 
+variable "enable_telemetry" {
+  type        = bool
+  default     = true
+  description = <<DESCRIPTION
+This variable controls whether or not telemetry is enabled for the module.
+For more information see <https://aka.ms/avm/telemetryinfo>.
+If it is set to false, then no telemetry will be collected.
+DESCRIPTION
+  nullable    = false
+}
+
 variable "ignore_body_changes" {
   type = object({
     virtual_hubs_route_maps = optional(list(string), [])
@@ -41,6 +52,17 @@ DESCRIPTION
   validation {
     condition     = alltrue([for path in var.ignore_body_changes.virtual_hubs_route_maps : length(trimspace(path)) > 0])
     error_message = "Every ignore_body_changes.virtual_hubs_route_maps entry must be a non-empty body path in dot notation, for example \"properties.rules\"."
+  }
+}
+
+variable "location" {
+  type        = string
+  default     = null
+  description = "The Azure region for this module's resources or telemetry deployment."
+
+  validation {
+    condition     = !var.enable_telemetry || var.location != null
+    error_message = "The location must not be null when telemetry is enabled."
   }
 }
 

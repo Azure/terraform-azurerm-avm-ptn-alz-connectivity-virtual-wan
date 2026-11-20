@@ -1,9 +1,18 @@
 # Regression test for Azure/Azure-Landing-Zones#4092.
 # Verifies the root input type and flattening logic retain dpd_timeout_seconds.
 
-mock_provider "azapi" {}
+mock_provider "azapi" {
+  mock_data "azapi_client_config" {
+    defaults = {
+      subscription_resource_id = "/subscriptions/00000000-0000-0000-0000-000000000000"
+    }
+  }
+}
+
 mock_provider "azurerm" {}
+
 mock_provider "modtm" {}
+
 mock_provider "random" {}
 
 override_module {
@@ -70,5 +79,11 @@ run "root_input_retains_dpd_timeout_seconds" {
   assert {
     condition     = local.vpn_site_connections["hub1-connection1"].vpn_links[0].dpd_timeout_seconds == 30
     error_message = "The root vpn_site_connections input discarded dpd_timeout_seconds before forwarding it to the Virtual WAN module."
+  }
+  providers = {
+    azapi   = azapi
+    azurerm = azurerm
+    modtm   = modtm
+    random  = random
   }
 }

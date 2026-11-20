@@ -149,6 +149,7 @@ module "vwan" {
   source = "../../"
 
   enable_telemetry = var.enable_telemetry
+  location         = var.location
   route_maps       = local.route_maps
   tags             = local.common_tags
   virtual_hubs = {

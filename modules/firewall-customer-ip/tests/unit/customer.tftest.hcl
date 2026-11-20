@@ -1,5 +1,5 @@
-mock_provider "modtm" {}
 mock_provider "random" {}
+
 mock_provider "azapi" {
   mock_data "azapi_resource_list" {
     defaults = { output = { firewalls = [], results = [] } }
@@ -22,6 +22,11 @@ mock_provider "azapi" {
           hubIPAddresses = { privateIPAddress = "10.0.0.4" }, threatIntelMode = null, additionalProperties = {}
         }
       }
+    }
+  }
+  mock_data "azapi_client_config" {
+    defaults = {
+      subscription_resource_id = "/subscriptions/00000000-0000-0000-0000-000000000000"
     }
   }
 }
@@ -69,6 +74,10 @@ run "one_customer_ip" {
     condition     = length(azapi_resource.lock) == 0 && length(azapi_resource.role_assignments) == 0 && output.lock_resource_id == null && output.role_assignment_resource_ids == {}
     error_message = "Canonical optional interfaces must create no locks or assignments by default."
   }
+  providers = {
+    azapi  = azapi
+    random = random
+  }
 }
 
 run "accept_standard_virtual_wan_type_without_hub_sku" {
@@ -93,6 +102,10 @@ run "accept_standard_virtual_wan_type_without_hub_sku" {
   assert {
     condition     = azapi_resource.this.body.properties.virtualHub.id == var.virtual_hub_id
     error_message = "Creation must succeed against a Standard Virtual WAN even when the hub response has no sku field at all."
+  }
+  providers = {
+    azapi  = azapi
+    random = random
   }
 }
 
@@ -129,6 +142,10 @@ run "add_second_ip_in_stable_key_order" {
     condition     = azapi_resource.this.body.properties.sku.tier == "Premium" && output.public_ip_addresses == tolist(["203.0.113.10", "203.0.113.11"])
     error_message = "Premium must support multiple IPs with output ordering matching configuration keys."
   }
+  providers = {
+    azapi  = azapi
+    random = random
+  }
 }
 
 run "replace_one_ip_and_remove_another" {
@@ -148,6 +165,10 @@ run "replace_one_ip_and_remove_another" {
   assert {
     condition     = azapi_resource.this.ignore_body_changes == null && !contains(keys(azapi_resource.this.body.properties), "hubIPAddresses")
     error_message = "IP maintenance must not suppress drift or fall back to managed mode."
+  }
+  providers = {
+    azapi  = azapi
+    random = random
   }
 }
 
@@ -183,6 +204,10 @@ run "same_firewall_association_readback" {
     condition     = lower(local.public_ip_association_parents["primary"]) == lower(local.firewall_id)
     error_message = "Reapply must accept the exact same firewall parent for the Azure Firewall IP configuration child path."
   }
+  providers = {
+    azapi  = azapi
+    random = random
+  }
 }
 
 run "same_firewall_alternate_child_path" {
@@ -198,6 +223,10 @@ run "same_firewall_alternate_child_path" {
         zones             = ["1", "2", "3"]
       }
     }
+  }
+  providers = {
+    azapi  = azapi
+    random = random
   }
 }
 
@@ -226,6 +255,10 @@ run "api_retry_timeout_policy_and_tags_controls" {
   assert {
     condition     = azapi_resource.this.body.properties.firewallPolicy.id == var.firewall_policy_id && azapi_resource.this.tags == var.tags
     error_message = "Existing policy references and exact caller tags must pass through unchanged."
+  }
+  providers = {
+    azapi  = azapi
+    random = random
   }
 }
 
@@ -263,6 +296,10 @@ run "diagnostics_preserve_legacy_names_destinations_and_ids" {
   assert {
     condition     = output.legacy_diagnostic_settings_resource_ids["audit"] == "${output.resource_id}|diag-fw-test"
     error_message = "The compatibility output must retain the AzureRM composite-ID shape."
+  }
+  providers = {
+    azapi  = azapi
+    random = random
   }
 }
 
@@ -334,6 +371,10 @@ run "firewall_scoped_roles_and_lock" {
     )
     error_message = "Satellite retry/timeouts, default drift visibility and discrete outputs must be wired to the actual resources."
   }
+  providers = {
+    azapi  = azapi
+    random = random
+  }
 }
 
 run "read_only_lock_name_and_notes" {
@@ -349,6 +390,10 @@ run "read_only_lock_name_and_notes" {
       length(azapi_resource.role_assignments) == 0
     )
     error_message = "Canonical lock notes must survive the released utility adapter, and roles remain optional."
+  }
+  providers = {
+    azapi  = azapi
+    random = random
   }
 }
 
@@ -374,11 +419,17 @@ run "generated_role_name" {
     )
     error_message = "Omitted assignment names must use the utility's UUID while explicit role IDs remain unchanged."
   }
+  providers = {
+    azapi  = azapi
+    random = random
+  }
 }
 
 run "accept_non_zonal_firewall_with_non_zonal_public_ip" {
   command = apply
-  variables { zones = [] }
+  variables {
+    zones = []
+  }
   override_data {
     target = data.azapi_resource.public_ips["primary"]
     values = {
@@ -393,6 +444,10 @@ run "accept_non_zonal_firewall_with_non_zonal_public_ip" {
     condition     = length(azapi_resource.this.body.zones) == 0
     error_message = "A caller-selected non-zonal firewall must be accepted when the customer public IP also has no configured zones, mirroring a pre-zone-redundancy public IP."
   }
+  providers = {
+    azapi  = azapi
+    random = random
+  }
 }
 
 run "remove_optional_extensions" {
@@ -400,6 +455,10 @@ run "remove_optional_extensions" {
   assert {
     condition     = output.lock_resource_id == null && output.role_assignment_resource_ids == {} && length(azapi_resource.this.body.properties.ipConfigurations) == 1
     error_message = "Removing optional extensions must leave the same customer firewall configuration intact."
+  }
+  providers = {
+    azapi  = azapi
+    random = random
   }
 }
 
@@ -409,6 +468,10 @@ run "reject_invalid_lock_kind" {
     lock = { kind = "None" }
   }
   expect_failures = [var.lock]
+  providers = {
+    azapi  = azapi
+    random = random
+  }
 }
 
 run "reject_invalid_delegated_identity_id" {
@@ -423,4 +486,8 @@ run "reject_invalid_delegated_identity_id" {
     }
   }
   expect_failures = [var.role_assignments]
+  providers = {
+    azapi  = azapi
+    random = random
+  }
 }

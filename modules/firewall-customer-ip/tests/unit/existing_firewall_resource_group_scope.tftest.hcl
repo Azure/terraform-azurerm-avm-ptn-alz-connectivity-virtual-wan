@@ -1,5 +1,5 @@
-mock_provider "modtm" {}
 mock_provider "random" {}
+
 mock_provider "azapi" {
   mock_data "azapi_resource_list" {
     defaults = { output = { firewalls = [] } }
@@ -12,6 +12,11 @@ mock_provider "azapi" {
         virtual_wan_id = "/subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/rg-test/providers/Microsoft.Network/virtualWans/wan-test"
         zones          = ["1", "2", "3"]
       }
+    }
+  }
+  mock_data "azapi_client_config" {
+    defaults = {
+      subscription_resource_id = "/subscriptions/00000000-0000-0000-0000-000000000000"
     }
   }
 }
@@ -72,6 +77,10 @@ run "resolves_the_firewall_in_its_own_resource_group_not_a_same_named_one_elsewh
     condition     = lower(provider::azapi::parse_resource_id("Microsoft.Network/azureFirewalls", local.existing_firewall.id).resource_group_name) == "rg-test"
     error_message = "existing_firewall must resolve to the same-named firewall inside this module's own resource group (var.parent_id), not a same-named firewall living in an unrelated resource group."
   }
+  providers = {
+    azapi  = azapi
+    random = random
+  }
 }
 
 # The more consequential "silent wrong answer" case: no firewall of this name
@@ -98,6 +107,10 @@ run "unrelated_same_named_managed_firewall_in_another_resource_group_does_not_bl
       }
     }
   }
+  providers = {
+    azapi  = azapi
+    random = random
+  }
 }
 
 # Regression control (must already pass, and must keep passing): no same-named firewall anywhere in the
@@ -111,6 +124,10 @@ run "no_same_named_firewall_anywhere_still_short_circuits_to_a_fresh_create" {
   assert {
     condition     = local.existing_firewall == null
     error_message = "With no same-named firewall in the mocked inventory, existing_firewall must resolve to null so a fresh create is never blocked."
+  }
+  providers = {
+    azapi  = azapi
+    random = random
   }
 }
 
@@ -135,4 +152,8 @@ run "genuine_same_resource_group_incumbent_still_blocks_a_real_managed_to_custom
     }
   }
   expect_failures = [azapi_resource.this]
+  providers = {
+    azapi  = azapi
+    random = random
+  }
 }

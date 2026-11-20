@@ -83,16 +83,13 @@ The following requirements are needed by this module:
 
 - <a name="requirement_modtm"></a> [modtm](#requirement\_modtm) (~> 0.3)
 
-- <a name="requirement_random"></a> [random](#requirement\_random) (~> 3.5)
-
 ## Resources
 
 The following resources are used by this module:
 
-- [modtm_telemetry.telemetry](https://registry.terraform.io/providers/azure/modtm/latest/docs/resources/telemetry) (resource)
-- [random_uuid.telemetry](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/uuid) (resource)
+- [azapi_resource.telemetry](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource) (resource)
+- [terraform_data.telemetry](https://registry.terraform.io/providers/hashicorp/terraform/latest/docs/resources/data) (resource)
 - [azapi_client_config.telemetry](https://registry.terraform.io/providers/Azure/azapi/latest/docs/data-sources/client_config) (data source)
-- [modtm_module_source.telemetry](https://registry.terraform.io/providers/azure/modtm/latest/docs/data-sources/module_source) (data source)
 
 <!-- markdownlint-disable MD013 -->
 ## Required Inputs
@@ -208,6 +205,14 @@ object({
 ```
 
 Default: `{}`
+
+### <a name="input_location"></a> [location](#input\_location)
+
+Description: The Azure region for this module's resources or telemetry deployment.
+
+Type: `string`
+
+Default: `null`
 
 ### <a name="input_private_link_private_dns_zone_virtual_network_link_moved_block_template_module_prefix"></a> [private\_link\_private\_dns\_zone\_virtual\_network\_link\_moved\_block\_template\_module\_prefix](#input\_private\_link\_private\_dns\_zone\_virtual\_network\_link\_moved\_block\_template\_module\_prefix)
 
@@ -410,6 +415,10 @@ The following top level attributes are supported:
       - `route_table_ids` - (Optional) A list of route table IDs to propagate routes to.
       - `route_table_keys` - (Optional) A list of route table keys to propagate routes to.
       - `labels` - (Optional) A list of labels for route propagation.
+    - `static_vnet_route` - (Optional) A static route for this Virtual Network connection. Omitted by default. The object has the following fields:
+      - `name` - (Optional) The name of the static route.
+      - `address_prefixes` - (Optional) A list of destination address prefixes in CIDR format. Default `[]`.
+      - `next_hop_ip_address` - (Optional) The next hop IP address for the static route.
     - `inbound_route_map_id` - (Optional) The ID of the inbound route map.
     - `outbound_route_map_id` - (Optional) The ID of the outbound route map.
 
@@ -848,6 +857,11 @@ map(object({
           route_table_ids  = optional(list(string))
           route_table_keys = optional(list(string))
           labels           = optional(list(string))
+        }))
+        static_vnet_route = optional(object({
+          name                = optional(string)
+          address_prefixes    = optional(list(string), [])
+          next_hop_ip_address = optional(string)
         }))
         inbound_route_map_id  = optional(string)
         outbound_route_map_id = optional(string)
@@ -1543,7 +1557,7 @@ Version: 0.23.2
 
 Source: Azure/avm-utl-regions/azurerm
 
-Version: 0.5.2
+Version: 0.13.2
 
 ### <a name="module_route_map"></a> [route\_map](#module\_route\_map)
 
@@ -1578,5 +1592,9 @@ Version:
 <!-- markdownlint-disable-next-line MD041 -->
 ## Data Collection
 
-The software may collect information about you and your use of the software and send it to Microsoft. Microsoft may use this information to provide services and improve our products and services. You may turn off the telemetry as described in the repository. There are also some features in the software that may enable you and Microsoft to collect data from users of your applications. If you use these features, you must comply with applicable law, including providing appropriate notices to users of your applications together with a copy of Microsoft’s privacy statement. Our privacy statement is located at <https://go.microsoft.com/fwlink/?LinkID=824704>. You can learn more about data collection and use in the help documentation and our privacy statement. Your use of the software operates as your consent to these practices.
+The software may collect information about you and your use of the software and send it to Microsoft. Microsoft may use this information to provide services and improve our products and services. You may turn off the telemetry as described in the [repository](https://aka.ms/avm/telemetry). There are also some features in the software that may enable you and Microsoft to collect data from users of your applications. If you use these features, you must comply with applicable law, including providing appropriate notices to users of your applications together with a copy of Microsoft's privacy statement. Our privacy statement is located at <https://go.microsoft.com/fwlink/?LinkID=824704>. You can learn more about data collection and use in the help documentation and our privacy statement. Your use of the software operates as your consent to these practices.
+
+## Trademarks
+
+**Trademarks** This project may contain trademarks or logos for projects, products, or services. Authorized use of Microsoft trademarks or logos is subject to and must follow [Microsoft's Trademark & Brand Guidelines](https://www.microsoft.com/en-us/legal/intellectualproperty/trademarks/usage/general). Use of Microsoft trademarks or logos in modified versions of this project must not cause confusion or imply Microsoft sponsorship. Any use of third-party trademarks or logos are subject to those third-party's policies.
 <!-- END_TF_DOCS -->

@@ -86,7 +86,7 @@ resource "azapi_resource" "this" {
   ignore_body_changes = length(var.ignore_body_changes.network_azure_firewalls) > 0 ? var.ignore_body_changes.network_azure_firewalls : null
   replace_triggers_refs = [
     "properties.sku.name",
-    "zones",
+    "sort(zones || `[]`)",
   ]
   response_export_values = [
     "properties.additionalProperties",
@@ -227,8 +227,9 @@ resource "azapi_resource" "this" {
 
 module "avm_interfaces" {
   source  = "Azure/avm-utl-interfaces/azure"
-  version = "0.6.0"
+  version = "0.9.0"
 
+  location = var.location
   diagnostic_settings_v2 = {
     for key, setting in var.diagnostic_settings : key => merge(setting, {
       name = coalesce(setting.name, "diag-${var.name}")

@@ -1,5 +1,5 @@
-mock_provider "modtm" {}
 mock_provider "random" {}
+
 mock_provider "azapi" {
   mock_data "azapi_resource_list" {
     defaults = { output = { firewalls = [], results = [] } }
@@ -12,6 +12,11 @@ mock_provider "azapi" {
         virtual_wan_id = "/subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/rg-test/providers/Microsoft.Network/virtualWans/wan-test"
         zones          = ["1", "2", "3"]
       }
+    }
+  }
+  mock_data "azapi_client_config" {
+    defaults = {
+      subscription_resource_id = "/subscriptions/00000000-0000-0000-0000-000000000000"
     }
   }
 }
@@ -88,6 +93,10 @@ run "resolves_private_ip_from_multi_ip_response_shape" {
   assert {
     condition     = output.private_ip_address == "10.224.10.132"
     error_message = "Must resolve the private IP address from the multi-IP response shape: ip-a carries privateIPAddress, ip-b omits the key entirely."
+  }
+  providers = {
+    azapi  = azapi
+    random = random
   }
 }
 

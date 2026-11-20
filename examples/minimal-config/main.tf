@@ -59,6 +59,7 @@ module "test" {
   source = "../../"
 
   enable_telemetry = var.enable_telemetry
+  location         = var.location
   tags             = local.common_tags
   virtual_hubs = {
     primary = {

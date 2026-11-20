@@ -4,24 +4,22 @@ terraform {
       source  = "Azure/azapi"
       version = "~> 2.12"
     }
+    # tflint-ignore: terraform_unused_required_providers
     azurerm = {
       source  = "hashicorp/azurerm"
       version = "~> 4.0"
     }
+    # tflint-ignore: terraform_unused_required_providers
     modtm = {
       source  = "Azure/modtm"
       version = "~> 0.3"
     }
+    # tflint-ignore: terraform_unused_required_providers
     random = {
       source  = "hashicorp/random"
       version = "~> 3.5"
     }
   }
-}
-
-variable "firewall_enabled" {
-  type    = bool
-  default = true
 }
 
 module "resource_groups" {
@@ -33,10 +31,10 @@ module "resource_groups" {
 resource "azapi_resource" "public_ips" {
   for_each = toset(["primary", "secondary"])
 
-  type      = "Microsoft.Network/publicIPAddresses@2024-10-01"
+  location  = "eastus"
   name      = "pip-${each.key}"
   parent_id = module.resource_groups.resource_id
-  location  = "eastus"
+  type      = "Microsoft.Network/publicIPAddresses@2024-10-01"
   body = {
     sku = { name = "Standard", tier = "Regional" }
     properties = {
@@ -79,6 +77,7 @@ module "virtual_wan" {
   source = "../../../.."
 
   enable_telemetry     = false
+  location             = var.location
   virtual_hubs         = local.virtual_hubs
   virtual_wan_settings = local.virtual_wan_settings
 }
