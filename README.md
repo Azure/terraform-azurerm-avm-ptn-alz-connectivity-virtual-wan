@@ -70,6 +70,53 @@ Adding, removing or replacing customer IP entries while keeping at least one ent
 
 Customer-mode firewall requests use API version `2024-10-01` by default.
 
+## Private DNS Resolver subnet and endpoints
+
+### Which input controls what
+
+| What | Controlled by |
+|---|---|
+| Whether the `dns_resolver` subnet exists | `enabled_resources.private_dns_resolver` and `enabled_resources.sidecar_virtual_network`. Endpoint settings do not affect it: the subnet is created even when no endpoint uses it. |
+| Generated subnet values | `private_dns_resolver.subnet_address_prefix`, `subnet_name` and `subnet_default_outbound_access_enabled` |
+| Replacing the subnet (for example to add an NSG) | `sidecar_virtual_network.subnets["dns_resolver"]` (see below) |
+| Default inbound endpoint `dns` | Created only when `enabled_resources.private_dns_zones` and `private_dns_resolver.default_inbound_endpoint_enabled` are both `true`. It is always placed in the subnet with the key `dns_resolver`. |
+| Custom inbound and outbound endpoints | `private_dns_resolver.inbound_endpoints` and `outbound_endpoints`. Each endpoint's `subnet_name` is the subnet **name** in the sidecar virtual network, not the map key. |
+| Azure Firewall DNS proxy servers | The IP address of the inbound endpoint with the key `dns`. Requires the default inbound endpoint (or a custom endpoint with the key `dns`), private DNS zones, an Azure Firewall and a non-Basic firewall SKU. |
+
+### Overriding a generated sidecar subnet
+
+The module generates the `dns_resolver` and `bastion` sidecar subnets first, then merges `sidecar_virtual_network.subnets` last. A user subnet with the same key therefore replaces the generated subnet. This is a supported configuration, and it is how to set subnet properties that the generated subnet does not expose, such as `network_security_group`, `route_table` or `nat_gateway`.
+
+The replacement is **shallow**: the whole generated subnet is replaced, and none of its values are merged into yours. When you override `dns_resolver`:
+
+- Restate `name`, `address_prefixes` and the `Microsoft.Network/dnsResolvers` delegation. DNS resolver endpoints need the delegation.
+- `private_dns_resolver.subnet_address_prefix`, `subnet_name` and `subnet_default_outbound_access_enabled` are ignored.
+- To move an existing deployment onto the override without replacing the subnet or its endpoints, keep the current subnet name (default `dns-resolver`) and address prefix.
+- The default inbound endpoint follows the override automatically. Custom endpoints must use the override's `name` in `subnet_name`.
+- An NSG on the resolver subnet must allow DNS traffic (UDP and TCP port 53) from your clients. The rules are up to you.
+
+A custom inbound endpoint with the key `dns` likewise replaces the default inbound endpoint.
+
+```hcl
+sidecar_virtual_network = {
+  subnets = {
+    dns_resolver = {
+      name             = "dns-resolver"
+      address_prefixes = ["10.0.0.0/28"]
+      network_security_group = {
+        id = "<NSG resource ID>"
+      }
+      delegations = [{
+        name = "Microsoft.Network.dnsResolvers"
+        service_delegation = {
+          name = "Microsoft.Network/dnsResolvers"
+        }
+      }]
+    }
+  }
+}
+```
+
 <!-- markdownlint-disable MD033 -->
 ## Requirements
 
