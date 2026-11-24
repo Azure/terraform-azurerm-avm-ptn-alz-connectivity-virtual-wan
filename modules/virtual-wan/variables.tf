@@ -336,6 +336,19 @@ variable "p2s_gateways" {
   DESCRIPTION
 }
 
+# Additional private traffic routes for virtual hubs
+variable "private_traffic_routes" {
+  type = map(object({
+    name                  = string
+    destinations          = list(string)
+    next_hop_firewall_key = string
+    virtual_hub_key       = string
+  }))
+  default     = {}
+  description = "Additional private-traffic CIDR routes to add to the default route table of the specified Virtual Hub, using the specified Azure Firewall as the next hop."
+  nullable    = false
+}
+
 variable "resource_group_tags" {
   type        = map(string)
   default     = {}
