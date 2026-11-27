@@ -1,6 +1,6 @@
 module "regions" {
   source  = "Azure/avm-utl-regions/azurerm"
-  version = "0.13.2"
+  version = "0.15.0"
   count   = local.has_regions ? 1 : 0
 
   location               = local.primary_location
